@@ -46,6 +46,7 @@ import type { SysExAcceptedArray, UserDrumSetParameter } from "../midi/types";
 import type { MIDISystem } from "../soundbank/types";
 import { DefaultGSChorus } from "./audio_engine/effects/gs/implementation/chorus";
 import { DefaultGSDelay } from "./audio_engine/effects/gs/implementation/delay";
+import { DefaultGSEqualizer } from "./audio_engine/effects/gs/implementation/equalizer";
 import { DefaultGSInsertion } from "./audio_engine/effects/gs/implementation/insertion";
 import { DefaultGSReverb } from "./audio_engine/effects/gs/implementation/reverb";
 import {
@@ -70,6 +71,8 @@ import {
 import type {
     GSChorusParameter,
     GSDelayParameter,
+    GSEqualizerParameter,
+    GSEqualizerProcessor,
     GSInsertionBlock,
     GSReverbParameter,
     GSReverbProcessor
@@ -128,6 +131,20 @@ const GS_CHORUS_MACRO_PARAMETERS: (keyof GSChorusParameter)[] = [
     "sendLevelToReverb",
     "sendLevelToDelay"
 ];
+
+/**
+ * The default GS equalizer parameters (SC-8850 manual p.236).
+ */
+const DEFAULT_GS_EQUALIZER: GSEqualizerParameter = {
+    lowFrequency: 0,
+    lowGain: 0x40,
+    highFrequency: 0,
+    highGain: 0x40
+};
+
+const GS_EQUALIZER_PARAMETERS = Object.keys(
+    DEFAULT_GS_EQUALIZER
+) as (keyof GSEqualizerParameter)[];
 
 /**
  * The GS delay parameters set by the delay macro.
@@ -237,6 +254,16 @@ export class SpessaSynthProcessor {
      * @internal
      */
     public readonly insertionInputR;
+    /**
+     * The GS equalizer's left input buffer.
+     * @internal
+     */
+    public readonly equalizerInputL;
+    /**
+     * The GS equalizer's right input buffer.
+     * @internal
+     */
+    public readonly equalizerInputR;
     /**
      * The GS reverb processor's input buffer.
      * @internal
@@ -496,6 +523,13 @@ export class SpessaSynthProcessor {
      */
     protected readonly gsDelayProcessor: GSDelayProcessor;
     /**
+     * The synthesizer's GS equalizer processor.
+     *
+     * Used when {@link GlobalMIDIParameter.system} is `gm` `gm2` or `gs`.
+     * @internal
+     */
+    protected readonly gsEqualizerProcessor: GSEqualizerProcessor;
+    /**
      * The synthesizer's XG reverb block.
      *
      * Used when {@link GlobalMIDIParameter.system} is `xg`.
@@ -613,6 +647,8 @@ export class SpessaSynthProcessor {
             new DefaultGSChorus(sampleRate, bufSize);
         this.gsDelayProcessor =
             options.gsDelayProcessor ?? new DefaultGSDelay(sampleRate, bufSize);
+        this.gsEqualizerProcessor =
+            options.gsEqualizerProcessor ?? new DefaultGSEqualizer(sampleRate);
         this.gsInsertionBlock =
             options.gsInsertionBlock ??
             new DefaultGSInsertion(sampleRate, bufSize);
@@ -636,6 +672,8 @@ export class SpessaSynthProcessor {
         this.sharedVoiceSendBuffer = new VoiceSendBuffer(bufSize);
         this.insertionInputL = new Float32Array(bufSize);
         this.insertionInputR = new Float32Array(bufSize);
+        this.equalizerInputL = new Float32Array(bufSize);
+        this.equalizerInputR = new Float32Array(bufSize);
         this.gsReverbInput = new Float32Array(bufSize);
         this.gsChorusInput = new Float32Array(bufSize);
         this.gsDelayInput = new Float32Array(bufSize);
@@ -1239,6 +1277,17 @@ export class SpessaSynthProcessor {
         this.setChorusMacro(2);
         // Delay1 default
         this.setDelayMacro(0);
+        if (!this.systemParameters.gsEqualizerLock) {
+            const eq = this.gsEqualizerProcessor;
+            for (const parameter of GS_EQUALIZER_PARAMETERS) {
+                eq[parameter] = DEFAULT_GS_EQUALIZER[parameter];
+                this.callEvent("effectChange", {
+                    effect: "gsEqualizer",
+                    parameter,
+                    value: eq[parameter]
+                });
+            }
+        }
         if (!this.systemParameters.gsInsertionLock) {
             this.gsInsertionBlock.reset();
             this.callEvent("effectChange", {
@@ -1419,10 +1468,10 @@ export class SpessaSynthProcessor {
          *              │          │ │    Chorus     │                │
          *              │          │ │   Processor   ├──────────┐     │
          *              │          │ └─┬──────────┬──┘          │     │
-         *              │          │   │          │             │     │
-         *              │          │   │          │             │     │
-         *              │          │   │          │             │     │
-         *              │          │   │          │             │     │
+         *         ┌────┴────┐     │   │          │             │     │
+         *         │Equalizer│     │   │          │             │     │
+         *         │or Bypass│     │   │          │             │     │
+         *         └────┬────┘     │   │          │             │     │
          *              │          │   │          𜸊             𜸊     𜸊
          *              │          │   │ ┌────────┴───────┐   ┌─┴─────┴────────┐
          *              │          └───┼>┤     Delay      ├─>>┤     Reverb     │
@@ -1460,6 +1509,7 @@ export class SpessaSynthProcessor {
         const isXG = this.midiParameters.system === "xg";
         const variationInsertion = this.xgVariationBlock.insertionMode;
         const fx = this.systemParameters.effectsEnabled;
+        const eq = fx && !isXG;
 
         // For XG, renderVoice always checks if insertion is assigned to bypass effect sends
         // Cache it here
@@ -1483,6 +1533,10 @@ export class SpessaSynthProcessor {
         if (this.gsInsertionActive) {
             this.insertionInputL.fill(0);
             this.insertionInputR.fill(0);
+        }
+        if (eq) {
+            this.equalizerInputL.fill(0);
+            this.equalizerInputR.fill(0);
         }
         for (const c of this.midiChannels) {
             // And voice count
@@ -1626,6 +1680,17 @@ export class SpessaSynthProcessor {
                 continue;
             }
 
+            // Into the equalizer instead of the output
+            if (eq && midiParameters.eqEnabled) {
+                const equalizerL = this.equalizerInputL;
+                const equalizerR = this.equalizerInputR;
+                for (let i = 0; i < sampleCount; i++) {
+                    equalizerL[i] += outputLeft[i];
+                    equalizerR[i] += outputRight[i];
+                }
+                continue;
+            }
+
             // Dry level is only active in XG with variation connection set to SYSTEM.
             if (isXG && !variationInsertion) {
                 // Mix down taking dry level into account
@@ -1695,14 +1760,29 @@ export class SpessaSynthProcessor {
             } else {
                 // Insertion first
                 if (this.gsInsertionActive) {
-                    this.gsInsertionBlock.process(
+                    const insertion = this.gsInsertionBlock;
+                    // The send EQ switch routes the insertion output into the equalizer
+                    const toEqualizer = eq && insertion.sendEQSwitch;
+                    insertion.process(
                         insertionInputL,
                         insertionInputR,
-                        left,
-                        right,
+                        toEqualizer ? this.equalizerInputL : left,
+                        toEqualizer ? this.equalizerInputR : right,
                         gsReverbInput,
                         gsChorusInput,
                         gsDelayInput,
+                        toEqualizer ? 0 : startIndex,
+                        sampleCount
+                    );
+                }
+
+                // Then the equalizer, the system effects do not pass through it
+                if (eq) {
+                    this.gsEqualizerProcessor.process(
+                        this.equalizerInputL,
+                        this.equalizerInputR,
+                        left,
+                        right,
                         startIndex,
                         sampleCount
                     );

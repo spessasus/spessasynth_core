@@ -3,3 +3,4 @@ export * from "./interface/gs_reverb_processor";
 export * from "./interface/gs_chorus_processor";
 export * from "./interface/gs_delay_processor";
 export * from "./interface/gs_insertion_block";
+export * from "./interface/gs_equalizer_processor";

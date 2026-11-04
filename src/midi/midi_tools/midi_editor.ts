@@ -24,12 +24,14 @@ import type { AnalyzedMIDIMessage } from "./analyzed_message";
 import {
     DEFAULT_GS_DRUM_MAP,
     DEFAULT_XG_DRUM_MAP,
+    GSEqualizerAddressMap,
     GSInsertionAddressMap,
     MELODIC_MAP
 } from "./sysex_data";
 import type {
     GSChorusParameter,
     GSDelayParameter,
+    GSEqualizerParameter,
     GSInsertionBlockSnapshot,
     GSReverbParameter
 } from "../../synthesizer/audio_engine/effects/gs/types";
@@ -248,6 +250,12 @@ export interface ModifyMIDIOptions {
      * - {@link GSDelayParameter} - clear + the new parameters are set via System Exclusive messages.
      */
     gsDelayParams?: ClearableParameter<GSDelayParameter>;
+    /**
+     * The GS equalizer parameters.
+     * - `"clear"` - all existing parameter change MIDI messages are cleared.
+     * - {@link GSEqualizerParameter} - clear + the new parameters are set via System Exclusive messages.
+     */
+    gsEqualizerParams?: ClearableParameter<GSEqualizerParameter>;
     /**
      * The GS Insertion Effect parameters.
      * - `"clear"` - all existing parameter change MIDI messages are cleared.
@@ -484,6 +492,7 @@ export class MIDIEditor {
     private readonly gsReverbParams;
     private readonly gsChorusParams;
     private readonly gsDelayParams;
+    private readonly gsEqualizerParams;
     private readonly gsInsertionParams;
 
     private readonly xgReverbParams;
@@ -523,6 +532,7 @@ export class MIDIEditor {
             gsReverbParams,
             gsChorusParams,
             gsDelayParams,
+            gsEqualizerParams,
             gsInsertionParams,
             xgReverbParams,
             xgChorusParams,
@@ -536,6 +546,7 @@ export class MIDIEditor {
         this.gsReverbParams = gsReverbParams;
         this.gsChorusParams = gsChorusParams;
         this.gsDelayParams = gsDelayParams;
+        this.gsEqualizerParams = gsEqualizerParams;
         this.gsInsertionParams = gsInsertionParams;
 
         this.xgReverbParams = xgReverbParams;
@@ -670,6 +681,8 @@ export class MIDIEditor {
                 (this.gsReverbParams && this.gsReverbParams !== "clear") ||
                 (this.gsChorusParams && this.gsChorusParams !== "clear") ||
                 (this.gsDelayParams && this.gsDelayParams !== "clear") ||
+                (this.gsEqualizerParams &&
+                    this.gsEqualizerParams !== "clear") ||
                 (this.gsInsertionParams &&
                     this.gsInsertionParams !== "clear") ||
                 (this.xgReverbParams && this.xgReverbParams !== "clear") ||
@@ -715,6 +728,8 @@ export class MIDIEditor {
                     this.gsChorusParams !== "clear") ||
                 (this.gsDelayParams !== undefined &&
                     this.gsDelayParams !== "clear") ||
+                (this.gsEqualizerParams !== undefined &&
+                    this.gsEqualizerParams !== "clear") ||
                 (this.gsInsertionParams !== undefined &&
                     this.gsInsertionParams !== "clear");
             const targetSystem =
@@ -1173,6 +1188,15 @@ export class MIDIEditor {
                         case "GS Delay Param": {
                             // Delete all delay params since we're setting new ones
                             if (this.gsDelayParams) {
+                                this.deleteCurrentEvent();
+                                return;
+                            }
+                            break;
+                        }
+
+                        case "GS Equalizer Param": {
+                            // Delete all equalizer params since we're setting new ones
+                            if (this.gsEqualizerParams) {
                                 this.deleteCurrentEvent();
                                 return;
                             }
@@ -2329,6 +2353,20 @@ export class MIDIEditor {
                         p.sendLevelToReverb
                     )
                 );
+            }
+            if (this.gsEqualizerParams && this.gsEqualizerParams !== "clear") {
+                const p = this.gsEqualizerParams;
+                for (const name of Object.keys(
+                    GSEqualizerAddressMap
+                ) as (keyof typeof GSEqualizerAddressMap)[]) {
+                    output.push(
+                        MIDIUtils.setGSEqualizerParameter(
+                            targetTicks,
+                            name,
+                            p[name]
+                        )
+                    );
+                }
             }
             if (this.gsInsertionParams && this.gsInsertionParams !== "clear") {
                 const p = this.gsInsertionParams;

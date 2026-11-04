@@ -2,6 +2,7 @@ import type { GSInsertionParameter } from "../../synthesizer/audio_engine/effect
 import type {
     GSChorusParameter,
     GSDelayParameter,
+    GSEqualizerParameter,
     GSReverbParameter
 } from "../../synthesizer/audio_engine/effects/gs/types";
 import type { GlobalMIDIParameter } from "../../synthesizer/audio_engine/parameters/midi";
@@ -168,6 +169,27 @@ export type GSDelayParameterMessage =
           value: number;
       };
 /**
+ * Represents an analyzed GS Equalizer Processor change.
+ *
+ * @group MIDI.Protocol
+ */
+export type GSEqualizerParameterMessage = {
+    [P in keyof GSEqualizerParameter]: {
+        /**
+         * The message type identifier.
+         */
+        type: "GS Equalizer Param";
+        /**
+         * The GS equalizer parameter being modified.
+         */
+        parameter: P;
+        /**
+         * The new value of the GS equalizer parameter.
+         */
+        value: GSEqualizerParameter[P];
+    };
+}[keyof GSEqualizerParameter];
+/**
  * Represents an analyzed GS Insertion Processor change.
  *
  * @group MIDI.Protocol
@@ -195,11 +217,25 @@ export type GSInsertionParameterMessage =
           /**
            * The parameter name that was modified in the processor: a send level or an EFX control setting.
            */
-          parameter: keyof GSInsertionParameter;
+          parameter: Exclude<keyof GSInsertionParameter, "sendEQSwitch">;
           /**
            * The new value of the parameter.
            */
           value: number;
+      }
+    | {
+          /**
+           * An insertion effect processor parameter message (Roland GS).
+           */
+          type: "GS Insertion Param";
+          /**
+           * The send EQ switch, see {@link GSInsertionParameter.sendEQSwitch}.
+           */
+          parameter: "sendEQSwitch";
+          /**
+           * If the insertion output goes through the equalizer.
+           */
+          value: boolean;
       }
     | {
           /**
@@ -575,6 +611,7 @@ export type AnalyzedMIDIMessage =
     | GSReverbParameterMessage
     | GSChorusParameterMessage
     | GSDelayParameterMessage
+    | GSEqualizerParameterMessage
     | GSInsertionParameterMessage
     | XGReverbParameterMessage
     | XGChorusParameterMessage

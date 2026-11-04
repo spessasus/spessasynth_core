@@ -102,6 +102,7 @@ export function resetChannelInternal(this: MIDIChannel, sendCCEvents = true) {
     this.resetMIDIParameter("modulationDepth");
     this.resetMIDIParameter("rxChannel");
     this.resetMIDIParameter("efxAssign");
+    this.resetMIDIParameter("eqEnabled");
     this.resetMIDIParameter("polyMode");
     this.resetMIDIParameter("keyShift");
     this.resetMIDIParameter("fineTune");

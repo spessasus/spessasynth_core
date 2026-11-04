@@ -49,6 +49,7 @@ export class DefaultGSInsertion implements GSInsertionBlock {
     public sendLevelToReverb = DEFAULT_SEND_LEVEL_TO_REVERB;
     public sendLevelToChorus = 0;
     public sendLevelToDelay = 0;
+    public sendEQSwitch = true;
     public controlSource1: number = GSInsertionControlSources.off;
     public controlDepth1 = DEFAULT_CONTROL_DEPTH;
     public controlSource2: number = GSInsertionControlSources.off;
@@ -127,6 +128,7 @@ export class DefaultGSInsertion implements GSInsertionBlock {
         this.sendLevelToReverb = DEFAULT_SEND_LEVEL_TO_REVERB;
         this.sendLevelToChorus = 0;
         this.sendLevelToDelay = 0;
+        this.sendEQSwitch = true;
     }
 
     public getType() {
@@ -221,6 +223,7 @@ export class DefaultGSInsertion implements GSInsertionBlock {
             sendLevelToReverb: this.sendLevelToReverb,
             sendLevelToChorus: this.sendLevelToChorus,
             sendLevelToDelay: this.sendLevelToDelay,
+            sendEQSwitch: this.sendEQSwitch,
             controlSource1: this.controlSource1,
             controlDepth1: this.controlDepth1,
             controlSource2: this.controlSource2,
@@ -247,6 +250,8 @@ export class DefaultGSInsertion implements GSInsertionBlock {
         this.sendLevelToReverb = snapshot.sendLevelToReverb;
         this.sendLevelToChorus = snapshot.sendLevelToChorus;
         this.sendLevelToDelay = snapshot.sendLevelToDelay;
+        // Snapshots from versions without the EQ keep it on
+        this.sendEQSwitch = snapshot.sendEQSwitch ?? true;
     }
 
     /**

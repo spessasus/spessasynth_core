@@ -136,6 +136,9 @@ export function applySnapshotInternal(
         gsDelayParams: snapshot.systemParameters.gsDelayLock
             ? snapshot.gsDelayProcessor
             : undefined,
+        gsEqualizerParams: snapshot.systemParameters.gsEqualizerLock
+            ? snapshot.gsEqualizerProcessor
+            : undefined,
         gsInsertionParams: snapshot.systemParameters.gsInsertionLock
             ? snapshot.gsInsertionBlock
             : undefined,

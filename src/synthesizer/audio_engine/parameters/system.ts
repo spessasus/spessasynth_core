@@ -115,6 +115,18 @@ export interface GlobalSystemParameter {
     gsDelayLock: boolean;
 
     /**
+     * If the synthesizer should prevent editing of the GS equalizer parameters.
+     * This effect is modified using MIDI system exclusive messages, so
+     * the recommended use case would be setting
+     * the equalizer parameters then locking it to prevent changes by MIDI files.
+     *
+     * > **Warning**
+     * >
+     * > To lock the channel equalizer switch, lock the {@link ChannelMIDIParameter.eqEnabled `eqEnabled`} parameter instead.
+     */
+    gsEqualizerLock: boolean;
+
+    /**
      * The XG variation gain when in system mode. {@link XGVariationConnection}
      * From 0 to any number. 1 is 100% variation.
      */
@@ -277,6 +289,8 @@ export const DEFAULT_GLOBAL_SYSTEM_PARAMETERS: GlobalSystemParameter = {
 
     gsDelayGain: 1,
     gsDelayLock: false,
+
+    gsEqualizerLock: false,
 
     xgVariationGain: 1,
     xgVariationLock: false,

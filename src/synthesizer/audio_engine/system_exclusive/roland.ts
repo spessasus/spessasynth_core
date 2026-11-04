@@ -590,6 +590,31 @@ export function rolandSystemExclusive(
                         break;
                     }
 
+                    // Equalizer
+                    if (a2 === 0x02) {
+                        if (this.systemParameters.gsEqualizerLock) return;
+                        const parameter = (
+                            [
+                                "lowFrequency",
+                                "lowGain",
+                                "highFrequency",
+                                "highGain"
+                            ] as const
+                        )[a3];
+                        if (parameter === undefined) {
+                            SpessaLog.gsFail("Equalizer", [a3]);
+                            return;
+                        }
+                        this.gsEqualizerProcessor[parameter] = data;
+                        SpessaLog.gsInfo(`EQ ${parameter}`, data);
+                        this.callEvent("effectChange", {
+                            effect: "gsEqualizer",
+                            parameter,
+                            value: data
+                        });
+                        return;
+                    }
+
                     // EFX Parameter
                     if (a2 === 0x03) {
                         if (this.systemParameters.gsInsertionLock) return;
@@ -692,6 +717,22 @@ export function rolandSystemExclusive(
                                     effect: "gsInsertion",
                                     parameter,
                                     value: data
+                                });
+                                return;
+                            }
+
+                            case 0x1f: {
+                                // Send EQ switch, 0 is off and anything else is on
+                                const on = data !== 0;
+                                insertion.sendEQSwitch = on;
+                                SpessaLog.gsInfo(
+                                    "EFX Send EQ Switch",
+                                    on ? "ON" : "OFF"
+                                );
+                                this.callEvent("effectChange", {
+                                    effect: "gsInsertion",
+                                    parameter: "sendEQSwitch",
+                                    value: on
                                 });
                                 return;
                             }
@@ -1195,6 +1236,17 @@ export function rolandSystemExclusive(
                                 ch.controllerChange(
                                     MIDIControllers.bankSelectLSB,
                                     data
+                                );
+                                break;
+                            }
+
+                            case 0x20: {
+                                // EQ on/off
+                                const eq = data === 1;
+                                ch.setMIDIParameter("eqEnabled", eq);
+                                SpessaLog.gsInfo(
+                                    `EQ for ${channel}`,
+                                    eq ? "ON" : "OFF"
                                 );
                                 break;
                             }

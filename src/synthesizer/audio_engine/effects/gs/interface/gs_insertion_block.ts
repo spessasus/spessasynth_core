@@ -29,6 +29,15 @@ export interface GSInsertionParameter {
     sendLevelToDelay: number;
 
     /**
+     * EFX send EQ switch: routes the insertion output through the equalizer (see {@link GSEqualizerProcessor})
+     * when on, or straight to the output when off.
+     * Default is `true` (on).
+     *
+     * In the SysEx message, `0` is off and any other value is on.
+     */
+    sendEQSwitch: boolean;
+
+    /**
      * `0-127`
      *
      * EFX control source 1: the controller that modulates the first controlled parameter of the type
@@ -95,7 +104,8 @@ export interface GSInsertionBlockSnapshot extends GSInsertionParameter {
 
 /**
  * The Insertion effect (EFX) processes the parts (channels) that have EFX assigned
- * (see {@link ChannelMIDIParameter.efxAssign}) and is routed straight to the output.
+ * (see {@link ChannelMIDIParameter.efxAssign}) and is routed to the output,
+ * through the equalizer unless {@link GSInsertionParameter.sendEQSwitch} is off.
  * It can additionally send its output to the reverb, chorus and delay.
  *
  * This is a Roland GS-compatible insertion interface.
@@ -120,7 +130,7 @@ export interface GSInsertionBlock extends GSInsertionParameter {
     /**
      * Sets the EFX type of the block.
      *
-     * Type change resets the parameters and the send levels to their defaults.
+     * Type change resets the parameters, the send levels and the send EQ switch to their defaults.
      * The EFX control sources and depths are kept.
      * Behavior for unsupported types is up to the implementation.
      *

@@ -7,6 +7,7 @@ import type { GlobalMIDIParameter } from "./audio_engine/parameters/midi";
 import type {
     GSChorusProcessor,
     GSDelayProcessor,
+    GSEqualizerParameter,
     GSInsertionParameter,
     GSReverbProcessor
 } from "./audio_engine/effects/gs/types";
@@ -211,6 +212,7 @@ export type FXType<K> =
  * - {@link GSReverbProcessor} (`effect: "gsReverb"`)
  * - {@link GSChorusProcessor} (`effect: "gsChorus"`)
  * - {@link GSDelayProcessor} (`effect: "gsDelay"`)
+ * - {@link GSEqualizerProcessor} (`effect: "gsEqualizer"`)
  * - {@link GSInsertionBlock} (`effect: "gsInsertion"`)
  * - {@link XGReverbBlock} (`effect: "xgReverb"`)
  * - {@link XGChorusBlock} (`effect: "xgChorus"`)
@@ -265,6 +267,20 @@ export type EffectChangeEvent =
       }
     | {
           /**
+           * The effect that was changed: Roland GS equalizer.
+           */
+          effect: "gsEqualizer";
+          /**
+           * The parameter, see {@link GSEqualizerParameter}.
+           */
+          parameter: keyof GSEqualizerParameter;
+          /**
+           * The new 7-bit value.
+           */
+          value: number;
+      }
+    | {
+          /**
            * The effect that was changed: Roland GS insertion.
            */
           effect: "gsInsertion";
@@ -276,12 +292,31 @@ export type EffectChangeEvent =
            * - `"controlSource1" | "controlDepth1" | "controlSource2" | "controlDepth2"` - EFX control (7-bit), see {@link GSInsertionParameter}.
            * - `number` - 0-based type-specific EFX parameter index (0-19). EFX parameter 1 is 0. Value is 7-bit.
            */
-          parameter: "type" | keyof GSInsertionParameter | number;
+          parameter:
+              | "type"
+              | Exclude<keyof GSInsertionParameter, "sendEQSwitch">
+              | number;
 
           /**
            * The new value for the parameter.
            */
           value: number;
+      }
+    | {
+          /**
+           * The effect that was changed: Roland GS insertion.
+           */
+          effect: "gsInsertion";
+
+          /**
+           * The send EQ switch, see {@link GSInsertionParameter.sendEQSwitch}.
+           */
+          parameter: "sendEQSwitch";
+
+          /**
+           * If the insertion output goes through the equalizer.
+           */
+          value: boolean;
       }
     | {
           /**

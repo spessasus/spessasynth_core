@@ -118,6 +118,17 @@ export interface ChannelMIDIParameter {
     efxAssign: boolean;
 
     /**
+     * Indicates whether this channel passes through the GS equalizer (see {@link GSEqualizerProcessor}).
+     * Default is `true`, like on the Sound Canvas.
+     *
+     * > **Note**
+     * >
+     * > Channels with {@link efxAssign} enabled ignore this.
+     * > Their equalizer routing is set by {@link GSInsertionParameter.sendEQSwitch} instead.
+     */
+    eqEnabled: boolean;
+
+    /**
      * CC1 for GS controller matrix.
      * An arbitrary MIDI controller, which can be bound to any synthesis parameter.
      * Default is 16.
@@ -222,6 +233,7 @@ export const DEFAULT_CHANNEL_MIDI_PARAMETERS: ChannelMIDIParameter = {
     randomPan: false,
     assignMode: 2,
     efxAssign: false,
+    eqEnabled: true,
     cc1: 0x10,
     cc2: 0x11,
     drumMap: MELODIC_MAP,

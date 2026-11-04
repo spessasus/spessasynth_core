@@ -88,6 +88,12 @@ runMIDIEditorTest(midi, {
         preLowpass: 2,
         sendLevelToReverb: 127
     },
+    gsEqualizerParams: {
+        lowFrequency: 1,
+        lowGain: 0x46,
+        highFrequency: 0,
+        highGain: 0x3a
+    },
     gsInsertionParams: {
         type: 0x30_10,
         params: new Uint8Array([
@@ -97,6 +103,7 @@ runMIDIEditorTest(midi, {
         sendLevelToReverb: 64,
         sendLevelToChorus: 120,
         sendLevelToDelay: 127,
+        sendEQSwitch: false,
         controlSource1: 16,
         controlDepth1: 115,
         controlSource2: 0x71,

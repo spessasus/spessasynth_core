@@ -19,6 +19,7 @@ import type {
     AnalyzedSysExMessage,
     GSChorusParameterMessage,
     GSDelayParameterMessage,
+    GSEqualizerParameterMessage,
     GSInsertionParameterMessage,
     GSReverbParameterMessage,
     XGChorusParameterMessage,
@@ -33,6 +34,7 @@ import {
     GSChorusAddressMap,
     GSDelayAddressMap,
     GSDrumParamMap,
+    GSEqualizerAddressMap,
     GSInsertionAddressMap,
     GSReverbAddressMap,
     GSUserDrumParamMap,
@@ -45,6 +47,17 @@ import {
 } from "./sysex_data";
 import { SpessaLog } from "../../utils/loggin";
 import type { GSInsertionParameter } from "../../synthesizer/audio_engine/effects/gs/interface/gs_insertion_block";
+import type { GSEqualizerParameter } from "../../synthesizer/audio_engine/effects/gs/interface/gs_equalizer_processor";
+
+/**
+ * The GS equalizer parameters by their address (`40 02 xx`).
+ */
+const GS_EQUALIZER_PARAMETER_BY_ADDRESS = new Map(
+    Object.entries(GSEqualizerAddressMap).map(
+        ([name, address]) =>
+            [address, name as keyof GSEqualizerParameter] as const
+    )
+);
 
 /**
  * The named GS insertion parameters by their address (`40 03 xx`).
@@ -281,23 +294,43 @@ export class MIDIUtils {
     }
 
     /**
+     * Returns a MIDI event needed to set the given GS Equalizer Parameter.
+     * @param ticks The MIDI tick time for the output event.
+     * @param parameter The parameter to set.
+     * @param value The value to set it to.
+     * @returns The {@link MIDIMessage} needed to set this GS Equalizer Parameter.
+     */
+    public static setGSEqualizerParameter(
+        ticks: number,
+        parameter: GSEqualizerParameterMessage["parameter"],
+        value: number
+    ) {
+        const a3 = GSEqualizerAddressMap[parameter];
+        if (a3 === undefined) {
+            throw new Error(`Invalid equalizer parameter: ${parameter}`);
+        }
+        return this.gsMessage(ticks, 0x40, 0x02, a3, [value]);
+    }
+
+    /**
      * Returns a MIDI event needed to set the given GS Insertion Parameter.
      * @param ticks The MIDI tick time for the output event.
      * @param parameter The parameter to set: `"type"`, a send level or EFX control name (see {@link GSInsertionParameter}),
      * or a 0-based effect-specific parameter number (0-19).
-     * @param value The value to set it to.
+     * @param value The value to set it to. A boolean for `"sendEQSwitch"`.
      * @returns The {@link MIDIMessage} needed to set this GS Insertion Parameter.
      */
     public static setGSInsertionParameter(
         ticks: number,
         parameter: GSInsertionParameterMessage["parameter"],
-        value: number
+        value: number | boolean
     ) {
+        const data = typeof value === "boolean" ? (value ? 1 : 0) : value;
         switch (parameter) {
             case "type": {
                 return this.gsMessage(ticks, 0x40, 0x03, 0x00, [
-                    (value >> 8) & 0x7f,
-                    value & 0x7f
+                    (data >> 8) & 0x7f,
+                    data & 0x7f
                 ]);
             }
             default: {
@@ -307,7 +340,7 @@ export class MIDIUtils {
                         0x40,
                         0x03,
                         GSInsertionAddressMap[parameter],
-                        [value]
+                        [data]
                     );
                 }
                 if (
@@ -319,9 +352,7 @@ export class MIDIUtils {
                         `Invalid insertion parameter: ${parameter}`
                     );
                 }
-                return this.gsMessage(ticks, 0x40, 0x03, parameter + 3, [
-                    value
-                ]);
+                return this.gsMessage(ticks, 0x40, 0x03, parameter + 3, [data]);
             }
         }
     }
@@ -909,6 +940,19 @@ export class MIDIUtils {
                         system,
                         parameter,
                         value as number
+                    )
+                ];
+            }
+
+            case "eqEnabled": {
+                // GS only
+                return [
+                    MIDIUtils.gsMessage(
+                        ticks,
+                        0x40,
+                        0x40 | MIDIUtils.channelToGSPart(channel),
+                        0x20,
+                        [value ? 1 : 0]
                     )
                 ];
             }
@@ -3137,6 +3181,19 @@ export class MIDIUtils {
             }
         }
 
+        // Equalizer
+        if (a2 === 0x02) {
+            const parameter = GS_EQUALIZER_PARAMETER_BY_ADDRESS.get(a3);
+            if (parameter === undefined) return [OTHER];
+            return [
+                {
+                    type: "GS Equalizer Param",
+                    parameter,
+                    value
+                }
+            ];
+        }
+
         // EFX Parameter
         if (a2 === 0x03) {
             switch (a3) {
@@ -3152,6 +3209,16 @@ export class MIDIUtils {
             }
 
             const named = GS_INSERTION_PARAMETER_BY_ADDRESS.get(a3);
+            if (named === "sendEQSwitch") {
+                // 0 is off, anything else is on
+                return [
+                    {
+                        type: "GS Insertion Param",
+                        parameter: named,
+                        value: value !== 0
+                    }
+                ];
+            }
             if (named !== undefined) {
                 return [
                     {
@@ -3550,6 +3617,17 @@ export class MIDIUtils {
                                 channel,
                                 controller: MIDIControllers.bankSelectLSB,
                                 value
+                            }
+                        ];
+                    }
+
+                    case 0x20: {
+                        return [
+                            {
+                                type: "Channel MIDI Param",
+                                channel,
+                                parameter: "eqEnabled",
+                                value: value === 1
                             }
                         ];
                     }

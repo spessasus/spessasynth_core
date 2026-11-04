@@ -8,6 +8,7 @@ import type { UserDrumSetParameter } from "../../midi/types";
 import type {
     GSChorusParameter,
     GSDelayParameter,
+    GSEqualizerParameter,
     GSInsertionBlockSnapshot,
     GSReverbParameter
 } from "./effects/gs/types";
@@ -58,6 +59,10 @@ export interface SynthesizerSnapshot {
      */
     gsDelayProcessor: GSDelayParameter;
     /**
+     * A snapshot of the equalizer processor.
+     */
+    gsEqualizerProcessor: GSEqualizerParameter;
+    /**
      * A snapshot of the GS insertion block.
      */
     gsInsertionBlock: GSInsertionBlockSnapshot;
@@ -105,6 +110,10 @@ export function applySnapshot(
     this.gsReverbProcessor.applySnapshot(snapshot.gsReverbProcessor);
     this.gsChorusProcessor.applySnapshot(snapshot.gsChorusProcessor);
     this.gsDelayProcessor.applySnapshot(snapshot.gsDelayProcessor);
+    // Snapshots from versions without the equalizer keep the current one
+    // Safety check
+    if (snapshot.gsEqualizerProcessor)
+        this.gsEqualizerProcessor.applySnapshot(snapshot.gsEqualizerProcessor);
     this.gsInsertionBlock.applySnapshot(snapshot.gsInsertionBlock);
 
     // Restore XG effects
@@ -183,6 +192,7 @@ export function getSynthesizerSnapshot(
         gsReverbProcessor: this.gsReverbProcessor.getSnapshot(),
         gsChorusProcessor: this.gsChorusProcessor.getSnapshot(),
         gsDelayProcessor: this.gsDelayProcessor.getSnapshot(),
+        gsEqualizerProcessor: this.gsEqualizerProcessor.getSnapshot(),
         gsInsertionBlock: this.gsInsertionBlock.getSnapshot(),
         xgReverbBlock: this.xgReverbBlock.getSnapshot(),
         xgChorusBlock: this.xgChorusBlock.getSnapshot(),

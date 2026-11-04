@@ -375,6 +375,15 @@ These are global parameters, affecting the entire synthesizer.
 | DELAY FEEDBACK             | Sets the Delay Processor property {@link GSDelayProcessor.feedback `feedback`}.                                                                                                             |
 | DELAY SEND LEVEL TO REVERB | Sets the Delay Processor property {@link GSDelayProcessor.sendLevelToReverb `sendLevelToReverb`}.                                                                                           |
 
+##### Equalizer
+
+| Name         | Description                                                                                       |
+| ------------ | ------------------------------------------------------------------------------------------------- |
+| EQ LOW FREQ  | Sets the Equalizer Processor property {@link GSEqualizerProcessor.lowFrequency `lowFrequency`}.   |
+| EQ LOW GAIN  | Sets the Equalizer Processor property {@link GSEqualizerProcessor.lowGain `lowGain`}.             |
+| EQ HIGH FREQ | Sets the Equalizer Processor property {@link GSEqualizerProcessor.highFrequency `highFrequency`}. |
+| EQ HIGH GAIN | Sets the Equalizer Processor property {@link GSEqualizerProcessor.highGain `highGain`}.           |
+
 ##### EFX
 
 | Name                     | Description                                                                                                                                                                |
@@ -386,6 +395,7 @@ These are global parameters, affecting the entire synthesizer.
 | EFX SEND LEVEL TO DELAY  | Sets the amount of signal sent from the insertion effect to the delay effect.                                                                                              |
 | EFX CONTROL SOURCE 1/2   | Sets the controller that modulates the type's controlled parameters: control change 1-95, channel aftertouch or pitch bend. Only the parts with EFX assigned control them. |
 | EFX CONTROL DEPTH 1/2    | Sets how far the control sources move their parameters, -100% to +100% of the full range.                                                                                  |
+| EFX SEND EQ SWITCH       | Routes the insertion effect output through the equalizer (any value but `0`, the default) or straight to the output (`0`). A type change turns it back on.                 |
 
 #### Patch Part Parameters
 
@@ -427,6 +437,7 @@ Part (channel) parameters set a specific parameter for a specific channel.
 | \* CONTROL                        | See [Patch Part Parameters (Controllers)](#patch-part-parameters-controllers) for more details.                                                       |
 | TONE MAP NUMBER                   | Aliased to MIDI CC#32 (Bank Select LSB).                                                                                                              |
 | TONE MAP-0 NUMBER                 | Aliased to MIDI CC#32 (Bank Select LSB).                                                                                                              |
+| EQ ON/OFF                         | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.eqEnabled `eqEnabled`}.                                                                   |
 | PART EFX ASSIGN                   | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.efxAssign `efxAssign`}.                                                                   |
 
 [^3]: Unlike with Sound Canvases, there's no limit to drum channels the synthesizer can have. The Drum Map number is stored in Channel MIDI Parameter {@link ChannelMIDIParameter.drumMap `drumMap`}. Switching resets the bank to 0 and the program to 0 and changing the drum map number re-selects the kit the same way.
@@ -779,7 +790,7 @@ For GS: It depends on the bank LSB number (MSB and drum map are ignored for this
 ## GS Effects
 
 SpessaSynth's GS effects are modeled after the Sound Canvas line.
-There are currently 3 system effect processors and the insertion processors,
+There are currently 4 system effect processors and the insertion processors,
 below are their built-in, default implementations.
 
 > **Note**
@@ -788,7 +799,7 @@ below are their built-in, default implementations.
 
 ### System Effects
 
-Note that all three can be replaced with custom effect processors.
+Note that all four can be replaced with custom effect processors.
 The XG effect blocks can likewise be replaced, see [XG effects](#xg-effects).
 
 #### Reverb
@@ -810,6 +821,16 @@ A simple 1st order lowpass filter is used for the pre-LPF param.
 Implemented using a single shared circular buffer with three read indexes (center, left, right),
 with the central tap having feedback and feeding into the stereo taps.
 Input is fed to all three taps.
+
+#### Equalizer
+
+Implemented using two first order shelving filters (low and high) per channel, designed with the bilinear transform
+at the corner frequency. A cut is the exact inverse of the matching boost.
+The shapes were measured on the SC-88Pro: the high corners are the manual's 3 kHz and 6 kHz,
+but the low ones sit at 225 Hz and 425 Hz instead of 200 Hz and 400 Hz.
+
+Only the parts with EQ ON/OFF enabled and the insertion effect (with EFX SEND EQ SWITCH on) pass through it.
+The reverb, chorus and delay outputs do not.
 
 ### Insertion Effects
 

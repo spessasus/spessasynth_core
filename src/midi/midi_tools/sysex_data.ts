@@ -2,6 +2,7 @@ import type { DrumParameter, UserDrumSetParameter } from "../types";
 import type {
     GSChorusParameterMessage,
     GSDelayParameterMessage,
+    GSEqualizerParameterMessage,
     GSReverbParameterMessage
 } from "./analyzed_message";
 import type { ChannelMIDIParameter } from "../../synthesizer/audio_engine/channel/parameters/midi";
@@ -77,7 +78,8 @@ export const GSInsertionAddressMap: Record<keyof GSInsertionParameter, number> =
         controlSource1: 0x1b,
         controlDepth1: 0x1c,
         controlSource2: 0x1d,
-        controlDepth2: 0x1e
+        controlDepth2: 0x1e,
+        sendEQSwitch: 0x1f
     };
 export const GSChorusAddressMap: Record<
     GSChorusParameterMessage["parameter"],
@@ -108,6 +110,15 @@ export const GSDelayAddressMap: Record<
     level: 0x58,
     feedback: 0x59,
     sendLevelToReverb: 0x5a
+};
+export const GSEqualizerAddressMap: Record<
+    GSEqualizerParameterMessage["parameter"],
+    number
+> = {
+    lowFrequency: 0x00,
+    lowGain: 0x01,
+    highFrequency: 0x02,
+    highGain: 0x03
 };
 
 /**

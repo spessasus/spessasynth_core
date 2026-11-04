@@ -5,6 +5,7 @@ import type { VoiceParameters } from "../soundbank/types";
 import type {
     GSChorusProcessor,
     GSDelayProcessor,
+    GSEqualizerProcessor,
     GSInsertionBlock,
     GSReverbProcessor
 } from "./audio_engine/effects/gs/types";
@@ -109,6 +110,11 @@ export interface SynthProcessorOptions {
      * Optional custom GS delay processor for the synthesizer. Leave undefined to use {@link DefaultGSDelay}.
      */
     gsDelayProcessor?: GSDelayProcessor;
+
+    /**
+     * Optional custom GS equalizer processor for the synthesizer. Leave undefined to use {@link DefaultGSEqualizer}.
+     */
+    gsEqualizerProcessor?: GSEqualizerProcessor;
 
     /**
      * Optional custom GS insertion block for the synthesizer. Leave undefined to use {@link DefaultGSInsertion}.
