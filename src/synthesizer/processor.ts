@@ -1866,10 +1866,10 @@ export class SpessaSynthProcessor {
      * @internal
      */
     public purgeCachedPatch(patch: MIDIPatch) {
-        // The patch occupies the lowest digits of the cache key (below 129 * 128 * 128)
+        // The patch occupies the lowest digits of the cache key (below 256 * 128 * 128)
         const patchKey = this.getCachedVoiceIndex(patch, 0, 0);
         for (const key of this.cachedVoices.keys()) {
-            if (key % 2_113_536 === patchKey) this.cachedVoices.delete(key);
+            if (key % 4_194_304 === patchKey) this.cachedVoices.delete(key);
         }
     }
 
@@ -2577,21 +2577,17 @@ export class SpessaSynthProcessor {
         midiNote: number,
         velocity: number
     ) {
-        let bankMSB = patch.bankMSB;
-        const bankLSB = patch.bankLSB;
-        const { isGMGSDrum, program } = patch;
-        if (isGMGSDrum) {
-            // Bank MSB is 0-127, so 128 is a separate drum digit
-            // The LSB stays since it selects the map
-            bankMSB = 128;
-        }
-        // 129x128x128x128x128 array!
+        const { isGMGSDrum, program, bankLSB } = patch;
+        // Bank MSB is 0-127, GM/GS drums use 128-255 so they stay apart from melodic patches
+        // The drum MSB and LSB both pick the kit
+        const bankMSB = isGMGSDrum ? 128 + patch.bankMSB : patch.bankMSB;
+        // 256x128x128x128x128 array!
         return (
-            bankMSB + // 129 * 128 ^ 0
-            bankLSB * 129 + // 129 * 128 ^ 0
-            program * 16_512 + // 129 * 128 ^ 1
-            2_113_536 * midiNote + // 129 * 128 ^ 2
-            270_532_608 * velocity // 129 * 128 ^ 3
+            bankMSB + // 256 * 128 ^ 0
+            bankLSB * 256 + // 256 * 128 ^ 0
+            program * 32_768 + // 256 * 128 ^ 1
+            4_194_304 * midiNote + // 256 * 128 ^ 2
+            536_870_912 * velocity // 256 * 128 ^ 3
         );
     }
 }

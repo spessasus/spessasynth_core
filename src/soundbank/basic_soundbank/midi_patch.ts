@@ -89,12 +89,12 @@ export class MIDIPatchTools {
     /**
      * Converts a given {@link MIDIPatch} to a string.
      * The format is:
-     * - `DRUM:bankLSB:program` for `isGMGSDrum` set to `true`.
+     * - `DRUM:bankMSB:bankLSB:program` for `isGMGSDrum` set to `true`.
      * - `bankLSB:bankMSB:program` for `isGMGSDrum` set to `false`.
      */
     public static toMIDIString(patch: MIDIPatch) {
         if (patch.isGMGSDrum) {
-            return `DRUM:${patch.bankLSB}:${patch.program}`;
+            return `DRUM:${patch.bankMSB}:${patch.bankLSB}:${patch.program}`;
         }
         return `${patch.bankLSB}:${patch.bankMSB}:${patch.program}`;
     }
@@ -105,27 +105,31 @@ export class MIDIPatchTools {
      */
     public static fromMIDIString(string: string): MIDIPatch {
         const parts = string.split(":");
-        const isDrum = string.startsWith("DRUM");
-        // DRUM:LSB:program, D
-        // RUM:program (older format LSB = 0)
-        // Or LSB:MSB:program
-        const drumLSB = parts.length === 3 ? Number.parseInt(parts[1]) : 0;
-        if (parts.length !== 3 && !(isDrum && parts.length === 2)) {
+        if (string.startsWith("DRUM")) {
+            // DRUM:MSB:LSB:program,
+            // DRUM:program (older format LSB = 0)
+            // Or LSB:MSB:program
+            if (parts.length !== 4 && parts.length !== 2) {
+                throw new Error(`Invalid MIDI string: ${string}`);
+            }
+            const long = parts.length === 4;
+            return {
+                bankMSB: long ? Number.parseInt(parts[1]) : 0,
+                bankLSB: long ? Number.parseInt(parts[2]) : 0,
+                program: Number.parseInt(parts[parts.length - 1]),
+                isGMGSDrum: true
+            };
+        }
+        // LSB:MSB:program
+        if (parts.length !== 3) {
             throw new Error(`Invalid MIDI string: ${string}`);
         }
-        return isDrum
-            ? {
-                  bankMSB: 0,
-                  bankLSB: drumLSB,
-                  program: Number.parseInt(parts[parts.length - 1]),
-                  isGMGSDrum: true
-              }
-            : {
-                  bankLSB: Number.parseInt(parts[0]),
-                  bankMSB: Number.parseInt(parts[1]),
-                  program: Number.parseInt(parts[2]),
-                  isGMGSDrum: false
-              };
+        return {
+            bankLSB: Number.parseInt(parts[0]),
+            bankMSB: Number.parseInt(parts[1]),
+            program: Number.parseInt(parts[2]),
+            isGMGSDrum: false
+        };
     }
 
     /**
@@ -166,11 +170,12 @@ export class MIDIPatchTools {
      */
     public static matches(patch1: MIDIPatch, patch2: MIDIPatch) {
         if (patch1.isGMGSDrum || patch2.isGMGSDrum) {
-            // For drums compare the program and the LSB (SC map),
-            // The MSB is always ignored
+            // Drum kits are told apart by the program,
+            // The MSB and the LSB
             return (
                 patch1.isGMGSDrum === patch2.isGMGSDrum &&
                 patch1.program === patch2.program &&
+                patch1.bankMSB === patch2.bankMSB &&
                 patch1.bankLSB === patch2.bankLSB
             );
         }
@@ -263,8 +268,14 @@ export class MIDIPatchTools {
 
         // No exact match...
         if (isGMGSDrum) {
-            // GM/GS drums: check for the exact program match
-            let p = patches.find((p) => p.isGMGSDrum && p.program === program);
+            // GM/GS drums: same program and LSB (the kit map), then the program alone
+            let p =
+                patches.find(
+                    (p) =>
+                        p.isGMGSDrum &&
+                        p.program === program &&
+                        p.bankLSB === bankLSB
+                ) ?? patches.find((p) => p.isGMGSDrum && p.program === program);
             if (p) {
                 returnReplacement(p);
                 return p;

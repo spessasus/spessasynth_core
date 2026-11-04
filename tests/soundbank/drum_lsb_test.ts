@@ -7,15 +7,20 @@ import {
 } from "../../src";
 
 // GS drum kits of one program, told apart by the bank LSB (the SC map)
-const kit = (bankLSB: number, name: string): MIDIPatchFull => ({
+const kit = (bankLSB: number, name: string, bankMSB = 0): MIDIPatchFull => ({
     program: 0,
-    bankMSB: 0,
+    bankMSB,
     bankLSB,
     isGMGSDrum: true,
     isDrum: true,
     name
 });
-const patches = [kit(0, "SC-55"), kit(2, "SC-88"), kit(3, "SC-88Pro")];
+const patches = [
+    kit(0, "SC-55"),
+    kit(2, "SC-88"),
+    kit(3, "SC-88Pro"),
+    kit(0, "GM2", 120)
+];
 
 let failed = false;
 const check = (name: string, ok: boolean) => {
@@ -38,22 +43,40 @@ const fallback = MIDIPatchTools.selectPatch(
     "gs"
 );
 check("unknown LSB still finds a kit", fallback.program === 0);
-// The MSB is still ignored for drums
+// A junk MSB still finds the kit of its LSB
 const msb = MIDIPatchTools.selectPatch(
     patches,
     { program: 0, bankMSB: 5, bankLSB: 2, isGMGSDrum: true },
     "gs"
 );
-check("MSB is ignored", msb.bankLSB === 2);
+check("junk MSB still finds the LSB kit", msb.bankLSB === 2);
+// GM2 kits (MSB 120, LSB 0) stay apart from the default kit
+const gm2 = MIDIPatchTools.selectPatch(
+    patches,
+    { program: 0, bankMSB: 120, bankLSB: 0, isGMGSDrum: true },
+    "gs"
+);
+check("MSB 120 selects the GM2 kit", gm2.name === "GM2");
+const def = MIDIPatchTools.selectPatch(
+    patches,
+    { program: 0, bankMSB: 0, bankLSB: 0, isGMGSDrum: true },
+    "gs"
+);
+check("MSB 0 LSB 0 selects the default kit", def.name === "SC-55");
 
 // The synthesizer's preset list must keep every kit,
 // Not only the first per program!
 const bank = new BasicSoundBank();
-for (const lsb of [0, 2, 3]) {
+for (const [msb, lsb] of [
+    [0, 0],
+    [0, 2],
+    [0, 3],
+    [120, 0]
+]) {
     const preset = new BasicPreset(bank);
     preset.name = `Kit ${lsb}`;
     preset.program = 0;
-    preset.bankMSB = 0;
+    preset.bankMSB = msb;
     preset.bankLSB = lsb;
     preset.isGMGSDrum = true;
     bank.addPresets(preset);
@@ -65,7 +88,8 @@ const kits = synth.soundBankManager.presetList.filter(
 );
 check(
     "preset list keeps all LSB kits",
-    kits.map((k) => k.bankLSB).join(",") === "0,2,3"
+    kits.map((k) => `${k.bankMSB}:${k.bankLSB}`).join(",") ===
+        "0:0,0:2,0:3,120:0"
 );
 
 // MIDI string check, plus the older format without an LSB
@@ -73,7 +97,7 @@ const str = MIDIPatchTools.toMIDIString(patches[1]);
 const parsed = MIDIPatchTools.fromMIDIString(str);
 check(
     "MIDI string keeps the LSB",
-    str === "DRUM:2:0" && parsed.bankLSB === 2 && parsed.isGMGSDrum
+    str === "DRUM:0:2:0" && parsed.bankLSB === 2 && parsed.isGMGSDrum
 );
 const old = MIDIPatchTools.fromMIDIString("DRUM:5");
 check(
