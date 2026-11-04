@@ -89,12 +89,12 @@ export class MIDIPatchTools {
     /**
      * Converts a given {@link MIDIPatch} to a string.
      * The format is:
-     * - `DRUM:program` for `isGMGSDrum` set to `true`.
+     * - `DRUM:bankLSB:program` for `isGMGSDrum` set to `true`.
      * - `bankLSB:bankMSB:program` for `isGMGSDrum` set to `false`.
      */
     public static toMIDIString(patch: MIDIPatch) {
         if (patch.isGMGSDrum) {
-            return `DRUM:${patch.program}`;
+            return `DRUM:${patch.bankLSB}:${patch.program}`;
         }
         return `${patch.bankLSB}:${patch.bankMSB}:${patch.program}`;
     }
@@ -106,15 +106,18 @@ export class MIDIPatchTools {
     public static fromMIDIString(string: string): MIDIPatch {
         const parts = string.split(":");
         const isDrum = string.startsWith("DRUM");
-        // DRUM:program or LSB:MSB:program
-        if (parts.length !== (isDrum ? 2 : 3)) {
+        // DRUM:LSB:program, D
+        // RUM:program (older format LSB = 0)
+        // Or LSB:MSB:program
+        const drumLSB = parts.length === 3 ? Number.parseInt(parts[1]) : 0;
+        if (parts.length !== 3 && !(isDrum && parts.length === 2)) {
             throw new Error(`Invalid MIDI string: ${string}`);
         }
         return isDrum
             ? {
                   bankMSB: 0,
-                  bankLSB: 0,
-                  program: Number.parseInt(parts[1]),
+                  bankLSB: drumLSB,
+                  program: Number.parseInt(parts[parts.length - 1]),
                   isGMGSDrum: true
               }
             : {
@@ -163,10 +166,12 @@ export class MIDIPatchTools {
      */
     public static matches(patch1: MIDIPatch, patch2: MIDIPatch) {
         if (patch1.isGMGSDrum || patch2.isGMGSDrum) {
-            // For drums only compare programs
+            // For drums compare the program and the LSB (SC map),
+            // The MSB is always ignored
             return (
                 patch1.isGMGSDrum === patch2.isGMGSDrum &&
-                patch1.program === patch2.program
+                patch1.program === patch2.program &&
+                patch1.bankLSB === patch2.bankLSB
             );
         }
         return (

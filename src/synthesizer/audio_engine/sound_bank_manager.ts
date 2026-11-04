@@ -242,8 +242,9 @@ export class SoundBankManager {
                     p,
                     bankOffset
                 );
-                if (!addedPresets.has(selectablePreset.toMIDIString())) {
-                    addedPresets.add(selectablePreset.toMIDIString());
+                const key = selectablePreset.toMIDIString();
+                if (!addedPresets.has(key)) {
+                    addedPresets.add(key);
                     presetList.push(selectablePreset);
                 }
             }

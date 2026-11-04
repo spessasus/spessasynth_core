@@ -448,11 +448,6 @@ export class SpessaSynthProcessor {
      */
     public readonly cachedVoices = new Map<number, CachedVoiceList>();
     /**
-     * Keeps the decoded sample data under the budget from the options.
-     * @internal
-     */
-    protected readonly decodedSamples: DecodedSampleCache;
-    /**
      * Insertion is not used outside SC-88Pro+ MIDIs, this is an optimization.
      * @internal
      */
@@ -474,6 +469,11 @@ export class SpessaSynthProcessor {
      * @internal
      */
     public readonly gsInsertionBlock: GSInsertionBlock;
+    /**
+     * Keeps the decoded sample data under the budget from the options.
+     * @internal
+     */
+    protected readonly decodedSamples: DecodedSampleCache;
     /**
      * The synthesizer's GS reverb processor.
      *
@@ -679,6 +679,14 @@ export class SpessaSynthProcessor {
      */
     public get voiceCount(): number {
         return this._voiceCount;
+    }
+
+    /**
+     * The decoded sample data kept under {@link SynthProcessorOptions.decodedSampleBudget}, in bytes.
+     * It is only counted when a budget is set.
+     */
+    public get decodedSampleBytes() {
+        return this.decodedSamples.totalBytes;
     }
 
     /**
@@ -1808,14 +1816,6 @@ export class SpessaSynthProcessor {
     }
 
     /**
-     * The decoded sample data kept under {@link SynthProcessorOptions.decodedSampleBudget}, in bytes.
-     * It is only counted when a budget is set.
-     */
-    public get decodedSampleBytes() {
-        return this.decodedSamples.totalBytes;
-    }
-
-    /**
      * Clears the synthesizer's voice cache.
      * This can be used to hear the changes after editing a {@link BasicSoundBank}
      */
@@ -2578,12 +2578,12 @@ export class SpessaSynthProcessor {
         velocity: number
     ) {
         let bankMSB = patch.bankMSB;
-        let bankLSB = patch.bankLSB;
+        const bankLSB = patch.bankLSB;
         const { isGMGSDrum, program } = patch;
         if (isGMGSDrum) {
             // Bank MSB is 0-127, so 128 is a separate drum digit
+            // The LSB stays since it selects the map
             bankMSB = 128;
-            bankLSB = 0;
         }
         // 129x128x128x128x128 array!
         return (

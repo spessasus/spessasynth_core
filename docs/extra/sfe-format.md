@@ -140,8 +140,8 @@ generators, so a bank can use them in the same way.
 | 69  | `delayVoice`           | -12000 | 5000  | -12000  | timecents, -12000 = no delay                   |
 | 70  | `fadeVibLFO`           | -12000 | 5000  | -12000  | timecents, -12000 = no fade                    |
 | 71  | `fadeModLFO`           | -12000 | 5000  | -12000  | timecents, -12000 = no fade                    |
-| 72  | `vibLfoWaveform`       | 0      | 1     | 0       | 0 triangle, 1 rising sawtooth                  |
-| 73  | `modLfoWaveform`       | 0      | 1     | 0       | 0 triangle, 1 rising sawtooth                  |
+| 72  | `vibLfoWaveform`       | 0      | 2     | 0       | 0 triangle, 1 rising sawtooth, 2 sine          |
+| 73  | `modLfoWaveform`       | 0      | 2     | 0       | 0 triangle, 1 rising sawtooth, 2 sine          |
 | 74  | `vibLfoStartPhase`     | 0      | 360   | 0       | degrees                                        |
 | 75  | `modLfoStartPhase`     | 0      | 360   | 0       | degrees                                        |
 | 76  | `maxFilterFc`          | 1500   | 13500 | 13500   | absolute cents, 13500 = no ceiling             |
@@ -179,8 +179,8 @@ this time. It scales all of that LFO's depths.
 
 #### LFO waveform and start phase (72 to 75)
 
-- Waveform 0 is the SF2 triangle. Waveform 1 is a rising sawtooth. Both cross zero going up at the default start
-  phase, so the sawtooth starts like the triangle and drops from +1 to -1 once per cycle.
+- Waveform 0 is the SF2 triangle. Waveform 1 is a rising sawtooth. Waveform 2 is a sine. All cross zero going up at
+  the default start phase, so the sawtooth starts like the triangle and drops from +1 to -1 once per cycle.
 - The start phase is added to where the LFO starts, in degrees of a cycle. 0 is the SF2 start (zero, rising),
   90 starts at the peak and 180 at zero, falling.
 

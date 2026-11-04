@@ -31,12 +31,16 @@ for (let pan = MIN_PAN; pan <= MAX_PAN; pan++) {
 
 /**
  * Computes the LFO value for the given phase.
- * Both waveforms are at zero and rising at the default start phase of 0.25.
+ * All waveforms are at zero and rising at the default start phase of 0.25.
  * @param phase the LFO phase, from 0 to 1.
- * @param waveform 0 for triangle, 1 for sawtooth.
+ * @param waveform 0 for triangle, 1 for sawtooth, 2 for sine.
  * @returns the LFO value, from -1 to 1.
  */
 function getLfoValue(phase: number, waveform: number) {
+    if (waveform === 2) {
+        // Sine
+        return Math.sin(TWO_PI * (phase - 0.25));
+    }
     if (waveform === 1) {
         // Rising sawtooth
         const p = phase + 0.25;

@@ -112,8 +112,8 @@ Every default value makes the voice play exactly as it would without the generat
 | 69           | Delay Voice                        | -12000        | 5000          | -12000        | Timecents, the whole voice (sample, envelopes, LFOs) starts this late. -12000 = no delay      |
 | 70           | Fade Vibrato LFO                   | -12000        | 5000          | -12000        | Timecents, the vibrato LFO ramps in over this time after its delay. -12000 = no fade          |
 | 71           | Fade Modulation LFO                | -12000        | 5000          | -12000        | Timecents, the modulation LFO ramps in over this time after its delay. -12000 = no fade       |
-| 72           | Vibrato LFO Waveform               | 0             | 1             | 0             | 0 = triangle, 1 = rising sawtooth                                                             |
-| 73           | Modulation LFO Waveform            | 0             | 1             | 0             | 0 = triangle, 1 = rising sawtooth                                                             |
+| 72           | Vibrato LFO Waveform               | 0             | 2             | 0             | 0 = triangle, 1 = rising sawtooth, 2 = sine                                                   |
+| 73           | Modulation LFO Waveform            | 0             | 2             | 0             | 0 = triangle, 1 = rising sawtooth, 2 = sine                                                   |
 | 74           | Vibrato LFO Start Phase            | 0             | 360           | 0             | Degrees added to the start phase (0 = zero and rising, 90 = peak)                             |
 | 75           | Modulation LFO Start Phase         | 0             | 360           | 0             | Degrees added to the start phase (0 = zero and rising, 90 = peak)                             |
 | 76           | Maximum Filter Cutoff              | 1500          | 13500         | 13500         | Absolute cents, the modulated cutoff can not go above this. 13500 = no ceiling                |

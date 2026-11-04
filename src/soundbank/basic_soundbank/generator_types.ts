@@ -97,9 +97,9 @@ export const GeneratorTypes = Object.freeze({
     fadeVibLFO: 70,
     // Timecents, mod LFO depth ramps in after its delay. -12000 and below = no fade
     fadeModLFO: 71,
-    // 0 = triangle, 1 = sawtooth
+    // 0 = triangle, 1 = sawtooth, 2 = sine
     vibLfoWaveform: 72,
-    // 0 = triangle, 1 = sawtooth
+    // 0 = triangle, 1 = sawtooth, 2 = sine
     modLfoWaveform: 73,
     // Degrees, added to the start phase of the vibrato LFO
     vibLfoStartPhase: 74,
@@ -626,10 +626,20 @@ export const GeneratorLimits: Readonly<Record<GeneratorType, GeneratorLimit>> =
             def: -12_000,
             nrpn: 2
         },
-        [GeneratorTypes.vibLfoWaveform]: { min: 0, max: 1, def: 0, nrpn: 0 },
-        [GeneratorTypes.modLfoWaveform]: { min: 0, max: 1, def: 0, nrpn: 0 },
-        [GeneratorTypes.vibLfoStartPhase]: { min: 0, max: 360, def: 0, nrpn: 1 },
-        [GeneratorTypes.modLfoStartPhase]: { min: 0, max: 360, def: 0, nrpn: 1 },
+        [GeneratorTypes.vibLfoWaveform]: { min: 0, max: 2, def: 0, nrpn: 0 },
+        [GeneratorTypes.modLfoWaveform]: { min: 0, max: 2, def: 0, nrpn: 0 },
+        [GeneratorTypes.vibLfoStartPhase]: {
+            min: 0,
+            max: 360,
+            def: 0,
+            nrpn: 1
+        },
+        [GeneratorTypes.modLfoStartPhase]: {
+            min: 0,
+            max: 360,
+            def: 0,
+            nrpn: 1
+        },
         [GeneratorTypes.maxFilterFc]: {
             min: 1500,
             max: 13_500,
