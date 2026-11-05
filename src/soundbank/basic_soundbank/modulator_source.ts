@@ -56,12 +56,12 @@ export class ModulatorSource {
     public curveType: ModulatorCurveType;
 
     /**
-     * @internal
-     * @param index
-     * @param curveType
-     * @param isCC
-     * @param isBipolar
-     * @param isNegative
+     * Creates a new modulator source.
+     * @param index The controller or MIDI CC number, see `isCC`.
+     * @param curveType How the minimum value approaches the maximum value.
+     * @param isCC If the index is a MIDI CC instead of a general controller.
+     * @param isBipolar If the source is bipolar (-1 to 1) instead of unipolar (0 to 1).
+     * @param isNegative If the direction of the source is flipped.
      */
     public constructor(
         index: ModulatorSourceIndex = ModulatorControllerSources.noController,

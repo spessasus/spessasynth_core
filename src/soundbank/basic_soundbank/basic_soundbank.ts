@@ -239,7 +239,7 @@ export class BasicSoundBank {
         // No reuse by name, same-named elements in the source are all copied
         const cloner = new SoundBankCloner(copied, {
             reuseByName: false,
-            reuseChildrenByName: false
+            reuseChildren: "none"
         });
         for (const p of bank.presets) cloner.clonePreset(p);
         copied.soundBankInfo = { ...bank.soundBankInfo };
@@ -295,9 +295,11 @@ export class BasicSoundBank {
      * @param options Options associated with setting the sample format.
      * @returns The samples whose sample rate or loop points changed.
      * Compressing resamples samples outside 8000 to 96000 Hz.
+     * @throws Error if `rejectOnFailure` is set and one of the samples has failed to compress.
      */
     public async setSampleFormat(options: SetSampleFormatOptions) {
         const changed = new Array<BasicSample>();
+        const failed = new Array<BasicSample>();
         let writtenCount = 0;
         const format = options.format;
         const progressFunc = options.progressFunction;
@@ -320,7 +322,9 @@ export class BasicSoundBank {
                             `No compression function supplied but '${format}' was requested.`
                         );
                     const { sampleRate, loopStart, loopEnd } = s;
-                    await s.compressSample(f);
+                    if (!(await s.compressSample(f))) {
+                        failed.push(s);
+                    }
                     if (
                         s.sampleRate !== sampleRate ||
                         s.loopStart !== loopStart ||
@@ -344,6 +348,15 @@ export class BasicSoundBank {
                     ? ConsoleColors.recognized
                     : ConsoleColors.unrecognized,
                 ConsoleColors.info
+            );
+        }
+        if (
+            failed.length > 0 &&
+            options.format === "compressed" &&
+            options.rejectOnFailure
+        ) {
+            throw new Error(
+                `Failed to compress ${failed.length} samples: ${failed.map((s) => s.name).join(", ")}`
             );
         }
         // Change format
@@ -515,9 +528,13 @@ export class BasicSoundBank {
 
     /**
      * Updates internal values. Call after updating the preset list.
+     * @param sort If the presets should be sorted. Set it to `false` to keep a custom order,
+     * only the internal values (like {@link isXGBank}) are then recomputed.
      */
-    public flush() {
-        this.presets.sort(MIDIPatchTools.compare.bind(MIDIPatchTools));
+    public flush(sort = true) {
+        if (sort) {
+            this.presets.sort(MIDIPatchTools.compare.bind(MIDIPatchTools));
+        }
         this.parseInternal();
     }
 

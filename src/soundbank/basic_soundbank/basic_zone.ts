@@ -181,7 +181,6 @@ export class BasicZone {
         );
     }
 
-    // Public API, spessafont consumes it
     /**
      * Copies the parameters from another zone.
      * @param zone The zone to copy from.

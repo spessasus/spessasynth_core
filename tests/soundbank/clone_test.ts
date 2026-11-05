@@ -104,7 +104,7 @@ source.addPresets(p1, p2);
 {
     const cloner = new SoundBankCloner(source, {
         reuseByName: false,
-        reuseChildrenByName: false,
+        reuseChildren: "none",
         addToBank: false
     });
     const a = cloner.clonePreset(p1);
@@ -132,6 +132,42 @@ source.addPresets(p1, p2);
     a.delete();
     b.delete();
     cloner.created.instruments[0].delete();
+}
+
+{
+    const twin = new BasicInstrument();
+    twin.name = inst.name;
+    twin.createZone(mono);
+    source.addInstruments(twin);
+    const p3 = new BasicPreset(source);
+    p3.name = "Twin user";
+    p3.createZone(twin);
+    source.addPresets(p3);
+
+    const cloner = new SoundBankCloner(source, {
+        reuseByName: false,
+        reuseChildren: "identity",
+        addToBank: false
+    });
+    const copy = cloner.clonePreset(p3);
+    check(
+        copy.zones[0].instrument === twin &&
+            cloner.created.instruments.length === 0 &&
+            cloner.created.samples.length === 0,
+        "identity reuse keeps the same instrument, even with a repeated name"
+    );
+    const foreign = new BasicInstrument();
+    foreign.name = "Foreign";
+    foreign.createZone(makeSample("Foreign sample"));
+    const foreignCopy = cloner.cloneInstrument(foreign);
+    check(
+        foreignCopy !== foreign &&
+            foreignCopy.zones[0].sample !== foreign.zones[0].sample,
+        "identity reuse copies children that are not in the bank"
+    );
+    copy.delete();
+    source.deletePreset(p3);
+    source.deleteInstrument(twin);
 }
 
 // Cloning the right half alone brings its partner

@@ -51,6 +51,7 @@ export class SoundBankManager {
      */
     public readonly userDrumSets: readonly [UserDrumSet, UserDrumSet];
     private readonly presetListChangeCallback: (resetSynth: boolean) => unknown;
+    private readonly bankRemovedCallback?: (bank: BasicSoundBank) => unknown;
 
     private selectablePresetList: SynthesizerPatch[] = [];
 
@@ -59,11 +60,15 @@ export class SoundBankManager {
      * @param presetListChangeCallback Supplied by the parent synthesizer class,
      * this is called whenever the preset list changes.
      * The argument tells if the synthesizer should reset after updating its channels.
+     * @param bankRemovedCallback Called when a sound bank leaves the manager (deleted, replaced or destroyed),
+     * so the synthesizer can drop what it holds of it.
      */
     public constructor(
-        presetListChangeCallback: (resetSynth: boolean) => unknown
+        presetListChangeCallback: (resetSynth: boolean) => unknown,
+        bankRemovedCallback?: (bank: BasicSoundBank) => unknown
     ) {
         this.presetListChangeCallback = presetListChangeCallback;
+        this.bankRemovedCallback = bankRemovedCallback;
 
         // Patch resolver for GS user drum
         const resolvePatch = (patch: MIDIPatch) =>
@@ -126,15 +131,18 @@ export class SoundBankManager {
     /**
      * This method removes a sound bank with a given ID from the sound bank list.
      * @param id The ID of the sound bank to delete.
+     * @param reset If the synthesizer should reset (put every channel's controllers back to defaults) after the change.
+     * Set it to `false` to keep a song playing, the channels then only update to the new presets.
      * @throws Error An error if there's no sound bank with the given ID.
      */
-    public deleteSoundBank(id: string) {
+    public deleteSoundBank(id: string, reset = true) {
         const index = this.soundBankList.findIndex((s) => s.id === id);
         if (index === -1) {
             throw new Error(`No sound bank with id "${id}"`);
         }
-        this.soundBankList.splice(index, 1);
-        this.generatePresetList();
+        const [removed] = this.soundBankList.splice(index, 1);
+        this.bankRemoved(removed.soundBank);
+        this.generatePresetList(reset);
     }
 
     // noinspection JSUnusedGlobalSymbols
@@ -144,8 +152,15 @@ export class SoundBankManager {
      * @param id The unique ID to assign to the sound bank.
      * If a sound bank with this ID already exists, it will be replaced.
      * @param bankOffset The bank offset of the sound bank. Offsets the bank MSB value of all presets in this sound bank.
+     * @param reset If the synthesizer should reset (put every channel's controllers back to defaults) after the change.
+     * Set it to `false` to keep a song playing, the channels then only update to the new presets.
      */
-    public addSoundBank(bank: BasicSoundBank, id: string, bankOffset = 0) {
+    public addSoundBank(
+        bank: BasicSoundBank,
+        id: string,
+        bankOffset = 0,
+        reset = true
+    ) {
         const foundBank = this.soundBankList.find((s) => s.id === id);
         if (foundBank === undefined) {
             this.soundBankList.push({
@@ -155,10 +170,12 @@ export class SoundBankManager {
             });
         } else {
             // Replace
+            const old = foundBank.soundBank;
             foundBank.soundBank = bank;
             foundBank.bankOffset = bankOffset;
+            this.bankRemoved(old);
         }
-        this.generatePresetList();
+        this.generatePresetList(reset);
     }
 
     /**
@@ -205,11 +222,20 @@ export class SoundBankManager {
      */
     public destroy() {
         for (const s of this.soundBankList) {
+            this.bankRemovedCallback?.(s.soundBank);
             s.soundBank.destroySoundBank();
         }
         this.soundBankList = [];
         this.selectablePresetList = [];
         this._presetList = [];
+    }
+
+    private bankRemoved(bank: BasicSoundBank) {
+        // The same bank can be added under another ID,
+        // Its samples are still in use then
+        if (!this.soundBankList.some((s) => s.soundBank === bank)) {
+            this.bankRemovedCallback?.(bank);
+        }
     }
 
     private generatePresetList(resetSynth = true) {

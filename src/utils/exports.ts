@@ -26,5 +26,6 @@ export const SpessaSynthCoreUtils = {
 
 export { IndexedByteArray } from "./indexed_array";
 export { audioToWav } from "./write_wav";
+export { wavToAudio } from "./read_wav";
 export { SpessaLog } from "./loggin";
 export type { FourCC, GenericRIFFFourCC, WAVFourCC } from "./riff_chunk";

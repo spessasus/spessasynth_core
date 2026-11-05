@@ -107,7 +107,12 @@ export function renderVoice(
 
     // MIDI Tuning Standard
     // Use `midiNote` here since it was used for selecting the preset if tuning was active
-    const tuning = core.tunings[this.preset!.program * 128 + voice.midiNote];
+    const tuning =
+        core.tunings[
+            // The preset can be gone while voices play (a removed bank),
+            // But the patch is always there for us!
+            (this.preset?.program ?? this.patch.program) * 128 + voice.midiNote
+        ];
     if (tuning !== -1) {
         // Tuning is encoded as float
         // For example: 60.56 means key 60 and 56 cents (or 0.56 semitones)

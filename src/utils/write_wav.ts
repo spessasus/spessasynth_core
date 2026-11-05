@@ -98,8 +98,8 @@ export function audioToWav(
     let cueChunk = new IndexedByteArray(0);
     const cueOn = loop?.end !== undefined && loop?.start !== undefined;
     if (cueOn) {
-        const loopStartSamples = Math.floor(loop.start * sampleRate);
-        const loopEndSamples = Math.floor(loop.end * sampleRate);
+        const loopStartSamples = Math.round(loop.start * sampleRate);
+        const loopEndSamples = Math.round(loop.end * sampleRate);
 
         const cueStart = new IndexedByteArray(24);
         writeLittleEndianIndexed(cueStart, 0, 4); // DwIdentifier

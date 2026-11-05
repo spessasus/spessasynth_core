@@ -154,6 +154,14 @@ export class DLSSample extends BasicSample {
         return super.storedForm;
     }
 
+    public get canRedecode() {
+        // Other formats than s16le decode from the raw data
+        return (
+            (this.rawData !== undefined && !this.dataOverridden) ||
+            super.canRedecode
+        );
+    }
+
     public getStoredData() {
         // Other formats than s16le have no stored form, decode them
         if (this.rawData && !this.audioData) {
@@ -165,14 +173,6 @@ export class DLSSample extends BasicSample {
     public setStoredData(stored: SampleStoredData) {
         this.rawData = undefined;
         super.setStoredData(stored);
-    }
-
-    public releaseDecoded() {
-        if (this.rawData && this.audioData && !this.dataOverridden) {
-            this.audioData = undefined;
-            return true;
-        }
-        return super.releaseDecoded();
     }
 
     public releaseData() {

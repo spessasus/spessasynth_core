@@ -33,6 +33,36 @@ export interface WaveWriteOptions {
 }
 
 /**
+ * The result of reading a WAVE file with {@link wavToAudio}.
+ *
+ * @group Utilities
+ */
+export interface WaveReadResult {
+    /**
+     * The PCM audio data, one array per channel.
+     */
+    audioData: Float32Array[];
+    /**
+     * The sample rate, in Hertz.
+     */
+    sampleRate: number;
+    /**
+     * The loop of the file, undefined if it has none.
+     * The points are in sample frames, not seconds.
+     */
+    loop?: {
+        /**
+         * The loop start, in sample frames.
+         */
+        start: number;
+        /**
+         * The loop end, in sample frames.
+         */
+        end: number;
+    };
+}
+
+/**
  * Metadata to write into a WAVE file.
  *
  * @group Utilities

@@ -188,12 +188,21 @@ export class DownloadableSoundsInstrument
         const chunks: Uint8Array[] = [this.writeHeader()];
 
         const regionChunks = this.regions.flatMap((r) => r.write());
-        chunks.push(...RIFFChunk.getParts("lrgn", regionChunks, false, true));
+        for (const part of RIFFChunk.getParts(
+            "lrgn",
+            regionChunks,
+            false,
+            true
+        )) {
+            chunks.push(part);
+        }
 
         // This will mostly be false as SF2 -> DLS only writes the region articulation,
         // So the instrument one is empty, hence this check.
         if (this.articulation.length > 0) {
-            chunks.push(...this.articulation.write());
+            for (const part of this.articulation.write()) {
+                chunks.push(part);
+            }
         }
 
         // Write the name

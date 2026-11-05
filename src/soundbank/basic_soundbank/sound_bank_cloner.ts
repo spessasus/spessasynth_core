@@ -13,9 +13,11 @@ import { fillWithDefaults } from "../../utils/fill_with_defaults";
  */
 export const DEFAULT_SOUND_BANK_CLONE_OPTIONS: SoundBankCloneOptions = {
     reuseByName: true,
-    reuseChildrenByName: true,
+    reuseChildren: "name",
     addToBank: true
 };
+
+type CloneReuse = SoundBankCloneOptions["reuseChildren"];
 
 // Leaves room for "-99" in a 40 character extended name
 const MAX_BASE_NAME_LENGTH = 37;
@@ -78,6 +80,39 @@ export class SoundBankCloner {
         );
     }
 
+    // The cloned elements themselves only reuse by name
+    private get ownReuse(): CloneReuse {
+        return this.options.reuseByName ? "name" : "none";
+    }
+
+    // noinspection JSUnusedGlobalSymbols
+    /**
+     * Gets the clone this session made of an element.
+     * @param source The sample or instrument that was cloned.
+     * @returns The clone, or undefined if the session has not cloned the element.
+     */
+    public getClone(source: BasicSample): BasicSample | undefined;
+
+    // noinspection JSUnusedGlobalSymbols
+    /**
+     * Gets the clone this session made of an element.
+     * @param source The sample or instrument that was cloned.
+     * @returns The clone, or undefined if the session has not cloned the element.
+     */
+    public getClone(source: BasicInstrument): BasicInstrument | undefined;
+
+    // noinspection JSUnusedGlobalSymbols
+    /**
+     * Gets the clone this session made of an element.
+     * @param source The sample or instrument that was cloned.
+     * @returns The clone, or undefined if the session has not cloned the element.
+     */
+    public getClone(source: BasicSample | BasicInstrument) {
+        return source instanceof BasicSample
+            ? this.sampleClones.get(source)
+            : this.instrumentClones.get(source);
+    }
+
     /**
      * Clones a sample and its stereo partner.
      * The data is shared with the original, not copied.
@@ -85,7 +120,7 @@ export class SoundBankCloner {
      * @returns The clone, or the existing sample with the same name if it is reused.
      */
     public cloneSample(sample: BasicSample) {
-        return this.copySample(sample, this.options.reuseByName);
+        return this.copySample(sample, this.ownReuse);
     }
 
     /**
@@ -94,7 +129,7 @@ export class SoundBankCloner {
      * @returns The clone, or the existing instrument with the same name if it is reused.
      */
     public cloneInstrument(instrument: BasicInstrument) {
-        return this.copyInstrument(instrument, this.options.reuseByName);
+        return this.copyInstrument(instrument, this.ownReuse);
     }
 
     /**
@@ -104,11 +139,9 @@ export class SoundBankCloner {
      */
     public clonePreset(preset: BasicPreset) {
         const all = [...this.bank.presets, ...this.created.presets];
-        if (this.options.reuseByName) {
-            const existing = all.find((p) => p.name === preset.name);
-            if (existing) {
-                return existing;
-            }
+        const existing = this.findReused(preset, all, this.ownReuse);
+        if (existing) {
+            return existing;
         }
         const newPreset = new BasicPreset(this.bank);
         newPreset.name = this.getFreeName(preset.name, all);
@@ -122,10 +155,7 @@ export class SoundBankCloner {
         newPreset.globalZone.copyFrom(preset.globalZone);
         for (const zone of preset.zones) {
             const copiedZone = newPreset.createZone(
-                this.copyInstrument(
-                    zone.instrument,
-                    this.options.reuseChildrenByName
-                )
+                this.copyInstrument(zone.instrument, this.options.reuseChildren)
             );
             copiedZone.copyFrom(zone);
         }
@@ -136,24 +166,22 @@ export class SoundBankCloner {
         return newPreset;
     }
 
-    private copyInstrument(instrument: BasicInstrument, reuse: boolean) {
+    private copyInstrument(instrument: BasicInstrument, reuse: CloneReuse) {
         const cloned = this.instrumentClones.get(instrument);
         if (cloned) {
             return cloned;
         }
         const all = [...this.bank.instruments, ...this.created.instruments];
-        if (reuse) {
-            const existing = all.find((i) => i.name === instrument.name);
-            if (existing) {
-                return existing;
-            }
+        const existing = this.findReused(instrument, all, reuse);
+        if (existing) {
+            return existing;
         }
         const newInstrument = new BasicInstrument();
         newInstrument.name = this.getFreeName(instrument.name, all);
         newInstrument.globalZone.copyFrom(instrument.globalZone);
         for (const zone of instrument.zones) {
             const copiedZone = newInstrument.createZone(
-                this.copySample(zone.sample, this.options.reuseChildrenByName)
+                this.copySample(zone.sample, this.options.reuseChildren)
             );
             copiedZone.copyFrom(zone);
         }
@@ -165,17 +193,15 @@ export class SoundBankCloner {
         return newInstrument;
     }
 
-    private copySample(sample: BasicSample, reuse: boolean): BasicSample {
+    private copySample(sample: BasicSample, reuse: CloneReuse): BasicSample {
         const cloned = this.sampleClones.get(sample);
         if (cloned) {
             return cloned;
         }
         const all = [...this.bank.samples, ...this.created.samples];
-        if (reuse) {
-            const existing = all.find((s) => s.name === sample.name);
-            if (existing) {
-                return existing;
-            }
+        const existing = this.findReused(sample, all, reuse);
+        if (existing) {
+            return existing;
         }
         const newSample = new BasicSample(
             this.getFreeName(sample.name, all),
@@ -209,10 +235,31 @@ export class SoundBankCloner {
             if (newLinked) {
                 newSample.setLinkedSample(newLinked, sample.sampleType);
             } else {
-                this.copySample(linked, false);
+                this.copySample(linked, "none");
             }
         }
         return newSample;
+    }
+
+    /**
+     * Finds the element to use instead of a copy, if the options allow one.
+     */
+    private findReused<T extends { name: string }>(
+        element: T,
+        elements: T[],
+        reuse: CloneReuse
+    ) {
+        switch (reuse) {
+            case "none": {
+                return undefined;
+            }
+            case "identity": {
+                return elements.includes(element) ? element : undefined;
+            }
+            case "name": {
+                return elements.find((e) => e.name === element.name);
+            }
+        }
     }
 
     private getFreeName(name: string, elements: { name: string }[]) {

@@ -113,7 +113,7 @@ function writeSF(
     const infoArrays: Uint8Array[] = [];
 
     const writeSF2Info = (type: SF2InfoFourCC, data?: string) => {
-        if (!data) return;
+        if (data === undefined) return;
 
         infoArrays.push(
             ...RIFFChunk.getParts(
@@ -136,7 +136,8 @@ function writeSF(
         infoArrays.push(RIFFChunk.write("ifil", ifilData, rf64));
     }
     writeSF2Info("isng", info.soundEngine);
-    writeSF2Info("INAM", info.name);
+    // The spec requires INAM, even if the name is empty
+    writeSF2Info("INAM", info.name ?? "");
     writeSF2Info("irom", info.romInfo);
     if (info.romVersion) {
         const ifilData = new IndexedByteArray(4);

@@ -292,7 +292,28 @@ export class BasicSample {
         return this.linkedTo.length;
     }
 
-    // Public API, spessafont consumes it
+    // noinspection JSUnusedGlobalSymbols
+    /**
+     * If the decoded float data is currently held in memory.
+     * Check it before {@link getAudioData} to know if the call has to decode,
+     * then use {@link releaseDecoded} to drop the copy again.
+     */
+    public get isDecoded() {
+        return this.audioData !== undefined;
+    }
+
+    /**
+     * If the decoded float data can be made again from the stored data.
+     * False for replaced data (set with {@link BasicSample.setAudioData}), which has nothing to decode from.
+     * @internal
+     */
+    public get canRedecode() {
+        return (
+            !this.dataOverridden &&
+            (this.compressedData !== undefined || this.s16leData !== undefined)
+        );
+    }
+
     /**
      * Get raw data for writing the file, either a compressed bit stream or signed 16-bit little endian PCM data.
      * @param allowVorbis if vorbis file data is allowed.
@@ -382,11 +403,7 @@ export class BasicSample {
      * @returns True if the decoded data was dropped.
      */
     public releaseDecoded() {
-        if (
-            this.audioData &&
-            !this.dataOverridden &&
-            (this.compressedData || this.s16leData)
-        ) {
+        if (this.audioData && this.canRedecode) {
             this.audioData = undefined;
             return true;
         }
@@ -430,14 +447,15 @@ export class BasicSample {
     }
 
     /**
-     * Compresses the audio data
+     * Compresses the audio data.
      * @param encodeVorbis the compression function to use when compressing.
+     * @returns True if the sample is compressed afterward, false if the encoder failed and it stays uncompressed.
      * @internal
      */
     public async compressSample(encodeVorbis: SampleEncodingFunction) {
         // No need to compress
         if (this.isCompressed) {
-            return;
+            return true;
         }
         // Compress, always mono!
         try {
@@ -449,12 +467,14 @@ export class BasicSample {
             }
             const compressed = await encodeVorbis(audioData, this.sampleRate);
             this.setCompressedData(compressed);
+            return true;
         } catch (error) {
             SpessaLog.warn(
                 `Failed to compress ${this.name}. Leaving as uncompressed!`,
                 error
             );
             this.compressedData = undefined;
+            return false;
         }
     }
 
@@ -537,18 +557,18 @@ export class BasicSample {
     }
 
     /**
-     * Links the sample to a given instrument
-     * @param instrument the instrument to link to
+     * Links the sample to a given instrument.
+     * @param instrument the instrument to link to.
      * @internal
      */
     public linkTo(instrument: BasicInstrument) {
         this.linkedTo.push(instrument);
     }
 
-    // Public API, spessafont consumes it
     /**
-     * Unlinks the sample from a given instrument
-     * @param instrument the instrument to unlink from
+     * Unlinks the sample from a given instrument.
+     * @param instrument the instrument to unlink from.
+     * @internal
      */
     public unlinkFrom(instrument: BasicInstrument) {
         const index = this.linkedTo.indexOf(instrument);

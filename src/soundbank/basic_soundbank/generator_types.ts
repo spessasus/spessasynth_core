@@ -193,17 +193,6 @@ export interface GeneratorLimit {
      * SoundFont2 NRPN scale factor for this generator type.
      */
     nrpn: number;
-    /**
-     * Minimum value of this generator in a preset zone.
-     * Preset generators are offsets added to the instrument, so they can go below the instrument range.
-     * If not set, it is the same as `min`.
-     */
-    presetMin?: number;
-    /**
-     * Maximum value of this generator in a preset zone.
-     * If not set, it is the same as `max`.
-     */
-    presetMax?: number;
 }
 
 /**
@@ -259,25 +248,19 @@ export const GeneratorLimits: Readonly<Record<GeneratorType, GeneratorLimit>> =
             min: -12_000,
             max: 12_000,
             def: 0,
-            nrpn: 2,
-            presetMin: -24_000,
-            presetMax: 24_000
+            nrpn: 2
         },
         [GeneratorTypes.vibLfoToPitch]: {
             min: -12_000,
             max: 12_000,
             def: 0,
-            nrpn: 2,
-            presetMin: -24_000,
-            presetMax: 24_000
+            nrpn: 2
         },
         [GeneratorTypes.modEnvToPitch]: {
             min: -12_000,
             max: 12_000,
             def: 0,
-            nrpn: 2,
-            presetMin: -24_000,
-            presetMax: 24_000
+            nrpn: 2
         },
 
         // Lowpass
@@ -285,32 +268,20 @@ export const GeneratorLimits: Readonly<Record<GeneratorType, GeneratorLimit>> =
             min: 1500,
             max: 13_500,
             def: 13_500,
-            nrpn: 2,
-            presetMin: -21_000,
-            presetMax: 21_000
+            nrpn: 2
         },
-        [GeneratorTypes.initialFilterQ]: {
-            min: 0,
-            max: 960,
-            def: 0,
-            nrpn: 1,
-            presetMin: -960
-        },
+        [GeneratorTypes.initialFilterQ]: { min: 0, max: 960, def: 0, nrpn: 1 },
         [GeneratorTypes.modLfoToFilterFc]: {
             min: -12_000,
             max: 12_000,
             def: 0,
-            nrpn: 2,
-            presetMin: -24_000,
-            presetMax: 24_000
+            nrpn: 2
         },
         [GeneratorTypes.modEnvToFilterFc]: {
             min: -12_000,
             max: 12_000,
             def: 0,
-            nrpn: 2,
-            presetMin: -24_000,
-            presetMax: 24_000
+            nrpn: 2
         },
 
         [GeneratorTypes.endAddrsCoarseOffset]: {
@@ -325,9 +296,7 @@ export const GeneratorLimits: Readonly<Record<GeneratorType, GeneratorLimit>> =
             min: -960,
             max: 960,
             def: 0,
-            nrpn: 1,
-            presetMin: -1920,
-            presetMax: 1920
+            nrpn: 1
         },
 
         // Effects / pan
@@ -335,57 +304,40 @@ export const GeneratorLimits: Readonly<Record<GeneratorType, GeneratorLimit>> =
             min: 0,
             max: 1000,
             def: 0,
-            nrpn: 1,
-            presetMin: -1000
+            nrpn: 1
         },
         [GeneratorTypes.reverbEffectsSend]: {
             min: 0,
             max: 1000,
             def: 0,
-            nrpn: 1,
-            presetMin: -1000
+            nrpn: 1
         },
-        [GeneratorTypes.pan]: {
-            min: -500,
-            max: 500,
-            def: 0,
-            nrpn: 1,
-            presetMin: -1000,
-            presetMax: 1000
-        },
+        [GeneratorTypes.pan]: { min: -500, max: 500, def: 0, nrpn: 1 },
 
         // LFO
         [GeneratorTypes.delayModLFO]: {
             min: -12_000,
             max: 5000,
             def: -12_000,
-            nrpn: 2,
-            presetMin: -21_000,
-            presetMax: 21_000
+            nrpn: 2
         },
         [GeneratorTypes.freqModLFO]: {
             min: -16_000,
             max: 4500,
             def: 0,
-            nrpn: 4,
-            presetMin: -21_000,
-            presetMax: 21_000
+            nrpn: 4
         },
         [GeneratorTypes.delayVibLFO]: {
             min: -12_000,
             max: 5000,
             def: -12_000,
-            nrpn: 2,
-            presetMin: -21_000,
-            presetMax: 21_000
+            nrpn: 2
         },
         [GeneratorTypes.freqVibLFO]: {
             min: -16_000,
             max: 4500,
             def: 0,
-            nrpn: 4,
-            presetMin: -21_000,
-            presetMax: 21_000
+            nrpn: 4
         },
 
         // Mod envelope
@@ -393,64 +345,44 @@ export const GeneratorLimits: Readonly<Record<GeneratorType, GeneratorLimit>> =
             min: -32_768,
             max: 5000,
             def: -32_768,
-            nrpn: 2,
-            presetMin: -21_000,
-            presetMax: 21_000
+            nrpn: 2
         }, // -32768 = instant, this is done to prevent click for lowpass
         [GeneratorTypes.attackModEnv]: {
             min: -32_768,
             max: 8000,
             def: -32_768,
-            nrpn: 2,
-            presetMin: -21_000,
-            presetMax: 21_000
+            nrpn: 2
         },
         [GeneratorTypes.holdModEnv]: {
             min: -12_000,
             max: 5000,
             def: -12_000,
-            nrpn: 2,
-            presetMin: -21_000,
-            presetMax: 21_000
+            nrpn: 2
         },
         [GeneratorTypes.decayModEnv]: {
             min: -12_000,
             max: 8000,
             def: -12_000,
-            nrpn: 2,
-            presetMin: -21_000,
-            presetMax: 21_000
+            nrpn: 2
         },
-        [GeneratorTypes.sustainModEnv]: {
-            min: 0,
-            max: 1000,
-            def: 0,
-            nrpn: 1,
-            presetMin: -1000
-        },
+        [GeneratorTypes.sustainModEnv]: { min: 0, max: 1000, def: 0, nrpn: 1 },
         [GeneratorTypes.releaseModEnv]: {
             min: -12_000,
             max: 8000,
             def: -12_000,
-            nrpn: 2,
-            presetMin: -21_000,
-            presetMax: 21_000
+            nrpn: 2
         },
         [GeneratorTypes.keyNumToModEnvHold]: {
             min: -1200,
             max: 1200,
             def: 0,
-            nrpn: 1,
-            presetMin: -2400,
-            presetMax: 2400
+            nrpn: 1
         },
         [GeneratorTypes.keyNumToModEnvDecay]: {
             min: -1200,
             max: 1200,
             def: 0,
-            nrpn: 1,
-            presetMin: -2400,
-            presetMax: 2400
+            nrpn: 1
         },
 
         // Volume envelope
@@ -458,64 +390,44 @@ export const GeneratorLimits: Readonly<Record<GeneratorType, GeneratorLimit>> =
             min: -12_000,
             max: 5000,
             def: -12_000,
-            nrpn: 2,
-            presetMin: -21_000,
-            presetMax: 21_000
+            nrpn: 2
         },
         [GeneratorTypes.attackVolEnv]: {
             min: -12_000,
             max: 8000,
             def: -12_000,
-            nrpn: 2,
-            presetMin: -21_000,
-            presetMax: 21_000
+            nrpn: 2
         },
         [GeneratorTypes.holdVolEnv]: {
             min: -12_000,
             max: 5000,
             def: -12_000,
-            nrpn: 2,
-            presetMin: -21_000,
-            presetMax: 21_000
+            nrpn: 2
         },
         [GeneratorTypes.decayVolEnv]: {
             min: -12_000,
             max: 8000,
             def: -12_000,
-            nrpn: 2,
-            presetMin: -21_000,
-            presetMax: 21_000
+            nrpn: 2
         },
-        [GeneratorTypes.sustainVolEnv]: {
-            min: 0,
-            max: 1440,
-            def: 0,
-            nrpn: 1,
-            presetMin: -1440
-        },
+        [GeneratorTypes.sustainVolEnv]: { min: 0, max: 1440, def: 0, nrpn: 1 },
         [GeneratorTypes.releaseVolEnv]: {
             min: -12_000,
             max: 8000,
             def: -12_000,
-            nrpn: 2,
-            presetMin: -21_000,
-            presetMax: 21_000
+            nrpn: 2
         },
         [GeneratorTypes.keyNumToVolEnvHold]: {
             min: -1200,
             max: 1200,
             def: 0,
-            nrpn: 1,
-            presetMin: -2400,
-            presetMax: 2400
+            nrpn: 1
         },
         [GeneratorTypes.keyNumToVolEnvDecay]: {
             min: -1200,
             max: 1200,
             def: 0,
-            nrpn: 1,
-            presetMin: -2400,
-            presetMax: 2400
+            nrpn: 1
         },
 
         // Misc
@@ -531,8 +443,7 @@ export const GeneratorLimits: Readonly<Record<GeneratorType, GeneratorLimit>> =
             min: 0,
             max: 1440,
             def: 0,
-            nrpn: 1,
-            presetMin: -1440
+            nrpn: 1
         },
         [GeneratorTypes.endloopAddrsCoarseOffset]: {
             min: -32_768,
@@ -540,32 +451,17 @@ export const GeneratorLimits: Readonly<Record<GeneratorType, GeneratorLimit>> =
             def: 0,
             nrpn: 1
         },
-        [GeneratorTypes.coarseTune]: {
-            min: -120,
-            max: 120,
-            def: 0,
-            nrpn: 1,
-            presetMin: -240,
-            presetMax: 240
-        },
+        [GeneratorTypes.coarseTune]: { min: -120, max: 120, def: 0, nrpn: 1 },
         [GeneratorTypes.fineTune]: {
             min: -12_700,
             max: 12_700,
             def: 0,
-            nrpn: 1,
-            presetMin: -198,
-            presetMax: 198
+            nrpn: 1
         },
-        [GeneratorTypes.scaleTuning]: {
-            min: 0,
-            max: 1200,
-            def: 100,
-            nrpn: 1,
-            presetMin: -1200
-        },
+        [GeneratorTypes.scaleTuning]: { min: 0, max: 1200, def: 100, nrpn: 1 },
         [GeneratorTypes.exclusiveClass]: {
             min: 0,
-            max: 99_999,
+            max: 32_767,
             def: 0,
             nrpn: 0
         },
@@ -628,18 +524,8 @@ export const GeneratorLimits: Readonly<Record<GeneratorType, GeneratorLimit>> =
         },
         [GeneratorTypes.vibLfoWaveform]: { min: 0, max: 2, def: 0, nrpn: 0 },
         [GeneratorTypes.modLfoWaveform]: { min: 0, max: 2, def: 0, nrpn: 0 },
-        [GeneratorTypes.vibLfoStartPhase]: {
-            min: 0,
-            max: 360,
-            def: 0,
-            nrpn: 1
-        },
-        [GeneratorTypes.modLfoStartPhase]: {
-            min: 0,
-            max: 360,
-            def: 0,
-            nrpn: 1
-        },
+        [GeneratorTypes.vibLfoStartPhase]: { min: 0, max: 360, def: 0, nrpn: 1 },
+        [GeneratorTypes.modLfoStartPhase]: { min: 0, max: 360, def: 0, nrpn: 1 },
         [GeneratorTypes.maxFilterFc]: {
             min: 1500,
             max: 13_500,

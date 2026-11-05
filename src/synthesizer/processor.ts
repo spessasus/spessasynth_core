@@ -388,12 +388,6 @@ export class SpessaSynthProcessor {
      */
     public gsDelayActive = false;
     /**
-     * The sound bank manager, which manages all sound banks and presets.
-     */
-    public readonly soundBankManager: SoundBankManager = new SoundBankManager(
-        this.updatePresetList.bind(this)
-    );
-    /**
      * The sample rate, in Hertz.
      */
     public readonly sampleRate;
@@ -418,7 +412,6 @@ export class SpessaSynthProcessor {
             ) as (keyof GlobalMIDIParameter)[]
         ).map((key) => [key, false])
     ) as Record<keyof GlobalMIDIParameter, boolean>;
-
     /**
      * The global MIDI parameters of the synthesizer.
      * These are only editable via MIDI messages.
@@ -459,7 +452,6 @@ export class SpessaSynthProcessor {
      * @internal
      */
     public readonly panSmoothingFactor: number;
-
     /**
      * This property can be defined as a function that listens for events.
      * All events are defined in {@link SynthesizerEvent}.
@@ -501,6 +493,16 @@ export class SpessaSynthProcessor {
      * @internal
      */
     protected readonly decodedSamples: DecodedSampleCache;
+    /**
+     * The sound bank manager, which manages all sound banks and presets.
+     */
+    public readonly soundBankManager: SoundBankManager = new SoundBankManager(
+        this.updatePresetList.bind(this),
+        (bank) => {
+            // Created later in the constructor, a bank can not be removed before that
+            this.decodedSamples.forget(bank.samples);
+        }
+    );
     /**
      * The synthesizer's GS reverb processor.
      *

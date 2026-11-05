@@ -547,7 +547,11 @@ export class BasicPreset implements MIDIPatchFull {
                 );
 
                 // Create the zone and copy over values
-                const zone = outputInstrument.createZone(instZone.sample);
+                // Not linked, the helper instrument is thrown away after writing!
+                const zone = outputInstrument.createZone(
+                    instZone.sample,
+                    false
+                );
                 zone.keyRange = instZoneKeyRange;
                 zone.velRange = instZoneVelRange;
                 if (zone.keyRange.min === 0 && zone.keyRange.max === 127) {

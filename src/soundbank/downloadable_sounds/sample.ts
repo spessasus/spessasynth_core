@@ -109,7 +109,12 @@ export class DownloadableSoundsSample extends DLSVerifier {
             new RIFFChunk(
                 "data",
                 raw.length,
-                new IndexedByteArray(raw.buffer as ArrayBuffer)
+                // The data may be a view into a larger buffer
+                new IndexedByteArray(
+                    raw.buffer as ArrayBuffer,
+                    raw.byteOffset,
+                    raw.byteLength
+                )
             )
         );
         dlsSample.name = sample.name;

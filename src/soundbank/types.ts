@@ -288,6 +288,14 @@ export type SetSampleFormatOptions = {
            * It must be provided if `compressed` format is chosen.
            */
           compressionFunction: SampleEncodingFunction;
+
+          /**
+           * If the returned promise should reject when a sample fails to compress.
+           * By default, such a sample is left uncompressed (and a warning is logged),
+           * but the bank is still set to version 3.0.
+           * With this on, the method throws after trying every sample and the bank's version stays the same.
+           */
+          rejectOnFailure?: boolean;
       }
 );
 
@@ -453,11 +461,15 @@ export interface SoundBankCloneOptions {
     reuseByName: boolean;
 
     /**
-     * If the instruments and samples used by a cloned element are reused when one with the same name exists.
-     * When false, they are copied under a free name as well.
+     * How the instruments and samples used by a cloned element are reused instead of copied.
+     * - `name` - reuse the first element in the bank with the same name.
+     * - `identity` - reuse the element itself if it is already in the bank.
+     *   Use it to duplicate elements within one bank, as names often repeat in real banks.
+     * - `none` - always copy them, under a free name if needed.
+     *
      * A stereo partner of a copied sample is always copied with it.
      */
-    reuseChildrenByName: boolean;
+    reuseChildren: "name" | "identity" | "none";
 
     /**
      * If the new elements are added to the bank.

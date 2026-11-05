@@ -17,12 +17,14 @@ export interface LinkableZoneChild<P> {
     /**
      * Links the element to a parent.
      * @param parent The parent that uses the element.
+     * @internal
      */
     linkTo(parent: P): void;
 
     /**
      * Unlinks the element from a parent.
      * @param parent The parent that no longer uses the element.
+     * @internal
      */
     unlinkFrom(parent: P): void;
 }
@@ -75,7 +77,7 @@ export abstract class BasicLinkedZone<
 
     /**
      * Links the child to the parent, unless this zone was created without linking.
-     * @internal
+     * Use it to put a zone back after {@link unlinkChild}, for example when undoing a zone deletion.
      */
     public linkChild() {
         if (this.linked) this.child.linkTo(this.parent);
@@ -83,7 +85,6 @@ export abstract class BasicLinkedZone<
 
     /**
      * Unlinks the child from the parent, unless this zone was created without linking.
-     * @internal
      */
     public unlinkChild() {
         if (this.linked) this.child.unlinkFrom(this.parent);
