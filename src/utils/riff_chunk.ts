@@ -215,7 +215,10 @@ export class RIFFChunk {
         // If LIST, the actual chunk "type" is at the beginning of data
         if (isList) parts.push(getStringBytes(header));
         // Data
-        parts.push(...chunks);
+        // One by one, as a list may hold a chunk for every element of a large bank
+        for (const chunk of chunks) {
+            parts.push(chunk);
+        }
 
         // Pad byte, does not get included in the size
         if (totalSize % 2 !== 0) parts.push(new Uint8Array(1));

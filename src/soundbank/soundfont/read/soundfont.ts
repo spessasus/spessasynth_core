@@ -1,6 +1,6 @@
 import { IndexedByteArray } from "../../../utils/indexed_array";
 import { readSamples } from "./samples";
-import type { SoundBankLoadOptions } from "../../types";
+import type { SF2InfoFourCC, SoundBankLoadOptions } from "../../types";
 import { readLittleEndianIndexed } from "../../../utils/byte_functions/little_endian";
 import { readGenerators } from "./generators";
 import { applyPresetZones } from "./preset_zones";
@@ -17,7 +17,6 @@ import {
 import { BasicSoundBank } from "../../basic_soundbank/basic_soundbank";
 import { applyInstrumentZones } from "./instrument_zones";
 import { readZoneIndexes } from "./zones";
-import type { SF2InfoFourCC } from "../../types";
 import type { Generator } from "../../basic_soundbank/generator";
 import type { Modulator } from "../../basic_soundbank/modulator";
 import { parseDateString } from "../../../utils/date";
@@ -314,7 +313,7 @@ export class SoundFont2 extends BasicSoundBank {
         }
         // Trim names
         for (const s of samples) s.name = s.name.trim();
-        this.samples.push(...samples);
+        this.addElements(this.samples, samples);
 
         // Read modulators and generators
         const instrumentGenerators = readGenerators(igenChunk, isSFE);
@@ -344,7 +343,7 @@ export class SoundFont2 extends BasicSoundBank {
         }
         // Trim names
         for (const i of instruments) i.name = i.name.trim();
-        this.instruments.push(...instruments);
+        this.addElements(this.instruments, instruments);
 
         const ibagIndexes = readZoneIndexes(ibagChunk);
 
@@ -398,7 +397,7 @@ export class SoundFont2 extends BasicSoundBank {
 
         // Trim names
         for (const p of presets) p.name = p.name.trim();
-        this.addPresets(...presets);
+        this.addElements(this.presets, presets);
 
         const pbagIndexes = readZoneIndexes(pbagChunk);
 

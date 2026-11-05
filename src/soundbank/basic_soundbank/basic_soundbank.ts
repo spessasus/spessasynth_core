@@ -256,7 +256,7 @@ export class BasicSoundBank {
      * @param presets The presets to add.
      */
     public addCompletePresets(presets: BasicPreset[]) {
-        this.addPresets(...presets);
+        this.addElements(this.presets, presets);
         const instrumentList: BasicInstrument[] = [];
         for (const preset of presets) {
             for (const zone of preset.zones) {
@@ -268,7 +268,7 @@ export class BasicSoundBank {
                 }
             }
         }
-        this.addInstruments(...instrumentList);
+        this.addElements(this.instruments, instrumentList);
 
         const sampleList: BasicSample[] = [];
 
@@ -279,7 +279,7 @@ export class BasicSoundBank {
                 }
             }
         }
-        this.addSamples(...sampleList);
+        this.addElements(this.samples, sampleList);
     }
 
     // noinspection JSUnusedGlobalSymbols
@@ -433,7 +433,7 @@ export class BasicSoundBank {
      * @param presets The presets to add.
      */
     public addPresets(...presets: BasicPreset[]) {
-        this.presets.push(...presets);
+        this.addElements(this.presets, presets);
     }
 
     /**
@@ -441,7 +441,7 @@ export class BasicSoundBank {
      * @param instruments The instruments to add.
      */
     public addInstruments(...instruments: BasicInstrument[]) {
-        this.instruments.push(...instruments);
+        this.addElements(this.instruments, instruments);
     }
 
     /**
@@ -449,7 +449,7 @@ export class BasicSoundBank {
      * @param samples The samples to add.
      */
     public addSamples(...samples: BasicSample[]) {
-        this.samples.push(...samples);
+        this.addElements(this.samples, samples);
     }
 
     /**
@@ -773,6 +773,13 @@ export class BasicSoundBank {
         this.presets.length = 0;
         this.instruments.length = 0;
         this.samples.length = 0;
+    }
+
+    protected addElements<T>(list: T[], elements: readonly T[]) {
+        // We do it this way because we can have a lot of presets and spread operator is not good for that
+        for (const element of elements) {
+            list.push(element);
+        }
     }
 
     protected parsingError(error: string): never {
