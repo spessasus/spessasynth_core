@@ -2250,6 +2250,18 @@ export class MIDIUtils {
                     ];
                 }
 
+                case 0x14: {
+                    // Variation
+                    return [
+                        {
+                            type: "Controller Change",
+                            channel,
+                            controller: MIDIControllers.variationDepth,
+                            value
+                        }
+                    ];
+                }
+
                 case 0x15: {
                     // Vibrato rate
                     return [

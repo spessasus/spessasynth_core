@@ -192,13 +192,8 @@ export function setTimeToInternal(
                             if (channel >= this.synth.midiChannels.length)
                                 break;
                             channels[channel] ??= createChannelStatus(channel);
-                            // Empty tracks cannot controller change
-                            if (
-                                this._midiData.isMultiPort &&
-                                track.channels.size === 0
-                            )
-                                break;
-
+                            // No empty track check here. The playback always sends SysEx
+                            // Testcase: (XG2000EX)MA09_Necrofantasia(KR.Palto47)
                             if (
                                 controller ===
                                 MIDIControllers.resetAllControllers
