@@ -652,18 +652,12 @@ export class BasicSample {
             return new Float32Array(1);
         }
         const audioData = new Float32Array(length);
-        if (data.byteOffset % 2 === 0) {
-            // Fast path, assumes a little endian platform like the rest of the library
-            const s16 = new Int16Array(data.buffer, data.byteOffset, length);
-            for (let i = 0; i < length; i++) {
-                audioData[i] = s16[i] / 32_768;
-            }
-        } else {
-            // An odd offset cannot be an Int16Array view
-            const view = new DataView(data.buffer, data.byteOffset, length * 2);
-            for (let i = 0; i < length; i++) {
-                audioData[i] = view.getInt16(i * 2, true) / 32_768;
-            }
+        // An odd offset cannot be an Int16Array view
+        const aligned =
+            data.byteOffset % 2 === 0 ? data : data.slice(0, length * 2);
+        const s16 = new Int16Array(aligned.buffer, aligned.byteOffset, length);
+        for (let i = 0; i < length; i++) {
+            audioData[i] = s16[i] / 32_768;
         }
         return audioData;
     }

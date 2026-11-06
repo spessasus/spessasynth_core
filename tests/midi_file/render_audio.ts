@@ -66,16 +66,17 @@ function readWav(bin: ArrayBuffer) {
         sampleData.push(new Float32Array(sampleLength));
     }
     const divider = 1 << (bytesPerSample * 8 - 1);
+    const floatData =
+        formatTag === 3
+            ? new Float32Array(
+                  data.data.slice(0, sampleLength * channels * 4).buffer
+              )
+            : undefined;
     for (let sampleIndex = 0; sampleIndex < sampleLength; sampleIndex++) {
         for (let channel = 0; channel < channels; channel++) {
-            if (formatTag === 3) {
-                const offset =
-                    (sampleIndex * channels + channel) * bytesPerSample;
-                sampleData[channel][sampleIndex] = new DataView(
-                    data.data.buffer,
-                    data.data.byteOffset + offset,
-                    bytesPerSample
-                ).getFloat32(0, true);
+            if (floatData) {
+                sampleData[channel][sampleIndex] =
+                    floatData[sampleIndex * channels + channel];
             } else {
                 const sample = readLittleEndianIndexed(
                     data.data,

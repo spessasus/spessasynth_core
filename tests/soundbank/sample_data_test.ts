@@ -182,8 +182,7 @@ for (const path of process.argv.slice(2)) {
 {
     const values = [0, 1000, -1000, 32_767, -32_768, 12_345];
     const bytes = new Uint8Array(values.length * 2 + 1);
-    const dv = new DataView(bytes.buffer);
-    for (const [i, v] of values.entries()) dv.setInt16(1 + i * 2, v, true);
+    bytes.set(new Uint8Array(Int16Array.from(values).buffer), 1);
     const s = new BasicSample(
         "odd",
         44_100,
