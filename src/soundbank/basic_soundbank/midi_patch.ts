@@ -338,6 +338,17 @@ export class MIDIPatchTools {
             returnReplacement(patches[0]);
             return patches[0];
         }
+        if (system === "gs") {
+            // In GS the LSB selects the map and a missing variation stays in its map.
+            // So we prefer capital rather than lsb with same msb + program
+            p = matchingPrograms.find(
+                (p) => p.bankMSB === 0 && p.bankLSB === bankLSB
+            );
+            if (p) {
+                returnReplacement(p);
+                return p;
+            }
+        }
         p = isXG
             ? // XG uses LSB so search for that.
               matchingPrograms.find((p) => p.bankLSB === bankLSB)

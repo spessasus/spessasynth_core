@@ -2489,9 +2489,10 @@ export class SpessaSynthProcessor {
             this.midiChannels.length
         );
         this.midiChannels.push(channel);
+        // Channel is added first, then reset
+        if (sendEvent) this.callEvent("channelAdded", undefined);
         // New channels need the default controllers, otherwise they are silent (CC7 = 0)
         channel.reset(false);
-        if (sendEvent) this.callEvent("channelAdded", undefined);
     }
 
     private processMessageInternal(
