@@ -77,10 +77,32 @@ SpessaSynth applies a few extra modulators for extended compatibility with vario
 | ---------------------------- | ------------------------ | ---------------- | ------------------------ | ---------------- |
 | **CC 67** (Soft Pedal)       | Switch Unipolar Positive | -                | Initial Filter Cutoff    | -1200 abs cents  |
 | **CC 71** (Filter Resonance) | Positive Bipolar Linear  | -                | Initial Filter Resonance | 250 cB           |
-| **CC 72** (Vol Env Release)  | Positive Bipolar Linear  | -                | Volume envelope release  | 3600 timecents   |
-| **CC 73** (Vol Env Attack)   | Positive Bipolar Convex  | -                | Volume envelope attack   | 6000 timecents   |
 | **CC 74** (Filter Cutoff)    | Positive Bipolar Linear  | -                | Initial Filter Cutoff    | 9600 abs cents   |
-| **CC 75** (Vol Env Decay)    | Positive Bipolar Linear  | -                | Volume envelope decay    | 3600 timecents   |
+
+### Envelope time modulators
+
+Envelope time modulators each use several modulators.
+All of them have the CC as a bipolar primary source.
+The secondary source is a switch on the same CC that limits the modulator to one half of its range:
+
+- `CC < 64` - Negative Unipolar Switch
+- `CC >= 64` - Positive Unipolar Switch
+
+Their sum forms the response curve of the time controllers.
+
+| Primary source              | Primary transform        | Secondary source | Destination             | Transform amount |
+| --------------------------- | ------------------------ | ---------------- | ----------------------- | ---------------- |
+| **CC 73** (Vol Env Attack)  | Positive Bipolar Linear  | `CC < 64`        | Volume envelope attack  | 9600 timecents   |
+| **CC 73** (Vol Env Attack)  | Positive Bipolar Linear  | `CC >= 64`       | Volume envelope attack  | 9657 timecents   |
+| **CC 73** (Vol Env Attack)  | Positive Bipolar Convex  | `CC >= 64`       | Volume envelope attack  | -1445 timecents  |
+| **CC 75** (Vol Env Decay)   | Positive Bipolar Linear  | `CC < 64`        | Volume envelope decay   | 9779 timecents   |
+| **CC 75** (Vol Env Decay)   | Positive Bipolar Linear  | `CC >= 64`       | Volume envelope decay   | -2997 timecents  |
+| **CC 75** (Vol Env Decay)   | Positive Bipolar Concave | `CC >= 64`       | Volume envelope release | 8035 timecents   |
+| **CC 75** (Vol Env Decay)   | Positive Bipolar Convex  | `CC >= 64`       | Volume envelope decay   | 435 timecents    |
+| **CC 72** (Vol Env Release) | Positive Bipolar Linear  | `CC < 64`        | Volume envelope release | 9779 timecents   |
+| **CC 72** (Vol Env Release) | Positive Bipolar Linear  | `CC >= 64`       | Volume envelope release | -2997 timecents  |
+| **CC 72** (Vol Env Release) | Positive Bipolar Concave | `CC >= 64`       | Volume envelope release | 8035 timecents   |
+| **CC 72** (Vol Env Release) | Positive Bipolar Convex  | `CC >= 64`       | Volume envelope release | 435 timecents    |
 
 ### Resonant modulator
 

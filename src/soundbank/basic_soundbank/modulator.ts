@@ -294,51 +294,120 @@ const defaultSoundFont2Modulators = [
     new DecodedModulator(0x00_dd, 0x0, GeneratorTypes.chorusEffectsSend, 200, 0)
 ];
 
+/**
+ * One term of an envelope time response: a bipolar CC source gated to one half of the CC.
+ * @param cc the controller
+ * @param curve the curve of the bipolar source
+ * @param destination the envelope generator
+ * @param amount the amount in timecents
+ * @param below true for the half under 64, false for the half over it
+ */
+function envelopeCC(
+    cc: number,
+    curve: ModulatorCurveType,
+    destination: GeneratorType,
+    amount: number,
+    below: boolean
+) {
+    return new DecodedModulator(
+        getModSourceEnum(curve, true, false, true, cc as ModulatorSourceIndex),
+        getModSourceEnum(
+            ModulatorCurveTypes.switch,
+            false,
+            below,
+            true,
+            cc as ModulatorSourceIndex
+        ),
+        destination,
+        amount,
+        0
+    );
+}
+
 const defaultSpessaSynthModulators = [
     // Custom modulators heck yeah
-    // Cc 73 (attack time) to volEnv attack
-    new DecodedModulator(
-        getModSourceEnum(
-            ModulatorCurveTypes.convex,
-            true,
-            false,
-            true,
-            MIDIControllers.attackTime
-        ), // Convex forward bipolar cc 73
-        0x0, // No controller
+
+    // Attack
+    envelopeCC(
+        MIDIControllers.attackTime,
+        ModulatorCurveTypes.linear,
         GeneratorTypes.attackVolEnv,
-        6000,
-        0
+        9600,
+        true
+    ),
+    envelopeCC(
+        MIDIControllers.attackTime,
+        ModulatorCurveTypes.linear,
+        GeneratorTypes.attackVolEnv,
+        9657,
+        false
+    ),
+    envelopeCC(
+        MIDIControllers.attackTime,
+        ModulatorCurveTypes.convex,
+        GeneratorTypes.attackVolEnv,
+        -1445,
+        false
     ),
 
-    // Cc 72 (release time) to volEnv release
-    new DecodedModulator(
-        getModSourceEnum(
-            ModulatorCurveTypes.linear,
-            true,
-            false,
-            true,
-            MIDIControllers.releaseTime
-        ), // Linear forward bipolar cc 72
-        0x0, // No controller
-        GeneratorTypes.releaseVolEnv,
-        3600,
-        0
-    ),
-
-    // Cc 75 (decay time) to vol env decay
-    new DecodedModulator(
-        getModSourceEnum(
-            ModulatorCurveTypes.linear,
-            true,
-            false,
-            true,
-            MIDIControllers.decayTime
-        ), // Linear forward bipolar cc 75
-        0x0, // No controller
+    // Decay
+    envelopeCC(
+        MIDIControllers.decayTime,
+        ModulatorCurveTypes.linear,
         GeneratorTypes.decayVolEnv,
-        3600,
-        0
+        9779,
+        true
+    ),
+    envelopeCC(
+        MIDIControllers.decayTime,
+        ModulatorCurveTypes.linear,
+        GeneratorTypes.decayVolEnv,
+        -2997,
+        false
+    ),
+    envelopeCC(
+        MIDIControllers.decayTime,
+        ModulatorCurveTypes.concave,
+        GeneratorTypes.releaseVolEnv,
+        8035,
+        false
+    ),
+    envelopeCC(
+        MIDIControllers.decayTime,
+        ModulatorCurveTypes.convex,
+        GeneratorTypes.decayVolEnv,
+        435,
+        false
+    ),
+
+    // Release
+    envelopeCC(
+        MIDIControllers.releaseTime,
+        ModulatorCurveTypes.linear,
+        GeneratorTypes.releaseVolEnv,
+        9779,
+        true
+    ),
+    envelopeCC(
+        MIDIControllers.releaseTime,
+        ModulatorCurveTypes.linear,
+        GeneratorTypes.releaseVolEnv,
+        -2997,
+        false
+    ),
+    envelopeCC(
+        MIDIControllers.releaseTime,
+        ModulatorCurveTypes.concave,
+        GeneratorTypes.releaseVolEnv,
+        8035,
+        false
+    ),
+    envelopeCC(
+        MIDIControllers.releaseTime,
+        ModulatorCurveTypes.convex,
+        GeneratorTypes.releaseVolEnv,
+        435,
+        false
     ),
 
     // Cc 74 (brightness) to filterFc
