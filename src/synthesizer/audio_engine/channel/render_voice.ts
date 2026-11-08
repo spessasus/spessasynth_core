@@ -423,7 +423,7 @@ export function renderVoice(
     // Calculate increase
     const gainInc = (voice.volEnv.outputGain * outputGain - gain) / sampleCount;
 
-    // Low pass filter and gain (inlined for performance, confirmed with node.js)
+    // Low pass filter and gain (inlined for performance, confirmed with Node.js)
     {
         const f = voice.filter;
         const initialFc = modulated[GeneratorTypes.initialFilterFc];
@@ -433,8 +433,11 @@ export function renderVoice(
              * We only smooth out the initialFc part,
              * the modulation envelope and LFO excursions are not smoothed.
              */
-            f.currentInitialFc +=
-                (initialFc - f.currentInitialFc) * f.smoothingConstant;
+            const step = f.smoothingStep;
+            f.currentInitialFc += Math.max(
+                -step,
+                Math.min(step, initialFc - f.currentInitialFc)
+            );
         } else {
             // Filter initialization, set the current fc to target
             f.initialized = true;

@@ -11,7 +11,9 @@ import { absCentsToHz, cbAttenuationToGain } from "./unit_converter";
 
 // Latest test: 06-12-2025 for the 9600 cent cc74 change (XG accurate)
 // Lowered from 0.1 to 0.03
-export const FILTER_SMOOTHING_FACTOR = 0.03;
+// 08-11-2026: replaced the exponential smoothing with a step limit.
+// Large jumps still take about as long, but small changes apply right away
+export const FILTER_SMOOTHING_STEP = 300;
 
 /*
  * Coefficient cache layout:
@@ -44,10 +46,10 @@ export class LowpassFilter {
      */
     private static readonly caches = new Map<number, FilterCoefficientCache>();
     /**
-     * For smoothing the filter cutoff frequency.
+     * The largest change of the cutoff frequency (in cents) per rendering quantum.
      * This is per filter, as it depends on the sample rate.
      */
-    public readonly smoothingConstant: number;
+    public readonly smoothingStep: number;
     /**
      * Resonance in centibels.
      */
@@ -130,8 +132,7 @@ export class LowpassFilter {
     public constructor(sampleRate: number) {
         this.sampleRate = sampleRate;
         this.maxCutoff = sampleRate * 0.45;
-        this.smoothingConstant =
-            FILTER_SMOOTHING_FACTOR * (44_100 / sampleRate);
+        this.smoothingStep = FILTER_SMOOTHING_STEP * (44_100 / sampleRate);
         this.coefficientCache = LowpassFilter.initCache(sampleRate);
     }
 
