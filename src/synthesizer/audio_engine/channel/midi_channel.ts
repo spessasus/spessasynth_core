@@ -846,6 +846,12 @@ export class MIDIChannel {
         const midiKeyShift = globalMIDI.keyShift + channelMIDI.keyShift;
         const pitchBased = globalSystem.pitchBasedKeyShift;
 
+        // Drum key shift in XG is treated as semitone shift
+        const drumFineTune =
+            this._drumChannel && this.channelSystem === "xg"
+                ? channelMIDI.keyShift * 100
+                : 0;
+
         // Only Channel System is processed for drum channels.
         // Drum channels ignore key shift
         // Testcase: th07_19_user_gm.mid
@@ -862,7 +868,7 @@ export class MIDIChannel {
 
         // Only Channel System is processed for drum channels
         this.currentTuning = this._drumChannel
-            ? channelSystem.fineTune
+            ? channelSystem.fineTune + drumFineTune
             : // Global System
               globalSystem.fineTune +
               // Global MIDI

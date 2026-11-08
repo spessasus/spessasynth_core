@@ -79,6 +79,10 @@ export interface ChannelMIDIParameter {
     /**
      * The key shift of the channel (in semitones).
      * Drum channels ignore this value.
+     *
+     * > **Note**
+     * >
+     * > For `xg` drum channels this instead changes the pitch in semitones.
      */
     keyShift: number;
 
