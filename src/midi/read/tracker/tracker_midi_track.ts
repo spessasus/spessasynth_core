@@ -20,6 +20,28 @@ export const OFFSET_FINE_CC: MIDIController = MIDIControllers.undefinedCC21;
  * The controller that sets the sample offset in units of 32,768 sample points (high 7 bits).
  */
 export const OFFSET_COARSE_CC: MIDIController = MIDIControllers.undefinedCC20;
+/**
+ * The LSB of {@link OFFSET_FINE_CC}, sets the sample offset in units of 2 sample points.
+ */
+export const OFFSET_FINEST_CC: MIDIController =
+    MIDIControllers.undefinedCC21LSB;
+/**
+ * The 14-bit controller (with its LSB) that lowers the filter cutoff from fully open, see {@link FILTER_CUTOFF_RANGE}.
+ */
+export const FILTER_CUTOFF_CC: MIDIController = MIDIControllers.undefinedCC22;
+/**
+ * The 14-bit controller (with its LSB) that sets the filter resonance, see {@link FILTER_RESONANCE_RANGE}.
+ */
+export const FILTER_RESONANCE_CC: MIDIController =
+    MIDIControllers.undefinedCC23;
+/**
+ * The full scale of {@link FILTER_CUTOFF_CC} in cents, from 13,500 (open) down to 4,500.
+ */
+export const FILTER_CUTOFF_RANGE = 9000;
+/**
+ * The full scale of {@link FILTER_RESONANCE_CC} in centibels.
+ */
+export const FILTER_RESONANCE_RANGE = 320;
 
 /**
  * Pitch changes smaller than this (in semitones) are floating point noise and are not written.
@@ -99,13 +121,18 @@ export class TrackerMIDITrack {
      * @param ticks The MIDI tick time.
      * @param controller The controller number.
      * @param value The new value (0-127).
+     * @param skipDefault If a zero value is not written while the controller is still at its reset value.
      */
     public controllerChange(
         ticks: number,
         controller: MIDIController,
-        value: number
+        value: number,
+        skipDefault = false
     ) {
-        if (this.controllers[controller] === value) {
+        if (
+            this.controllers[controller] === value ||
+            (skipDefault && value === 0 && this.controllers[controller] === -1)
+        ) {
             return;
         }
         this.controllers[controller] = value;
@@ -114,6 +141,28 @@ export class TrackerMIDITrack {
             MIDIMessageTypes.controllerChange,
             controller,
             value
+        );
+    }
+
+    /**
+     * Changes a 14-bit controller (0-31) and its LSB if the value differs from the last one.
+     * @param ticks The MIDI tick time.
+     * @param controller The controller number.
+     * @param value The new value (0-16,383).
+     * @param skipDefault If a zero value is not written while the controller is still at its reset value.
+     */
+    public controllerChange14(
+        ticks: number,
+        controller: MIDIController,
+        value: number,
+        skipDefault = false
+    ) {
+        this.controllerChange(ticks, controller, value >> 7, skipDefault);
+        this.controllerChange(
+            ticks,
+            (controller + 32) as MIDIController,
+            value & 0x7f,
+            skipDefault
         );
     }
 
@@ -204,7 +253,8 @@ export class TrackerMIDITrack {
                 )
             );
         }
-        track.pushEvents(...setup, ...this.events);
+        // Long tracks have too many events to pass as arguments
+        track.events = setup.concat(this.events);
         track.channels.add(this.channel);
         return track;
     }

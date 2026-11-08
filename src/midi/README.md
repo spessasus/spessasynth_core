@@ -5,9 +5,7 @@ All public symbols are exported through `exports.ts`.
 
 ### Core classes
 
-- `basic_midi.ts` - `BasicMIDI`, the MIDI representation: tracks, metadata, the embedded sound bank,
-  tick to time conversion, writing (`writeMIDI`, `writeRMIDI`), editing (`modify`, `applySnapshot`),
-  `getNoteTimes` and `iterate`. `BasicMIDI.fromArrayBuffer` detects the file format and calls the right loader.
+- `basic_midi.ts` - `BasicMIDI`, the MIDI representation.
 - `midi_track.ts` - `MIDITrack`, a single track with its events, name, port and used channels.
 - `midi_message.ts` - `MIDIMessage`, a single MIDI event.
 - `enums.ts` - the message types, controllers and RPN/NRPN numbers.
@@ -23,18 +21,16 @@ The `read/` directory.
 - `xmf.ts` - Extensible Music Format (XMF).
 - `tracker/` - tracker modules, converted to MIDI with an embedded sound bank:
     - `load_tracker_module.ts` - detects the module format and runs the conversion.
-    - `tracker_module.ts` - `TrackerModule`, the base class of all formats. Plays the module tick by tick
-      (orders, rows, jumps, loops and delays), writes one MIDI track per tracker channel
-      (16 channels per port, the GS rhythm part is switched to a melodic part) and creates one SF2 preset per sample.
+    - `tracker_module.ts` - `TrackerModule`, the base class of all formats.
+    - `tracker_sound_bank.ts` - `TrackerSampleBank`, one SF2 preset per sample, plus presets for the sample variants created when the playback needs them.
     - `tracker_channel.ts` - `TrackerChannel`, the playback state of a channel and the effects shared between formats.
     - `tracker_midi_track.ts` - `TrackerMIDITrack`, writes the MIDI events of a channel.
-      Pitch is the closest key plus the pitch wheel, with the pitch wheel range fitted per channel.
     - `tracker_pattern.ts` - `TrackerPattern`, the pattern data.
     - `types.ts` - the format-agnostic samples, instruments and envelopes.
     - `protracker.ts` - ProTracker MOD (also the base of the XM format).
-    - `fasttracker.ts` - Fast Tracker 2 XM (effect memory, volume column, instruments, envelopes and automatic vibrato).
-      Also reads ModPlug ADPCM and OpenMPT stereo samples, and the OpenMPT song message and artist.
+    - `fasttracker.ts` - Fast Tracker 2 XM.
     - `screamtracker.ts` - Scream Tracker 3 S3M (shared effect memory).
+    - `impulsetracker.ts` - Impulse Tracker IT.
 
 To add a new tracker format, extend `TrackerModule` (or an existing format) and add its detection to
 `load_tracker_module.ts`.

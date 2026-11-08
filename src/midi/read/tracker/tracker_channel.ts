@@ -1,4 +1,37 @@
+/**
+ * @license
+ * The random waveform table in this file is taken from the sound library of OpenMPT (https://openmpt.org/).
+ * OpenMPT is distributed under the BSD license below.
+ *
+ * Copyright (c) 2004-2026, OpenMPT Project Developers and Contributors
+ * Copyright (c) 1997-2003, Olivier Lapicque
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *     * Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in the
+ *       documentation and/or other materials provided with the distribution.
+ *     * Neither the name of the OpenMPT project nor the
+ *       names of its contributors may be used to endorse or promote products
+ *       derived from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 import type { TrackerInstrument, TrackerSample } from "./types";
+import type { TrackerMIDITrack } from "./tracker_midi_track";
 
 /**
  * The 64-step sine table shared by the vibrato and tremolo effects.
@@ -7,6 +40,7 @@ const SINE_TABLE = new Int8Array(64);
 /**
  * The random waveform table,
  * Fixed so conversions are deterministic, and we can test them.
+ * This is the random table of OpenMPT (ModRandomTable).
  */
 const RANDOM_TABLE = new Int8Array([
     98, -127, -43, 88, 102, 41, -65, -94, 125, 20, -71, -86, -70, -32, -16, -96,
@@ -45,6 +79,15 @@ export class TrackerChannel {
      */
     public sampleIndex = -1;
     /**
+     * The sound bank preset that plays the sample, usually the sample index.
+     * Other values select a variant of the sample, see {@link TrackerSampleBank}.
+     */
+    public preset = -1;
+    /**
+     * The playback position in the preset's sample, Infinity once a sample without a loop has ended.
+     */
+    public samplePosition = 0;
+    /**
      * The fine-tuning used for the next notes, initialized from the sample.
      * Its unit is specific to the module format, see {@link TrackerSample.finetune}.
      */
@@ -82,6 +125,11 @@ export class TrackerChannel {
      */
     public volumeDelta = 0;
     /**
+     * An additional volume multiplier (0-1) for the format-specific volumes,
+     * such as the channel, sample and instrument global volumes.
+     */
+    public volumeScale = 1;
+    /**
      * Set to true while tremor silences the channel.
      */
     public tremorMuted = false;
@@ -90,6 +138,18 @@ export class TrackerChannel {
      * The channel panning (0-255).
      */
     public panning = 128;
+    /**
+     * The final panning (0-256) computed by the format, -1 to compute it from the panning and its envelope.
+     */
+    public outputPanning = -1;
+    /**
+     * The resonant filter cutoff in absolute cents, 13,500 or above leaves the filter open.
+     */
+    public filterCutoff = 13_500;
+    /**
+     * The resonant filter resonance in centibels.
+     */
+    public filterResonance = 0;
 
     // Instrument envelopes
 
@@ -165,6 +225,21 @@ export class TrackerChannel {
     public patternLoopRow = 0;
     public patternLoopCount = 0;
 
+    // Output
+
+    /**
+     * The MIDI track (one MIDI channel) this channel writes to.
+     */
+    public output?: TrackerMIDITrack;
+    /**
+     * True for the background voices that keep playing after a new note (Impulse Tracker new note actions).
+     */
+    public background = false;
+    /**
+     * The volume of the last written tick (0-1), used to pick the voice to stop when there are too many.
+     */
+    public outputLevel = 0;
+
     public constructor(index: number, panning: number) {
         this.index = index;
         this.panning = panning;
@@ -195,6 +270,16 @@ export class TrackerChannel {
                 return RANDOM_TABLE[position];
             }
         }
+    }
+
+    /**
+     * Creates a copy of this channel, keeping its class.
+     */
+    public clone() {
+        return Object.assign(
+            Object.create(Object.getPrototypeOf(this) as object) as this,
+            this
+        );
     }
 
     /**

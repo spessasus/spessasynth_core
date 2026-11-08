@@ -12,7 +12,7 @@ It allows you to:
 - Read and write MIDI files!
 - Read and write SF2/SF3 files!
 - Convert DLS to SF2! (and back!)
-- Play tracker modules (MOD, XM, S3M) as MIDI files!
+- Play tracker modules (MOD, XM, S3M, IT) as MIDI files!
 - [and more!](#current-features)
 
 ### v4.4.0 The XG Update is here!
@@ -151,10 +151,11 @@ a more capable MIDI editor, and a faster synthesis engine!
 
 #### Read and play tracker modules
 
-- **MOD, XM and S3M support:** _ProTracker, FastTracker 2 and Scream Tracker 3 modules load just like MIDI files!_
+- **MOD, XM, S3M and IT support:** _ProTracker, FastTracker 2, Scream Tracker 3 and Impulse Tracker modules load just like MIDI files!_
 - **Converted to MIDI with an embedded sound bank:** Every sample becomes a preset, and the song can be saved as an RMIDI file!
 - **Accurate playback:** _Effects, effect memory, instrument envelopes and auto-vibrato are converted to MIDI events!_
 - **Sample offset support:** _Implemented with SoundFont modulators!_
+- **Impulse Tracker features:** _New note actions, resonant filters, filter and pitch envelopes, MIDI macros, sustain loops, stereo samples and reversed playback!_
 - **Loop detection:** _Song loops and restart positions become loop points!_
 - **Seamless integration:** _Read like any other MIDI file!_
 

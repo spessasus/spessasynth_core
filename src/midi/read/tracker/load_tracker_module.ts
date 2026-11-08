@@ -4,6 +4,7 @@ import type { TrackerModule } from "./tracker_module";
 import { ProTrackerModule } from "./protracker";
 import { FastTrackerModule } from "./fasttracker";
 import { ScreamTrackerModule } from "./screamtracker";
+import { ImpulseTrackerModule } from "./impulsetracker";
 
 /**
  * Detects a tracker module and converts it into the given MIDI.
@@ -20,6 +21,8 @@ export function loadTrackerModule(
     let module: TrackerModule;
     if (FastTrackerModule.isXM(binary)) {
         module = new FastTrackerModule();
+    } else if (ImpulseTrackerModule.isIT(binary)) {
+        module = new ImpulseTrackerModule();
     } else if (ScreamTrackerModule.isS3M(binary)) {
         module = new ScreamTrackerModule();
     } else if (ProTrackerModule.getChannelCount(binary) > 0) {

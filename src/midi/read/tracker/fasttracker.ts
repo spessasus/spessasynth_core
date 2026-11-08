@@ -9,6 +9,7 @@ import {
 import type { TrackerChannel } from "./tracker_channel";
 import {
     emptyEnvelope,
+    getEnvelopeValue,
     MIDDLE_C_PERIOD,
     MIDDLE_C_RATE
 } from "./tracker_module";
@@ -74,30 +75,6 @@ const VolumeColumnCommands = {
 const AUTO_VIBRATO_SINE = new Int8Array(256);
 for (let i = 0; i < 256; i++) {
     AUTO_VIBRATO_SINE[i] = Math.round(64 * Math.sin((i * Math.PI) / 128));
-}
-
-/**
- * Gets the value of an envelope at a position.
- * @param envelope The envelope.
- * @param tick The position.
- * @returns The value (0-64).
- */
-function getEnvelopeValue(envelope: TrackerEnvelope, tick: number) {
-    const points = envelope.points;
-    for (let i = 0; i < points.length - 1; i++) {
-        const a = points[i];
-        const b = points[i + 1];
-        if (tick < b.tick) {
-            if (tick <= a.tick || b.tick === a.tick) {
-                return a.value;
-            }
-            return (
-                a.value +
-                ((b.value - a.value) * (tick - a.tick)) / (b.tick - a.tick)
-            );
-        }
-    }
-    return points[points.length - 1]?.value ?? 64;
 }
 
 /**
@@ -173,7 +150,11 @@ function decodeDeltaPCM(
  * @param length The number of sample points.
  * @returns The decoded sample data.
  */
-function decodeADPCM(binary: IndexedByteArray, offset: number, length: number) {
+export function decodeADPCM(
+    binary: IndexedByteArray,
+    offset: number,
+    length: number
+) {
     const data = new Float32Array(length);
     let value = 0;
     for (let n = 0; n < length; n++) {
@@ -213,10 +194,12 @@ function readEnvelope(
         });
     }
     const hasLoop = (type & 4) !== 0 && loopEnd < count && loopStart <= loopEnd;
+    const sustainPoint = (type & 2) !== 0 && sustain < count ? sustain : -1;
     const envelope: TrackerEnvelope = {
         enabled: (type & 1) !== 0 && count > 0,
         points,
-        sustainPoint: (type & 2) !== 0 && sustain < count ? sustain : -1,
+        sustainPoint,
+        sustainStart: sustainPoint,
         loopStart: hasLoop ? loopStart : -1,
         loopEnd: hasLoop ? loopEnd : -1
     };
