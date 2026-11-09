@@ -90,7 +90,8 @@ export class DownloadableSounds extends DLSVerifier {
                     }
 
                     case "ICRD": {
-                        dls.soundBankInfo.creationDate = parseDateString(text);
+                        dls.soundBankInfo.creationDate =
+                            parseDateString(text) ?? new Date();
                         break;
                     }
 

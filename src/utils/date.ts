@@ -94,7 +94,7 @@ export function parseDateString(dateString: string) {
     // Trim the date. Testcase: " 4  0  97"
     dateString = dateString.trim();
     if (dateString.length === 0) {
-        return new Date();
+        return;
     }
 
     // Remove "st" , "nd" , "rd",  "th", etc.
@@ -121,10 +121,8 @@ export function parseDateString(dateString: string) {
             return year;
         }
 
-        SpessaLog.warn(
-            `Invalid date: "${dateString}". Replacing with the current date!`
-        );
-        return new Date();
+        SpessaLog.warn(`Invalid date: "${dateString}".`);
+        return;
     }
     return date;
 }

@@ -25,10 +25,11 @@ for (const entry of entries) {
         if (dec.decode(bin.buffer.slice(8, 12)) !== "RMID") continue;
         const rmid = BasicMIDI.fromArrayBuffer(bin.buffer);
         if (!rmid.rmidiInfo.creationDate) continue;
+        const date = rmid.getRMIDInfo("creationDate");
         console.info(
             dec.decode(rmid.rmidiInfo.creationDate),
             "decoded as date ->",
-            toISODateString(rmid.getRMIDInfo("creationDate")!)
+            date ? toISODateString(date) : "NO DATE (unparsable)"
         );
     }
 }

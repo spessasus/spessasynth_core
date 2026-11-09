@@ -400,7 +400,13 @@ export function writeRMIDIInternal(
     mid: BasicMIDI,
     soundBankBinary: ArrayBuffer,
     options: RMIDIWriteOptions
-): ArrayBuffer {
+) {
+    const offset = options.bankOffset;
+    if (!Number.isInteger(offset) || offset < 0 || offset > 127) {
+        throw new Error(
+            `Invalid bank offset: ${offset}. It must be an integer between 0 and 127.`
+        );
+    }
     // Copy to avoid modifying the defaults or the caller's object
     const metadata = { ...options.metadata };
     SpessaLog.group("%cWriting the RMIDI File...", ConsoleColors.info);
@@ -443,6 +449,8 @@ export function writeRMIDIInternal(
     for (const v of Object.entries(mid.rmidiInfo)) {
         const type = v[0] as keyof RMIDInfoData;
         const data = v[1];
+        // Empty chunks are illegal!
+        if (data.length === 0) continue;
 
         switch (type) {
             case "album": {
@@ -517,8 +525,12 @@ export function writeRMIDIInternal(
 
     // Bank offset
     const DBNK = new IndexedByteArray(2);
-    writeLittleEndianIndexed(DBNK, options.bankOffset, 2);
-    infoContent.push(RIFFChunk.write("DBNK", DBNK));
+    writeLittleEndianIndexed(DBNK, offset, 2);
+    infoContent.push(
+        RIFFChunk.write("DBNK", DBNK),
+        // Preserve unknown
+        ...mid.rmidiExtraChunks.info
+    );
 
     // Combine and write out
     SpessaLog.info("%cFinished!", ConsoleColors.info);
@@ -527,6 +539,7 @@ export function writeRMIDIInternal(
         getStringBytes("RMID"),
         RIFFChunk.write("data", newMid),
         RIFFChunk.writeParts("INFO", infoContent, false, true),
-        new IndexedByteArray(soundBankBinary)
+        new IndexedByteArray(soundBankBinary),
+        ...mid.rmidiExtraChunks.file
     ]).buffer;
 }

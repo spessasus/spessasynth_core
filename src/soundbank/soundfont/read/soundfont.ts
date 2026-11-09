@@ -117,9 +117,13 @@ export class SoundFont2 extends BasicSoundBank {
                 }
 
                 case "ICRD": {
-                    this.soundBankInfo.creationDate = parseDateString(
-                        readBinaryStringIndexed(chunk.data, chunk.data.length)
-                    );
+                    this.soundBankInfo.creationDate =
+                        parseDateString(
+                            readBinaryStringIndexed(
+                                chunk.data,
+                                chunk.data.length
+                            )
+                        ) ?? new Date();
                     break;
                 }
 

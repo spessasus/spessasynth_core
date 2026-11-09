@@ -59,14 +59,18 @@ export function parseRMIDIInternal(
                     startIndex,
                     startIndex + currentChunk.headerSize + currentChunk.size
                 ).buffer;
+                if (type === "dls ") {
+                    // Assume bank offset of 0 by default. If we find any bank selects, then the offset is 1.
+                    outputMIDI.isDLSRMIDI = true;
+                } else {
+                    isSF2RMIDI = true;
+                }
             } else {
                 SpessaLog.warn(`Unknown RIFF chunk: "${type}"`);
-            }
-            if (type === "dls ") {
-                // Assume bank offset of 0 by default. If we find any bank selects, then the offset is 1.
-                outputMIDI.isDLSRMIDI = true;
-            } else {
-                isSF2RMIDI = true;
+                // The spec says to keep chunks we don't know
+                outputMIDI.rmidiExtraChunks.file.push(
+                    RIFFChunk.write(currentChunk.header, currentChunk.data)
+                );
             }
         } else if (currentChunk.header === "LIST") {
             const type = readBinaryStringIndexed(currentChunk.data, 4);
@@ -79,10 +83,20 @@ export function parseRMIDIInternal(
                     const infoChunk = RIFFChunk.read(currentChunk.data);
                     const headerTyped = infoChunk.header as RMIDInfoFourCC;
                     const infoData = infoChunk.data;
+                    if (infoChunk.size === 0) {
+                        // Empty chunks are illegal, drop them
+                        SpessaLog.warn(
+                            `Discarding empty RMIDI Info: ${headerTyped}`
+                        );
+                        continue;
+                    }
                     switch (headerTyped) {
                         default: {
                             SpessaLog.warn(
                                 `Unknown RMIDI Info: ${headerTyped as string}`
+                            );
+                            outputMIDI.rmidiExtraChunks.info.push(
+                                RIFFChunk.write(infoChunk.header, infoData)
                             );
                             break;
                         }
@@ -92,10 +106,13 @@ export function parseRMIDIInternal(
                             break;
                         }
 
-                        case "IALB":
-                        case "IPRD": {
-                            // Note that there are two album chunks: IPRD and IALB
+                        case "IALB": {
                             outputMIDI.rmidiInfo.album = infoData;
+                            break;
+                        }
+
+                        case "IPRD": {
+                            outputMIDI.rmidiInfo.album ??= infoData;
                             break;
                         }
 
@@ -157,12 +174,31 @@ export function parseRMIDIInternal(
                         }
 
                         case "DBNK": {
-                            dbnk = readLittleEndian(infoData, 2);
+                            // Invalid offsets are treated as missing.
+                            const offset =
+                                infoData.length === 2
+                                    ? readLittleEndian(infoData, 2)
+                                    : undefined;
+                            if (offset === undefined || offset > 127) {
+                                SpessaLog.warn(
+                                    `Invalid DBNK chunk (${offset ?? `${infoData.length} bytes`}), ignoring it.`
+                                );
+                                break;
+                            }
+                            dbnk = offset;
                             break;
                         }
                     }
                 }
+            } else {
+                outputMIDI.rmidiExtraChunks.file.push(
+                    RIFFChunk.write(currentChunk.header, currentChunk.data)
+                );
             }
+        } else {
+            outputMIDI.rmidiExtraChunks.file.push(
+                RIFFChunk.write(currentChunk.header, currentChunk.data)
+            );
         }
     }
 

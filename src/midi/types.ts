@@ -171,7 +171,7 @@ export interface NoteTime {
  */
 export interface RMIDIWriteOptions {
     /**
-     * The bank offset to apply to the file. Defaults to `0`.
+     * The bank offset to apply to the file, an integer from 0 to 127. Defaults to `0`.
      * [See this for more info](https://github.com/spessasus/sf2-rmidi-specification#dbnk-chunk)
      */
     bankOffset: number;

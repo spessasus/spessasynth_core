@@ -152,6 +152,7 @@ export class SoundBankManager {
      * @param id The unique ID to assign to the sound bank.
      * If a sound bank with this ID already exists, it will be replaced.
      * @param bankOffset The bank offset of the sound bank. Offsets the bank MSB value of all presets in this sound bank.
+     * Presets that would end up above bank 127 are left out.
      * @param reset If the synthesizer should reset (put every channel's controllers back to defaults) after the change.
      * Set it to `false` to keep a song playing, the channels then only update to the new presets.
      */
@@ -264,6 +265,14 @@ export class SoundBankManager {
             const bank = s.soundBank;
             const bankOffset = s.bankOffset;
             for (const p of bank.presets) {
+                // A preset offset past bank 127 can't be selected.
+                // For RMIDI spec compliance.
+                if (
+                    p.bankMSB + bankOffset > 127 &&
+                    !BankSelectHacks.isXGDrum(p.bankMSB)
+                ) {
+                    continue;
+                }
                 const selectablePreset = new SoundBankManagerPreset(
                     p,
                     bankOffset

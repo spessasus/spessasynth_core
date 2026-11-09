@@ -200,6 +200,22 @@ export class BasicMIDI {
     > = {};
 
     /**
+     * RMIDI chunks that SpessaSynth does not recognize, kept so {@link BasicMIDI.writeRMIDI} can write them back.
+     * Each entry is a complete RIFF chunk (FourCC, size, data and the pad byte).
+     *
+     * - `info` holds unknown chunks from the `INFO` list.
+     * - `file` holds unknown chunks from the main `RIFF` chunk. They get written after the sound bank.
+     *
+     * > **Tip**
+     * >
+     * > See [SF2 RMIDI Extension Specification](https://github.com/spessasus/sf2-rmidi-specification#handling-differences) for more info.
+     */
+    public rmidiExtraChunks = {
+        info: new Array<Uint8Array>(),
+        file: new Array<Uint8Array>()
+    };
+
+    /**
      * The bank offset used for RMID files.
      * Only applies to RMID, for normal MIDIs it's set to 0.
      */
@@ -851,7 +867,7 @@ export class BasicMIDI {
      * > Do not call in audioWorkletGlobalScope as it uses TextDecoder.
      *
      * @param infoType The metadata type.
-     * @returns `string`, `Date`, `ArrayBuffer` or undefined if the info is not set.
+     * @returns `string`, `Date`, `ArrayBuffer` or undefined if the info is not set (or the creation date cannot be parsed).
      */
     public getRMIDInfo<K extends keyof RMIDInfoData>(
         infoType: K
@@ -866,7 +882,7 @@ export class BasicMIDI {
         } else if (infoType === "creationDate") {
             return parseDateString(
                 readBinaryString(this.rmidiInfo[infoType])
-            ) as RMIDInfoData[K];
+            ) as RMIDInfoData[K] | undefined;
         }
 
         try {
@@ -979,6 +995,10 @@ export class BasicMIDI {
             const value = v[1];
             this.rmidiInfo[key as keyof RMIDInfoData] = new Uint8Array(value);
         }
+        this.rmidiExtraChunks = {
+            info: mid.rmidiExtraChunks.info.map((c) => c.slice()),
+            file: mid.rmidiExtraChunks.file.map((c) => c.slice())
+        };
     }
 
     /**
