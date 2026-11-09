@@ -2,8 +2,8 @@ import type {
     GSReverbParameter,
     GSReverbProcessor
 } from "../interface/gs_reverb_processor";
-import { DattorroReverb } from "../../implementation/dattorro";
-import { DelayLine } from "../../implementation/delay_line";
+import { DattorroReverb } from "./dsp/dattorro";
+import { DelayLine } from "./dsp/delay_line";
 
 const DELAY_GAIN = 1.5;
 
