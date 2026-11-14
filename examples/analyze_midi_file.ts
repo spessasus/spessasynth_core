@@ -55,5 +55,16 @@ for (const [preset, keys] of used)
 console.groupEnd();
 console.info("---");
 
+console.group("--- Used Channels ---");
+
+for (const track of mid.tracks) {
+    console.info(
+        `Track "${track.name}": ${[...track.channels.values()].map((v) => v + mid.portChannelOffsetMap[track.port]).join(", ")}`
+    );
+}
+
+console.groupEnd();
+console.info("---");
+
 console.groupEnd();
 console.info("---");
