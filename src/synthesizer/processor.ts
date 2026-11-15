@@ -1934,22 +1934,21 @@ export class SpessaSynthProcessor {
      * Checks if we can disable insertion and delay effects.
      */
     public updateActiveGSEffects() {
-        if (!this.systemParameters.gsInsertionLock)
-            this.gsInsertionActive = this.midiChannels.some(
-                (c) => c.midiParameters.efxAssign
-            );
-        if (!this.systemParameters.gsDelayLock)
-            this.gsDelayActive =
-                this.midiParameters.system === "xg"
-                    ? false
-                    : this.gsChorusProcessor.sendLevelToDelay > 0 ||
-                      this.gsInsertionBlock.sendLevelToDelay > 0 ||
-                      this.midiChannels.some(
-                          (c) =>
-                              c.midiControllers[
-                                  MIDIControllers.variationDepth
-                              ] > 0
-                      );
+        // Locked effects are always active.
+        // Otherwise, a fresh synthesizer would keep them disabled for the entire offline render.
+        // And it's just an optimization case, so always active is fine.
+        this.gsInsertionActive = this.systemParameters.gsInsertionLock
+            ? true
+            : this.midiChannels.some((c) => c.midiParameters.efxAssign);
+        this.gsDelayActive = this.systemParameters.gsDelayLock
+            ? true
+            : this.midiParameters.system === "xg"
+              ? false
+              : this.gsChorusProcessor.sendLevelToDelay > 0 ||
+                this.gsInsertionBlock.sendLevelToDelay > 0 ||
+                this.midiChannels.some(
+                    (c) => c.midiControllers[MIDIControllers.variationDepth] > 0
+                );
     }
 
     /**
