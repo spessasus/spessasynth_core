@@ -94,7 +94,11 @@ export const ModulatorCurveTypes = {
     /**
      * First half is 0, second half is 1.
      */
-    switch: 3
+    switch: 3,
+    /**
+     * A curve stored in the bank (SFe only), see {@link CustomCurve}.
+     */
+    custom: 4
 } as const;
 
 /**

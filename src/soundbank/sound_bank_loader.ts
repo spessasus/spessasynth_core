@@ -24,6 +24,14 @@ export const DEFAULT_SOUND_BANK_LOAD_OPTIONS: SoundBankLoadOptions = {
 export class SoundBankLoader {
     /**
      * Loads a sound bank from a file buffer.
+     *
+     * Currently supported formats are:
+     *
+     * - SoundFont2 - With optional SpessaSynth extensions.
+     * - SoundFont3 - Like SoundFont2 but also allows Ogg Vorbis-compressed samples.
+     * - DownLoadable Sounds.
+     * - SpessaSynth SFe.
+     *
      * @param buffer The binary file buffer to load.
      * @param options Options for loading the sample data.
      * @returns The loaded sound bank.

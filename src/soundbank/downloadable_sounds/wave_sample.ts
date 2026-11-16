@@ -166,7 +166,8 @@ export class WaveSample extends DLSVerifier {
         waveSample.gain = -attenuationCb << 16;
         const loopingMode = zone.getGenerator(GeneratorTypes.sampleModes, 0);
         // Don't add loops unless needed
-        if (loopingMode !== 0) {
+        // DLS has no alternating loop (SFe sampleModes 4), it is dropped like in SF2
+        if (loopingMode !== 0 && loopingMode !== 4) {
             // Make sure to get offsets
             const loopStart =
                 zone.sample.loopStart +

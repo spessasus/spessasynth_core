@@ -76,6 +76,13 @@ export class BasicInstrument {
     public readonly linkedTo: BasicPreset[] = [];
 
     /**
+     * Creates a new empty instrument.
+     */
+    public constructor() {
+        this.globalZone.setCurveUser(this);
+    }
+
+    /**
      * How many presets is this instrument used by.
      */
     public get useCount(): number {
@@ -135,6 +142,7 @@ export class BasicInstrument {
             const stays = z.useCount > 0;
             if (!stays) {
                 z.unlinkChild();
+                z.unlinkCurves();
             }
             return stays;
         });
@@ -152,16 +160,24 @@ export class BasicInstrument {
                 `Cannot delete an instrument that is used by: ${this.linkedTo.map((p) => p.name).toString()}.`
             );
         }
-        for (const z of this.zones) z.unlinkChild();
+        for (const z of this.zones) {
+            z.unlinkChild();
+            z.unlinkCurves();
+        }
+        this.globalZone.unlinkCurves();
     }
 
     /**
-     * Links the samples back to this instrument, the inverse of {@link delete}.
+     * Links the samples and custom curves back to this instrument, the inverse of {@link delete}.
      * Use it to restore a deleted instrument, for example when undoing the deletion.
      * Add the instrument back to the sound bank as well.
      */
     public restore() {
-        for (const z of this.zones) z.linkChild();
+        for (const z of this.zones) {
+            z.linkChild();
+            z.linkCurves();
+        }
+        this.globalZone.linkCurves();
     }
 
     /**
@@ -175,6 +191,7 @@ export class BasicInstrument {
         zone.useCount -= 1;
         if (zone.useCount < 1 || force) {
             zone.unlinkChild();
+            zone.unlinkCurves();
             this.zones.splice(index, 1);
             return true;
         }
@@ -329,10 +346,7 @@ export class BasicInstrument {
                         modulator.transformAmount ===
                         checkedModulator.transformAmount
                     ) {
-                        zone.modulators.splice(
-                            zone.modulators.indexOf(modulator),
-                            1
-                        );
+                        zone.deleteModulator(modulator);
                     }
                 }
             }

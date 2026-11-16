@@ -167,7 +167,8 @@ a more capable MIDI editor, and a faster synthesis engine!
 - **SF3 conversion:** _Compress SoundFont2 files to SoundFont3 with an encoder of your choice
   ([see the example](https://github.com/spessasus/spessasynth_core/blob/master/examples/compress_to_sf3.ts))!_
 - **Easy saving:** _Also just [one function!](https://spessasus.github.io/spessasynth_core/classes/BasicSoundBank/#writesf2)_
-- **SFE support:** _Experimental reading and writing of [SF-Enhanced](https://sfe-team-was-taken.github.io/SFE/) banks!_
+- **SFe support:** _Experimental reading and writing of [SFe](https://spessasus.github.io/spessasynth_core/extra/sfe-format) banks,
+  SpessaSynth's own SoundFont 2 extension (not SFE by the SFE Team)!_
 
 #### Read and write SoundFont3 files
 

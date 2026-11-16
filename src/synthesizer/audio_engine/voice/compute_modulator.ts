@@ -6,8 +6,6 @@ import {
 import type { MIDIChannel } from "../channel/midi_channel";
 import type { Voice } from "./voice";
 
-const EFFECT_MODULATOR_TRANSFORM_MULTIPLIER = 1000 / 200;
-
 /**
  * Buffer for the generators with the NRPN offsets applied,
  * To avoid allocating on the audio thread.
@@ -43,12 +41,7 @@ export function computeModulator(
         voice
     );
 
-    // See the comment for isEffectModulator (voice_modulator.ts) for explanation
-    let transformAmount = modulator.transformAmount;
-    if (modulator.isEffectModulator && transformAmount <= 1000) {
-        transformAmount *= EFFECT_MODULATOR_TRANSFORM_MULTIPLIER;
-        transformAmount = Math.min(transformAmount, 1000);
-    }
+    const transformAmount = modulator.transformAmount;
 
     // Compute the modulator
     let computedValue = sourceValue * secondSrcValue * transformAmount;
@@ -56,12 +49,6 @@ export function computeModulator(
     if (modulator.transformType === 2) {
         // Abs value
         computedValue = Math.abs(computedValue);
-    }
-
-    // Resonant modulator: take its value and ensure that it won't change the final gain
-    if (modulator.isDefaultResonantModulator) {
-        // Half the gain, negates the filter
-        voice.resonanceOffset = Math.max(0, computedValue / 2);
     }
 
     // Modulation depth
@@ -102,7 +89,11 @@ export function computeModulators(
         OFFSET_GENERATORS.set(generators);
         generators = OFFSET_GENERATORS;
         for (let i = 0; i < generators.length; i++) {
-            generators[i] += g[i];
+            // An Int16Array wraps, so a negative offset would turn -32768 (instant) into a long time
+            generators[i] = Math.min(
+                32_767,
+                Math.max(-32_768, generators[i] + g[i])
+            );
         }
     }
     const modulatedGenerators = voice.modulatedGenerators;

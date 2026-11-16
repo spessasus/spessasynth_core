@@ -129,7 +129,7 @@ export function resetChannelInternal(this: MIDIChannel, sendCCEvents = true) {
     this.resetDrumParams();
     this.resetGeneratorOverrides();
     this.resetGeneratorOffsets();
-    this.dynamicModulators.resetModulators();
+    this.matrix.reset();
     this.sf2NRPNGeneratorLSB = 0;
     this.playingNotes.fill(false);
     this.xgInsertionAssigned = false;

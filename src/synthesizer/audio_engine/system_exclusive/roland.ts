@@ -1,6 +1,6 @@
 import { SpessaLog } from "../../../utils/loggin";
 import { type MIDIController, MIDIControllers } from "../../../midi/enums";
-import { ModulatorControllerSources } from "../../../soundbank/enums";
+import type { MatrixDestination, MatrixSource } from "../channel/enums";
 import { readBinaryString } from "../../../utils/byte_functions/string";
 import type { SpessaSynthProcessor } from "../../processor";
 import { MIDIUtils } from "../../../midi/midi_tools/midi_utils";
@@ -1083,123 +1083,57 @@ export function rolandSystemExclusive(
                             );
                             return;
                         }
-                        switch (a3 & 0xf0) {
-                            default: {
-                                // This is some other GS sysex...
-                                SpessaLog.gsFail(
-                                    `Patch Parameter Controller for ${channel}`,
-                                    [a3 & 0xf0]
-                                );
-                                break;
-                            }
-
-                            case 0x00: {
-                                // Modulation wheel
-                                if ((a3 & 0x0f) === 0x04) {
-                                    // LFO1 Pitch depth
-                                    // Special case:
-                                    // If the source is a mod wheel, it's a strange way of setting the modulation depth
-                                    // Testcase: J-Cycle.mid (it affects gm.dls which uses LFO1 for modulation)
-                                    const cents = (data / 127) * 600;
-                                    ch.setMIDIParameter(
-                                        "modulationDepth",
-                                        cents
-                                    );
-                                    SpessaLog.gsInfo(
-                                        `Modulation depth for ${channel}`,
-                                        Math.round(cents),
-                                        "cents"
-                                    );
-                                    break;
-                                }
-                                ch.dynamicModulators.setupReceiverGS(
-                                    a3,
-                                    data,
-                                    MIDIControllers.modulationWheel,
-                                    true,
-                                    "mod wheel"
-                                );
-                                break;
-                            }
-
-                            case 0x10: {
-                                // Pitch wheel
-                                if ((a3 & 0x0f) === 0x00) {
-                                    // See https://github.com/spessasus/SpessaSynth/issues/154
-                                    // Pitch control
-                                    // Special case:
-                                    // If the source is a pitch wheel, it's a strange way of setting the pitch wheel range
-                                    // Testcase: th07_03.mid
-                                    const centeredValue = data - 64;
-                                    ch.setMIDIParameter(
-                                        "pitchWheelRange",
-                                        centeredValue
-                                    );
-                                    SpessaLog.gsInfo(
-                                        `Pitch Wheel Range for ${channel}`,
-                                        centeredValue,
-                                        "semitones"
-                                    );
-                                    break;
-                                }
-                                ch.dynamicModulators.setupReceiverGS(
-                                    a3,
-                                    data,
-                                    ModulatorControllerSources.pitchWheel,
-                                    false,
-                                    "pitch wheel",
-                                    true
-                                );
-                                break;
-                            }
-
-                            case 0x20: {
-                                // Channel pressure
-                                ch.dynamicModulators.setupReceiverGS(
-                                    a3,
-                                    data,
-                                    ModulatorControllerSources.channelPressure,
-                                    false,
-                                    "channel pressure"
-                                );
-                                break;
-                            }
-
-                            case 0x30: {
-                                // Poly pressure
-                                ch.dynamicModulators.setupReceiverGS(
-                                    a3,
-                                    data,
-                                    ModulatorControllerSources.polyPressure,
-                                    false,
-                                    "poly pressure"
-                                );
-                                break;
-                            }
-
-                            case 0x40: {
-                                // CC1
-                                ch.dynamicModulators.setupReceiverGS(
-                                    a3,
-                                    data,
-                                    ch.midiParameters.cc1,
-                                    true,
-                                    "CC1"
-                                );
-                                break;
-                            }
-
-                            case 0x50: {
-                                // CC2
-                                ch.dynamicModulators.setupReceiverGS(
-                                    a3,
-                                    data,
-                                    ch.midiParameters.cc2,
-                                    true,
-                                    "CC2"
-                                );
-                            }
+                        const source = a3 >> 4;
+                        const destination = a3 & 0x0f;
+                        if (source > 5 || destination > 0x0a) {
+                            // This is some other GS sysex...
+                            SpessaLog.gsFail(
+                                `Patch Parameter Controller for ${channel}`,
+                                [a3]
+                            );
+                            return;
                         }
+                        if (source === 0 && destination === 0x04) {
+                            // LFO1 Pitch depth
+                            // Special case:
+                            // If the source is a mod wheel, it's a strange way of setting the modulation depth
+                            // Testcase: J-Cycle.mid (it affects gm.dls which uses LFO1 for modulation)
+                            ch.setMIDIParameter("modulationDepth", data * 5);
+                            SpessaLog.gsInfo(
+                                `Modulation wheel depth for ${channel}`,
+                                data / 10,
+                                "times the bank's depth"
+                            );
+                            return;
+                        }
+                        if (source === 1 && destination === 0x00) {
+                            // See https://github.com/spessasus/SpessaSynth/issues/154
+                            // BEND Pitch control
+                            // Special case:
+                            // If the source is a pitch wheel, it's a strange way of setting the pitch wheel range
+                            // Testcase: th07_03.mid
+                            // A control below the center gives no bend at all
+                            // SC-55 does it but SC-88Pro doesn't
+                            // And let's be real: Why would one want reverse pitch bend?
+                            const range = Math.max(0, Math.min(24, data - 64));
+                            ch.setMIDIParameter("pitchWheelRange", range);
+                            SpessaLog.gsInfo(
+                                `Pitch Wheel Range for ${channel}`,
+                                range,
+                                "semitones"
+                            );
+                            return;
+                        }
+                        ch.setMatrixCell(
+                            "gs",
+                            source as MatrixSource,
+                            destination as MatrixDestination,
+                            data
+                        );
+                        SpessaLog.gsInfo(
+                            `Controller matrix for ${channel}, source ${source} destination ${destination}`,
+                            data
+                        );
                         return;
                     }
 

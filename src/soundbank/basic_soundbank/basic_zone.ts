@@ -8,6 +8,7 @@ import { Modulator } from "./modulator";
 
 import type { GenericRange } from "../types";
 import type { BasicSoundBank } from "./basic_soundbank";
+import type { CustomCurveUser } from "./custom_curve";
 
 export const BAG_BYTE_SIZE = 4;
 
@@ -33,10 +34,32 @@ export class BasicZone {
      * The zone's generators.
      */
     public generators: Generator[] = [];
+    private storedModulators = new Array<Modulator>();
+
     /**
-     * The zone's modulators.
+     * The element the custom curves of this zone's modulators are linked to.
+     * Unset for zones created without linking.
      */
-    public modulators: Modulator[] = [];
+    private curveUser?: CustomCurveUser;
+
+    /**
+     * The zone's modulators. Use {@link addModulators}, {@link deleteModulator} and {@link setModulators}
+     * to change them, so the custom curves they use stay linked.
+     *
+     * > **Note**
+     * >
+     * > A modulator object belongs to one zone (or to the default modulators) only.
+     * > Adding it to another one throws, add a copy ({@link Modulator.copyFrom}) instead.
+     *
+     * > **Note**
+     * >
+     * > A bank loaded from SF2 or DLS has modulators that are not in the file:
+     * > every CC 71 to resonance modulator gets a CC 71 to gain twin, and SF2 reverb and chorus send amounts
+     * > are scaled. Writing SF2 or DLS undoes both, so the written file matches the loaded one.
+     */
+    public get modulators(): readonly Modulator[] {
+        return this.storedModulators;
+    }
 
     /**
      * True if this zone has a key range explicitly set.
@@ -155,12 +178,71 @@ export class BasicZone {
     }
 
     /**
-     * Adds modulators to the zone.
-     * @param modulators The modulators to add.
-     * @internal
+     * Adds modulators to the zone and links the custom curves they use.
+     * @param modulators The modulators to add. A modulator can only be in one zone, add a copy to use it again.
      */
     public addModulators(...modulators: Modulator[]) {
-        this.modulators.push(...modulators);
+        Modulator.checkAddable(modulators);
+        if (this.curveUser) {
+            for (const m of modulators) m.linkCurves(this.curveUser);
+        }
+        this.storedModulators.push(...modulators);
+    }
+
+    /**
+     * Deletes a modulator from the zone and unlinks the custom curves it uses.
+     * @param modulator The modulator to delete.
+     * @returns True if the modulator was in this zone.
+     */
+    public deleteModulator(modulator: Modulator) {
+        const index = this.storedModulators.indexOf(modulator);
+        if (index === -1) return false;
+        modulator.unlinkCurves();
+        this.storedModulators.splice(index, 1);
+        return true;
+    }
+
+    /**
+     * Replaces all modulators of the zone.
+     * @param modulators The new modulators.
+     */
+    public setModulators(modulators: readonly Modulator[]) {
+        Modulator.checkAddable(modulators, this.storedModulators);
+        for (const m of this.storedModulators) m.unlinkCurves();
+        this.storedModulators = [];
+        this.addModulators(...modulators);
+    }
+
+    /**
+     * Sets the element the custom curves of this zone's modulators link to, and links them.
+     * @param user The instrument or preset this zone belongs to.
+     * @internal
+     */
+    public setCurveUser(user: CustomCurveUser) {
+        this.curveUser = user;
+        this.linkCurves();
+    }
+
+    /**
+     * Unlinks the custom curves of the modulators, when the zone or its element is deleted.
+     * The modulators stay in the zone.
+     * @internal
+     */
+    public unlinkCurves() {
+        for (const m of this.storedModulators) m.unlinkCurves();
+    }
+
+    /**
+     * Links the custom curves of the modulators back, the inverse of {@link unlinkCurves}.
+     * @internal
+     */
+    public linkCurves() {
+        const user = this.curveUser;
+        if (!user) return;
+        for (const m of this.storedModulators) {
+            if (!m.primarySource.user && !m.secondarySource.user)
+                m.linkCurves(user);
+        }
     }
 
     /**
@@ -189,8 +271,8 @@ export class BasicZone {
         this.generators = zone.generators.map(
             (g) => new Generator(g.type, g.value, false)
         );
-        this.modulators = zone.modulators.map(
-            Modulator.copyFrom.bind(Modulator)
+        this.setModulators(
+            zone.modulators.map(Modulator.copyFrom.bind(Modulator))
         );
         this.velRange = { ...zone.velRange };
         this.keyRange = { ...zone.keyRange };

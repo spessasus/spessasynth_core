@@ -12,7 +12,8 @@ import {
     MIDI_DRUM_CHANNEL,
     SPESSASYNTH_GAIN_FACTOR
 } from "../synth_constants";
-import { DynamicModulatorManager } from "./dynamic_modulator_system";
+import { ControllerMatrix } from "./controller_matrix";
+import type { MatrixDestination, MatrixSource } from "./enums";
 import {
     computeModulator,
     computeModulators
@@ -89,10 +90,10 @@ export class MIDIChannel {
         (_, index) => ({ ...DrumParameterUtilities.DEFAULT_DATA[index] })
     );
     /**
-     * A system for dynamic modulator assignment for advanced system exclusives.
+     * The GS / XG controller matrix.
      * @internal
      */
-    public readonly dynamicModulators;
+    public readonly matrix = new ControllerMatrix();
     /**
      * SF2 NRPN LSB for selecting a generator value.
      * @internal
@@ -403,7 +404,6 @@ export class MIDIChannel {
 
         // @ts-expect-error Rx Channel init here!
         this._midiParameters.rxChannel = channelNumber;
-        this.dynamicModulators = new DynamicModulatorManager(channelNumber);
         // Init
         this.resetGeneratorOverrides();
         this.resetGeneratorOffsets();
@@ -973,6 +973,37 @@ export class MIDIChannel {
     }
 
     /**
+     * Writes one controller matrix cell and recomputes the matrix.
+     * @param rules the GS or XG rules.
+     * @param source the matrix source.
+     * @param destination the matrix destination.
+     * @param value the depth byte.
+     * @internal
+     */
+    public setMatrixCell(
+        rules: "gs" | "xg",
+        source: MatrixSource,
+        destination: MatrixDestination,
+        value: number
+    ) {
+        this.matrix.setCell(rules, source, destination, value);
+        this.recomputeMatrix();
+    }
+
+    /**
+     * Recomputes the controller matrix outputs from the current source values.
+     * @internal
+     */
+    public recomputeMatrix() {
+        this.matrix.recompute(
+            this._midiControllers,
+            this._midiParameters,
+            this.polyPressures,
+            this.perNotePitch ? this.pitchWheels : undefined
+        );
+    }
+
+    /**
      * Resets the given Channel MIDI Parameter to the default value, taking special actions depending on the parameter.
      * @internal
      */
@@ -1127,6 +1158,8 @@ export class MIDIChannel {
         sourceUsesCC: -1 | 0 | 1,
         sourceIndex: number
     ) {
+        // Every matrix source goes through here
+        if (this.matrix.active) this.recomputeMatrix();
         let vc = 0;
         if (this._voiceCount > 0)
             for (const v of this.synthCore.voices) {

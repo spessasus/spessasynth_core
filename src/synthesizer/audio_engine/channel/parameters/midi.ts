@@ -274,6 +274,13 @@ export function setMIDIParameterInternal<P extends keyof ChannelMIDIParameter>(
             );
             break;
         }
+
+        case "cc1":
+        case "cc2": {
+            // The matrix reads the newly bound controller at once
+            this.recomputeMatrix();
+            break;
+        }
     }
 
     this.updateInternalParams();

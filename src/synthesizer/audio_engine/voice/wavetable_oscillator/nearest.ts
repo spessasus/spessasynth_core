@@ -8,7 +8,7 @@ export class NearestOscillator extends WavetableOscillator {
     ): boolean {
         const step = tuningRatio * this.playbackStep;
         const sampleData = this.sampleData!;
-        const { loopEnd, loopLength, end } = this;
+        const { loopEnd, loopLength, end, turn } = this;
         let cursor = this.cursor;
 
         if (this.isLooping) {
@@ -22,8 +22,10 @@ export class NearestOscillator extends WavetableOscillator {
                 // Testcase: saw_and_square_wave.sf2
                 while (cursor >= loopEnd) cursor -= loopLength;
 
-                // Grab the nearest neighbor
-                outputBuffer[i] = sampleData[cursor | 0];
+                // Grab the nearest neighbor, reflected on the way back of an alternating loop
+                const index = cursor | 0;
+                outputBuffer[i] =
+                    sampleData[index > turn ? 2 * turn - index : index];
                 cursor += step;
             }
         } else {

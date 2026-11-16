@@ -111,6 +111,8 @@ export function controllerChange(
 
             case MIDIControllers.variationDepth: {
                 this.synthCore.updateActiveGSEffects();
+                // The send itself is a modulator (variationEffectsSend)
+                this.computeModulatorsAll(1, controller);
                 break;
             }
 

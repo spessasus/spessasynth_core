@@ -1,6 +1,7 @@
 import {
     CENTIBEL_LOOKUP_TABLE,
     MIN_CENTIBELS,
+    rawTimecentsToSeconds,
     timecentsToSeconds
 } from "./unit_converter";
 import type { Voice } from "./voice";
@@ -24,10 +25,9 @@ const PERCEIVED_CB_SILENCE = 900;
  * 1 - attack
  * 2 - hold/peak
  * 3 - decay
- * 5 - decay 2 (SFE, runs between decay and sustain)
- * 4 - sustain
+ * 4 - decay 2 (SFe, runs between decay and sustain)
+ * 5 - sustain
  * release indicates by isInRelease property
- * Decay 2 is 5 so the sustain keeps its number (voice priorities use it)
  */
 type VolumeEnvelopeState = 0 | 1 | 2 | 3 | 4 | 5;
 
@@ -36,6 +36,10 @@ export class VolumeEnvelope {
      * The target gain for the current rendering block.
      */
     public outputGain = 0;
+    /**
+     * If the delay and attack round to zero samples, so the first block starts at the peak instead of fading in.
+     */
+    public startsAtPeak = false;
     /**
      * The current attenuation of the envelope in cB.
      */
@@ -146,7 +150,7 @@ export class VolumeEnvelope {
             voice.overrideReleaseVolEnv ||
             voice.modulatedGenerators[GeneratorTypes.releaseVolEnv];
         // Min is set to -7200 to prevent clicks
-        this.releaseDuration = this.timecentsToSamples(
+        this.releaseDuration = this.rawTimecentsToSamples(
             Math.max(-7200, timecents)
         );
 
@@ -171,7 +175,7 @@ export class VolumeEnvelope {
                 voice.modulatedGenerators[GeneratorTypes.keyNumToVolEnvDecay];
 
             this.decayDuration =
-                this.timecentsToSamples(
+                this.rawTimecentsToSamples(
                     voice.modulatedGenerators[GeneratorTypes.decayVolEnv] +
                         keyNumAddition
                 ) * fraction;
@@ -212,7 +216,7 @@ export class VolumeEnvelope {
                     break;
                 }
 
-                case 5: {
+                case 4: {
                     this.releaseStartCb =
                         (1 -
                             (this.decay2End - this.releaseStartTimeSamples) /
@@ -222,7 +226,7 @@ export class VolumeEnvelope {
                     break;
                 }
 
-                case 4: {
+                case 5: {
                     this.releaseStartCb = this.sustain2Cb;
                     break;
                 }
@@ -293,7 +297,7 @@ export class VolumeEnvelope {
             voice.modulatedGenerators[GeneratorTypes.keyNumToVolEnvDecay];
         const fraction = this.sustainCb / CB_SILENCE;
         this.decayDuration =
-            this.timecentsToSamples(
+            this.rawTimecentsToSamples(
                 voice.modulatedGenerators[GeneratorTypes.decayVolEnv] +
                     keyNumAddition
             ) * fraction;
@@ -303,22 +307,28 @@ export class VolumeEnvelope {
             voice.modulatedGenerators[GeneratorTypes.delayVolEnv]
         );
         this.attackEnd = this.attackDuration + this.delayEnd;
+        // Only an instant time (-32768) for both gets here, anything above plays as -12000 at least (1 ms)
+        this.startsAtPeak = this.attackEnd === 0;
 
         // Make sure to take keyNumToVolEnvHold into account!
         const holdExcursion =
             (60 - voice.targetKey) *
             voice.modulatedGenerators[GeneratorTypes.keyNumToVolEnvHold];
+        // -32768 is no hold, the key excursion included.
+        // Otherwise, the hold is clamped at -12000 before the excursion
+        const hold = voice.modulatedGenerators[GeneratorTypes.holdVolEnv];
         this.holdEnd =
-            this.timecentsToSamples(
-                voice.modulatedGenerators[GeneratorTypes.holdVolEnv] +
-                    holdExcursion
-            ) + this.attackEnd;
+            (hold <= -32_768
+                ? 0
+                : this.rawTimecentsToSamples(
+                      Math.max(-12_000, hold) + holdExcursion
+                  )) + this.attackEnd;
 
         this.decayEnd = this.decayDuration + this.holdEnd;
 
         // Decay 2 uses the same rate convention (scaled against CB_SILENCE) and key scaling as decay
         this.decay2Duration =
-            this.timecentsToSamples(
+            this.rawTimecentsToSamples(
                 voice.modulatedGenerators[GeneratorTypes.decay2VolEnv] +
                     keyNumAddition
             ) *
@@ -412,6 +422,7 @@ export class VolumeEnvelope {
             }
             // Fallthrough
             case 3: {
+                // Decay phase: ramp down to sustain
                 if (sampleTime < decayEnd) {
                     // Linear centibel ramp down to sustain
                     this.attenuationCb =
@@ -424,10 +435,11 @@ export class VolumeEnvelope {
                         ];
                     return true;
                 }
-                this.state = 5;
+                this.state++;
             }
             // Fallthrough
-            case 5: {
+            case 4: {
+                // Decay 2 phase: ramp down to sustain2
                 if (sampleTime < decay2End) {
                     // Linear centibel ramp from sustain to sustain 2
                     this.attenuationCb =
@@ -441,10 +453,11 @@ export class VolumeEnvelope {
                         ];
                     return true;
                 }
-                this.state = 4;
+                this.state++;
             }
             // Fallthrough
-            case 4: {
+            case 5: {
+                // Sustain phase: stay at sustain
                 if (
                     this.canEndOnSilentSustain &&
                     sustain2Cb >= PERCEIVED_CB_SILENCE
@@ -456,7 +469,6 @@ export class VolumeEnvelope {
                     return false;
                 }
 
-                // Sustain phase: stay at sustain
                 this.attenuationCb = sustain2Cb;
                 this.outputGain =
                     gainTarget *
@@ -467,9 +479,14 @@ export class VolumeEnvelope {
     }
 
     private timecentsToSamples(tc: number) {
+        return Math.floor(timecentsToSeconds(tc) * this.sampleRate);
+    }
+
+    // No clamp
+    private rawTimecentsToSamples(tc: number) {
         return Math.max(
             0,
-            Math.floor(timecentsToSeconds(tc) * this.sampleRate)
+            Math.floor(rawTimecentsToSeconds(tc) * this.sampleRate)
         );
     }
 }

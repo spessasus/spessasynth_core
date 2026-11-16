@@ -29,6 +29,7 @@ import {
     DLSSources,
     type DLSTransform
 } from "./enums";
+import { MIDIControllers } from "../../midi/enums";
 
 const invalidGeneratorTypes = new Set<GeneratorType>([
     GeneratorTypes.sampleModes, // Set in wave sample
@@ -191,6 +192,13 @@ export class ConnectionBlock {
         if (
             Modulator.isIdentical(m, DEFAULT_DLS_CHORUS, true) ||
             Modulator.isIdentical(m, DEFAULT_DLS_REVERB, true)
+        ) {
+            return;
+        }
+        // The CC 71 to gain twins are added back when the file is loaded, DLS has no gain to store them
+        if (
+            m.destination === GeneratorTypes.gain &&
+            m.primarySource.isController(MIDIControllers.filterResonance)
         ) {
             return;
         }

@@ -1,5 +1,5 @@
-import { timecentsToSeconds } from "./unit_converter";
-import { getModulatorCurveValue } from "../../../soundbank/basic_soundbank/modulator_curves";
+import { rawTimecentsToSeconds } from "./unit_converter";
+import { ModulatorCurve } from "../../../soundbank/basic_soundbank/modulator_curve";
 import { type Voice } from "./voice";
 import {
     type GeneratorType,
@@ -15,13 +15,12 @@ const MODENV_PEAK = 1;
 
 // 1000 should be precise enough
 const CONVEX_ATTACK = new Float32Array(1000);
+// Unipolar positive
+const convexTable = ModulatorCurve.fromType(ModulatorCurveTypes.convex)
+    .tables[0];
 for (let i = 0; i < CONVEX_ATTACK.length; i++) {
     // This makes the db linear (I think)
-    CONVEX_ATTACK[i] = getModulatorCurveValue(
-        0,
-        ModulatorCurveTypes.convex,
-        i / 1000
-    );
+    CONVEX_ATTACK[i] = convexTable[Math.trunc((i / 1000) * 16_384)];
 }
 
 /**
@@ -53,7 +52,7 @@ export const MOD_ENV_GENERATORS: ModulationEnvelopeGenerators = {
 };
 
 /**
- * The second modulation envelope (SFE).
+ * The second modulation envelope (SFe).
  */
 export const MOD_ENV_2_GENERATORS: ModulationEnvelopeGenerators = {
     delay: GeneratorTypes.delayModEnv2,
@@ -220,9 +219,13 @@ export class ModulationEnvelope {
         const holdKeyExcursionCents =
             (60 - voice.targetKey) *
             voice.modulatedGenerators[this.gens.keyNumToHold];
-        this.holdDuration = this.tc2Sec(
-            holdKeyExcursionCents + voice.modulatedGenerators[this.gens.hold]
-        );
+        // -32768 is no hold, the key excursion included.
+        // Otherwise, the hold is clamped at -12000 before the excursion (like the volume envelope)
+        const hold = voice.modulatedGenerators[this.gens.hold];
+        this.holdDuration =
+            hold <= -32_768
+                ? 0
+                : this.tc2Sec(Math.max(-12_000, hold) + holdKeyExcursionCents);
 
         this.delayEnd =
             voice.startTime +
@@ -238,6 +241,6 @@ export class ModulationEnvelope {
         // So anything at or below that is treated as instant
         // Testcase: MS_Basic-v0.2.1.sf2 Bass & Lead
         if (timecents <= -10_114) return 0;
-        return timecentsToSeconds(timecents);
+        return rawTimecentsToSeconds(timecents);
     }
 }

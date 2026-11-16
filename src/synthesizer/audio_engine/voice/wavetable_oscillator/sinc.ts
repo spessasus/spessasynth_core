@@ -152,14 +152,16 @@ export class SincOscillator extends WavetableOscillator {
         const step = tuningRatio * this.playbackStep;
         const sampleData = this.sampleData!;
         const scratch = this.scratch;
-        const { loopStart, loopEnd, loopLength, end, isLooping } = this;
+        const { loopStart, loopEnd, loopLength, end, isLooping, turn } = this;
         const { halfWidth } = this.kernel;
         let cursor = this.cursor;
         let hasLooped = this.hasLooped;
 
         // Points at or above this one have to be gathered (wrapped or silent)
         // The lower limit is checked in the loop since it changes after the first loop
-        const upperLimit = isLooping ? loopEnd : end;
+        // An alternating loop reads straight only up to its turn point
+        const upperLimit = isLooping ? Math.min(loopEnd, turn + 1) : end;
+        const twoTurn = 2 * turn;
 
         const stretch =
             this.antiAlias && step > 1 ? Math.min(step, MAX_STRETCH) : 1;
@@ -186,13 +188,20 @@ export class SincOscillator extends WavetableOscillator {
                 const y0 = cursor | 0;
                 let first = y0 + 1 - halfWidth;
                 let source = sampleData;
+                let direction = 1;
                 if (
                     first < (isLooping && hasLooped ? loopStart : 0) ||
                     first + taps > upperLimit
                 ) {
-                    this.gather(first, taps, hasLooped);
-                    source = scratch;
-                    first = 0;
+                    if (first >= turn && first + taps <= loopEnd) {
+                        // The way back of an alternating loop: every point is a reflection, read backwards
+                        first = twoTurn - first;
+                        direction = -1;
+                    } else {
+                        this.gather(first, taps, hasLooped);
+                        source = scratch;
+                        first = 0;
+                    }
                 }
 
                 const phase = (cursor - y0) * OVERSAMPLING;
@@ -204,8 +213,9 @@ export class SincOscillator extends WavetableOscillator {
                 let out = 0;
                 for (; row < rowEnd; row++) {
                     out +=
-                        source[first++] *
+                        source[first] *
                         (phases[row] + phaseDeltas[row] * fraction);
+                    first += direction;
                 }
                 outputBuffer[i] = out;
                 cursor += step;
@@ -234,24 +244,30 @@ export class SincOscillator extends WavetableOscillator {
                 const taps = Math.floor(cursor + reach) - first + 1;
                 let position = (first - cursor) * tableStep + center;
                 let source = sampleData;
+                let direction = 1;
                 if (
                     first < (isLooping && hasLooped ? loopStart : 0) ||
                     first + taps > upperLimit
                 ) {
-                    this.gather(first, taps, hasLooped);
-                    source = scratch;
-                    first = 0;
+                    if (first >= turn && first + taps <= loopEnd) {
+                        first = twoTurn - first;
+                        direction = -1;
+                    } else {
+                        this.gather(first, taps, hasLooped);
+                        source = scratch;
+                        first = 0;
+                    }
                 }
 
                 let out = 0;
-                const last = first + taps;
-                for (; first < last; first++) {
+                for (let k = 0; k < taps; k++) {
                     const index = position | 0;
                     out +=
                         source[first] *
                         (table[index] +
                             tableDeltas[index] * (position - index));
                     position += tableStep;
+                    first += direction;
                 }
                 outputBuffer[i] = out * gain;
 
@@ -273,7 +289,7 @@ export class SincOscillator extends WavetableOscillator {
     private gather(first: number, count: number, hasLooped: boolean) {
         const sampleData = this.sampleData!;
         const scratch = this.scratch;
-        const { loopStart, loopEnd, loopLength, end } = this;
+        const { loopStart, loopEnd, loopLength, end, turn } = this;
         if (this.isLooping) {
             // Bring the first point into the loop, the rest just wrap at the loop end
             // Modulo instead of a single wrap: the loop may be shorter than the kernel
@@ -288,7 +304,11 @@ export class SincOscillator extends WavetableOscillator {
             }
             for (let k = 0; k < count; k++) {
                 // Before looping, there is no data before the sample start
-                scratch[k] = index < 0 ? 0 : sampleData[index];
+                // The way back of an alternating loop reads the reflected point
+                scratch[k] =
+                    index < 0
+                        ? 0
+                        : sampleData[index > turn ? 2 * turn - index : index];
                 if (++index >= loopEnd) index = loopStart;
             }
         } else {

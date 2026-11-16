@@ -19,7 +19,7 @@ console.info("Sound bank type:", bank.type);
 // Write as 64 -> parse -> write as 32
 console.info("Convert to sfe64 and parse");
 const bank2 = SoundBankLoader.fromArrayBuffer(
-    bank.writeSFE({
+    bank.writeSFe({
         software: bank.soundBankInfo.software
     })
 );

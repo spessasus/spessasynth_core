@@ -3,6 +3,11 @@
  * purpose: plays back raw audio data at an arbitrary playback rate
  */
 
+/**
+ * The turn point of an oscillator without an alternating loop, above any sample index.
+ */
+export const ALTERNATING_OFF = 0x3f_ff_ff_ff;
+
 export abstract class WavetableOscillator {
     /**
      * Is the loop on?
@@ -26,6 +31,12 @@ export abstract class WavetableOscillator {
      * Exclusive.
      */
     public loopEnd = 0;
+    /**
+     * The last point of an alternating loop (sampleModes 4), where it turns back.
+     * An alternating loop is played as a forward loop twice as long (minus the two turn points), and every index
+     * above this one reads its reflection, `2 * turn - index`. For other loops it is above any index.
+     */
+    public turn = ALTERNATING_OFF;
     /**
      * Length of the loop.
      * The oscillators wrap with `while (cursor >= loopEnd) cursor -= loopLength`,

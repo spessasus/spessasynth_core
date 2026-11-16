@@ -8,12 +8,17 @@ export class LinearOscillator extends WavetableOscillator {
     ): boolean {
         const step = tuningRatio * this.playbackStep;
         const data = this.sampleData!;
-        const { loopEnd, loopLength, end } = this;
+        const { loopEnd, loopLength, end, turn } = this;
         let cursor = this.cursor;
 
         if (this.isLooping) {
             // Below this cursor, both points are inside the loop, so no wrapping is needed
-            const safeEnd = loopEnd - 1;
+            // An alternating loop reads straight only up to its turn point
+            const safeEnd = Math.min(loopEnd, turn + 1) - 1;
+            // The way back of an alternating loop: from the turn point up to this cursor both points
+            // Are reflections, read backwards without wrapping
+            const mirrorEnd = loopEnd - 1;
+            const twoTurn = 2 * turn;
             let i = 0;
             while (i < sampleCount) {
                 // Fast path, this is where almost all samples are rendered
@@ -27,6 +32,20 @@ export class LinearOscillator extends WavetableOscillator {
                 }
                 if (i >= sampleCount) break;
 
+                // Mirrored fast path
+                if (cursor >= turn) {
+                    for (; i < sampleCount && cursor < mirrorEnd; i++) {
+                        const floor = (cursor | 0) & 0x3f_ff_ff_ff;
+                        const fraction = cursor - floor;
+                        const reflected = twoTurn - floor;
+                        const lower = data[reflected];
+                        outputBuffer[i] =
+                            lower + (data[reflected - 1] - lower) * fraction;
+                        cursor += step;
+                    }
+                    if (i >= sampleCount) break;
+                }
+
                 // Slow path, a single sample near the loop end
                 // Check for loop first (end is exclusive so it's `<=` and not `<`)
                 // Testcase: https://github.com/spessasus/spessasynth_core/issues/90
@@ -36,13 +55,15 @@ export class LinearOscillator extends WavetableOscillator {
                 while (cursor >= loopEnd) cursor -= loopLength;
 
                 // Grab the 2 nearest points
-                const floor = cursor | 0;
+                let floor = cursor | 0;
                 let ceil = floor + 1;
+                const fraction = cursor - floor;
 
                 // Ensure that the point above does not go over the loop
                 if (ceil >= loopEnd) ceil -= loopLength;
-
-                const fraction = cursor - floor;
+                // The way back of an alternating loop
+                if (floor > turn) floor = 2 * turn - floor;
+                if (ceil > turn) ceil = 2 * turn - ceil;
 
                 // Grab the samples and interpolate
                 const upper = data[ceil];

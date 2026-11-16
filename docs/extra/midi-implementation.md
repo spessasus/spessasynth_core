@@ -93,9 +93,9 @@ Legend for the "Type" column:
 | 74                   | Brightness                          | Extended | Controls the brightness (lowpass frequency) of the given patch.                                                                                                                                                    |
 | 75                   | Decay time                          | Extended | Controls the decay time for the given patch.                                                                                                                                                                       |
 | 84                   | Portamento Control                  | Engine   | Sets the key the next note glides from. Forces portamento once, even if portamento is off. The key persists across channel reset, but a pending forced glide is cancelled. [More info](#portamento-implementation) |
-| 91                   | Reverb Depth                        | SF2      | Controls the reverb effect send for the given channel. [More info](modulator-information.md#reverb-and-chorus-modulators)                                                                                          |
-| 93                   | Chorus Depth                        | SF2      | Controls the chorus effect for the given channel. [More info](modulator-information.md#reverb-and-chorus-modulators)                                                                                               |
-| 94                   | Variation Depth                     | Engine   | In GS mode, it controls the delay effect for the given channel.[^1]                                                                                                                                                |
+| 91                   | Reverb Depth                        | SF2      | Controls the reverb effect send for the given channel. [More info](sfe-format.md#102-effects-send-amounts)                                                                                                         |
+| 93                   | Chorus Depth                        | SF2      | Controls the chorus effect for the given channel. [More info](sfe-format.md#102-effects-send-amounts)                                                                                                              |
+| 94                   | Variation Depth                     | Extended | In GS mode, it controls the delay effect for the given channel.[^1] [More info](sfe-format.md#73-default-modulators)                                                                                               |
 | 98                   | Non-Registered Parameter Number LSB | Engine   | Selects the LSB of the Non-Registered Parameter Number. [More info](#supported-non-registered-parameters)                                                                                                          |
 | 99                   | Non-Registered Parameter Number MSB | Engine   | Selects the MSB of the Non-Registered Parameter Number. [More info](#supported-non-registered-parameters)                                                                                                          |
 | 100                  | Registered Parameter Number LSB     | Engine   | Selects the LSB of the Registered Parameter Number. [More info](#supported-registered-parameters)                                                                                                                  |
@@ -207,7 +207,7 @@ Calculation for the specific NRPN parameters are as follows (value is the data e
 
 > **Note**
 >
-> Custom vibrato NRPNs are ignored when the channel has active dynamic modulators
+> Custom vibrato NRPNs are ignored when the channel's controller matrix is active
 > (for example after GS `*CONTROL` or XG controller-depth messages),
 > when {@link ChannelSystemParameter.nrpnParamLock} is set,
 > and when the data value is 64 (which leaves the vibrato off).
@@ -447,12 +447,13 @@ Part (channel) parameters set a specific parameter for a specific channel.
 All of them are supported! At least, in theory.
 These define how a controller affects the sound.
 See page 198 of the SC-88Pro Manual.
-This is implemented using a dynamic modulator system and additional generators to cover the linear time and hertz range.
+This is implemented as a controller matrix stage that scales each cell onto the range from the manual and applies
+amplitude linearly. The changes apply to sounding notes too. [More info](#controller-matrix)
 
 There are two special cases that are directly aliased to Channel MIDI Parameters:
 
-- MOD LFO1 PITCH DEPTH - Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.modulationDepth `modulationDepth`}.
-- BEND PITCH CONTROL - Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.pitchWheelRange `pitchWheelRange`}.
+- MOD LFO1 PITCH DEPTH - Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.modulationDepth `modulationDepth`} to 5 times the value, so the default 10 keeps the bank's own modulation wheel depth.
+- BEND PITCH CONTROL - Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.pitchWheelRange `pitchWheelRange`}, from 0 to 24. A value below the center sets the range to 0, so the wheel does nothing.
 
 #### Drum Setup Parameters
 
@@ -620,12 +621,14 @@ Examples:
 - AC2 LFO AMOD DEPTH
 
 See pages 42 and 43 of the XG specification.
-This is implemented using a dynamic modulator system and additional generators to cover the linear amplitude range.
+This is implemented as a controller matrix stage that scales each cell onto the range from the manual and applies
+amplitude in decibels. The LFO depths drive the vibrato LFO.
+[More info](#controller-matrix)
 
 There are two special cases that are directly aliased to Channel MIDI Parameters:
 
-- MW LFO PMOD DEPTH - Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.modulationDepth `modulationDepth`}.
-- BEND PITCH CONTROL - Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.pitchWheelRange `pitchWheelRange`}.
+- MW LFO PMOD DEPTH - Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.modulationDepth `modulationDepth`} to 5 times the value, so the default 10 keeps the bank's own modulation wheel depth.
+- BEND PITCH CONTROL - Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.pitchWheelRange `pitchWheelRange`}, from 0 to 24. A value below the center sets the range to 0, so the wheel does nothing.
 
 #### Drum Setup
 
@@ -716,6 +719,35 @@ Messages that are not part of the standards above.
 | Roland MT-32 Master Volume (Model ID `16`) | `F0 41 dd 16 12 10 xx xx vv cs F7`, emitted by Falcosoft MIDI Player. Sets the Global MIDI Parameter {@link GlobalMIDIParameter.volume `volume`} to `vv / 100`. Only the first address byte (`10`) is checked.                                                                                                                               |
 
 ## Implementation Details
+
+### Controller Matrix
+
+The GS and XG System Exclusive messages that route controllers to pitch, cutoff, amplitude and the LFOs (the
+"controller matrix") are handled by a small stage of the engine. They do not use generators or modulators.
+
+Each cell is scaled linearly onto the range its manual gives, multiplied by its source and summed per destination:
+
+| Destination         | Range (GS and XG)                | Applied as                                       |
+| ------------------- | -------------------------------- | ------------------------------------------------ |
+| Pitch               | -24 to +24 semitones (0x28-0x58) | cents added to the pitch                         |
+| Cutoff              | -9600 to +9600 cents             | cents added to the cutoff, before `maxFilterFc`  |
+| Amplitude           | -100 to +100 %                   | GS: linear, XG: -96 dB to +6 dB                  |
+| LFO rate (GS)       | -10 to +10 Hz                    | added to the LFO frequency, 0 Hz stops the LFO   |
+| LFO pitch depth     | 0 to 600 cents                   | added to the zone's depth                        |
+| LFO filter depth    | 0 to 2400 cents                  | added to the zone's depth                        |
+| LFO amplitude depth | 0 to 100 %                       | GS: linear, XG: a swing from the level to -96 dB |
+
+- Centered cells scale `(value - 64) / 64` onto the range, the LFO depths `value / 127`.
+- The sources go from 0 to 1, and the pitch wheel from -1 to 1. There is no clamp on the sums.
+- LFO 1 is the Vibrato LFO and LFO 2 is the Modulation LFO. XG drives only the Vibrato LFO. The depths play at
+  full strength from the note on, and the zone's LFO delay and fade only hold back the zone's own depths.
+- The pitch bend to pitch cells are the pitch bend range (RPN 0), from 0 to 24 semitones. They act through the pitch
+  wheel modulators.
+- The modulation wheel to LFO pitch depth cells scale every modulator that has CC 1 as a source and `vibLfoToPitch`
+  or `modLfoToPitch` as its destination, whether it is a default modulator or the bank's own, by the cell value
+  divided by 10. The default value of 10 leaves them unchanged. The modulation depth (RPN 5) sets the same scale as
+  its value in cents divided by 50, and the last of the two that is received applies.
+- The assignable controller cells follow the controller number currently assigned to them.
 
 ### Overlapping Notes
 

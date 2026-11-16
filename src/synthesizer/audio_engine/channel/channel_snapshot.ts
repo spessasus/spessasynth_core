@@ -9,6 +9,7 @@ import type { MIDISystem } from "../../../soundbank/types";
 import { CONTROLLER_TABLE_SIZE } from "../synth_constants";
 import type { DrumParameter } from "../../../midi/types";
 import type { CustomChannelVibrato } from "./types";
+import type { ControllerMatrixSnapshot } from "./controller_matrix";
 
 /**
  * This interface is a snapshot of a {@link MIDIChannel},
@@ -94,6 +95,11 @@ export interface ChannelSnapshot {
     drumParams: DrumParameter[];
 
     /**
+     * The GS / XG controller matrix.
+     */
+    controllerMatrix?: ControllerMatrixSnapshot;
+
+    /**
      * Indicates whether this channel is a drum channel.
      */
     drumChannel: boolean;
@@ -137,6 +143,7 @@ export function getChannelSnapshot(this: MIDIChannel): ChannelSnapshot {
         customVibrato: { ...this.customVibrato },
 
         drumParams: this.drumParams.map((d) => ({ ...d })),
+        controllerMatrix: this.matrix.getSnapshot(),
         drumChannel: this._drumChannel,
         channel: this.channel
     };
@@ -217,6 +224,12 @@ export function applySnapshot(this: MIDIChannel, snapshot: ChannelSnapshot) {
         this.setSystemParameter(parameter, value);
     }
 
-    // The controllers were written directly, update the playing voices
+    if (snapshot.controllerMatrix) {
+        this.matrix.applySnapshot(snapshot.controllerMatrix);
+    } else {
+        this.matrix.reset();
+    }
+
+    // The controllers were written directly, update the playing voices (and the matrix)
     this.computeModulatorsAll(-1, 0);
 }

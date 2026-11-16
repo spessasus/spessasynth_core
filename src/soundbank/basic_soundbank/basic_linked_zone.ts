@@ -2,6 +2,7 @@ import { BasicZone } from "./basic_zone";
 import type { BasicSoundBank } from "./basic_soundbank";
 import { Generator } from "./generator";
 import type { GeneratorType } from "./generator_types";
+import type { CustomCurveUser } from "./custom_curve";
 
 /**
  * An element that zones can link to, a {@link BasicInstrument} or a {@link BasicSample}.
@@ -73,6 +74,8 @@ export abstract class BasicLinkedZone<
         this.child = child;
         this.linked = link;
         this.linkChild();
+        // The custom curves of the modulators link to the parent too
+        if (link) this.setCurveUser(parent as CustomCurveUser);
     }
 
     /**

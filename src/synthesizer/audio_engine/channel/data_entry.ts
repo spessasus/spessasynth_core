@@ -165,7 +165,7 @@ export function dataEntry(this: MIDIChannel) {
                      */
                     if (
                         this.synthCore.systemParameters.customVibrato &&
-                        !this.dynamicModulators.active
+                        !this.matrix.active
                     ) {
                         if (parameterLock || dataCoarse === 64) return;
                         this.addDefaultVibrato();
@@ -188,7 +188,7 @@ export function dataEntry(this: MIDIChannel) {
                 case NonRegisteredParameterTypesLSB.vibratoDepth: {
                     if (
                         this.synthCore.systemParameters.customVibrato &&
-                        !this.dynamicModulators.active
+                        !this.matrix.active
                     ) {
                         if (parameterLock || dataCoarse === 64) return;
                         this.addDefaultVibrato();
@@ -211,7 +211,7 @@ export function dataEntry(this: MIDIChannel) {
                 case NonRegisteredParameterTypesLSB.vibratoDelay: {
                     if (
                         this.synthCore.systemParameters.customVibrato &&
-                        !this.dynamicModulators.active
+                        !this.matrix.active
                     ) {
                         if (parameterLock || dataCoarse === 64) return;
                         this.addDefaultVibrato();

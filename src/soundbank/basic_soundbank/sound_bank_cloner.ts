@@ -4,6 +4,8 @@ import { BasicInstrument } from "./basic_instrument";
 import { BasicPreset } from "./basic_preset";
 import type { SoundBankCloneOptions } from "../types";
 import { fillWithDefaults } from "../../utils/fill_with_defaults";
+import { CustomCurve } from "./custom_curve";
+import type { Modulator } from "./modulator";
 
 /**
  * The default clone options, matching {@link BasicSoundBank.clonePreset} and the other clone methods:
@@ -23,15 +25,15 @@ type CloneReuse = SoundBankCloneOptions["reuseChildren"];
 const MAX_BASE_NAME_LENGTH = 37;
 
 /**
- * Clones presets, instruments and samples into a sound bank, as one session.
+ * Clones presets, instruments, samples and custom curves into a sound bank, as one session.
  * Elements copied once in a session are reused when something else in the session uses them again,
  * so an instrument used by two cloned presets is only copied once.
- * Stereo pairs are always cloned together.
+ * Stereo pairs are always cloned together. Custom curves used by modulators are cloned like samples.
  *
  * > **Tip**
  * >
  * > With `addToBank: false`, nothing is added to the bank. The new elements are listed in {@link created},
- * > in an order they can be added in (samples first, then instruments, then presets).
+ * > in an order they can be added in (curves and samples first, then instruments, then presets).
  * > Their zones still link to the children they use, like {@link BasicInstrument.createZone} does,
  * > so a reused child in the bank counts them as users.
  *
@@ -42,6 +44,7 @@ export class SoundBankCloner {
      * The new elements this session made, in the order they were made. Reused elements are not listed.
      */
     public readonly created = {
+        customCurves: new Array<CustomCurve>(),
         samples: new Array<BasicSample>(),
         instruments: new Array<BasicInstrument>(),
         presets: new Array<BasicPreset>()
@@ -58,6 +61,8 @@ export class SoundBankCloner {
     public readonly options: SoundBankCloneOptions;
 
     private readonly sampleClones = new Map<BasicSample, BasicSample>();
+
+    private readonly curveClones = new Map<CustomCurve, CustomCurve>();
 
     private readonly instrumentClones = new Map<
         BasicInstrument,
@@ -104,13 +109,48 @@ export class SoundBankCloner {
     // noinspection JSUnusedGlobalSymbols
     /**
      * Gets the clone this session made of an element.
-     * @param source The sample or instrument that was cloned.
+     * @param source The curve that was cloned.
      * @returns The clone, or undefined if the session has not cloned the element.
      */
-    public getClone(source: BasicSample | BasicInstrument) {
-        return source instanceof BasicSample
-            ? this.sampleClones.get(source)
-            : this.instrumentClones.get(source);
+    public getClone(source: CustomCurve): CustomCurve | undefined;
+
+    // noinspection JSUnusedGlobalSymbols
+    /**
+     * Gets the clone this session made of an element.
+     * @param source The sample, instrument or curve that was cloned.
+     * @returns The clone, or undefined if the session has not cloned the element.
+     */
+    public getClone(source: BasicSample | BasicInstrument | CustomCurve) {
+        if (source instanceof BasicSample) return this.sampleClones.get(source);
+        if (source instanceof CustomCurve) return this.curveClones.get(source);
+        return this.instrumentClones.get(source);
+    }
+
+    /**
+     * Clones a custom curve.
+     * @param curve The curve to clone.
+     * @returns The clone, or the existing curve with the same name if it is reused.
+     */
+    public cloneCustomCurve(curve: CustomCurve) {
+        return this.copyCurve(curve, this.ownReuse);
+    }
+
+    /**
+     * Points the modulators at clones of the custom curves they use, by the rules for children.
+     * @param modulators The modulators, already copied from the source.
+     * @internal
+     */
+    public cloneCurvesOf(modulators: readonly Modulator[]) {
+        for (const m of modulators) {
+            for (const source of [m.primarySource, m.secondarySource]) {
+                if (source.curve instanceof CustomCurve) {
+                    source.curve = this.copyCurve(
+                        source.curve,
+                        this.options.reuseChildren
+                    );
+                }
+            }
+        }
     }
 
     /**
@@ -153,11 +193,13 @@ export class SoundBankCloner {
         newPreset.genre = preset.genre;
         newPreset.morphology = preset.morphology;
         newPreset.globalZone.copyFrom(preset.globalZone);
+        this.cloneCurvesOf(newPreset.globalZone.modulators);
         for (const zone of preset.zones) {
             const copiedZone = newPreset.createZone(
                 this.copyInstrument(zone.instrument, this.options.reuseChildren)
             );
             copiedZone.copyFrom(zone);
+            this.cloneCurvesOf(copiedZone.modulators);
         }
         this.created.presets.push(newPreset);
         if (this.options.addToBank) {
@@ -179,11 +221,13 @@ export class SoundBankCloner {
         const newInstrument = new BasicInstrument();
         newInstrument.name = this.getFreeName(instrument.name, all);
         newInstrument.globalZone.copyFrom(instrument.globalZone);
+        this.cloneCurvesOf(newInstrument.globalZone.modulators);
         for (const zone of instrument.zones) {
             const copiedZone = newInstrument.createZone(
                 this.copySample(zone.sample, this.options.reuseChildren)
             );
             copiedZone.copyFrom(zone);
+            this.cloneCurvesOf(copiedZone.modulators);
         }
         this.instrumentClones.set(instrument, newInstrument);
         this.created.instruments.push(newInstrument);
@@ -239,6 +283,30 @@ export class SoundBankCloner {
             }
         }
         return newSample;
+    }
+
+    private copyCurve(curve: CustomCurve, reuse: CloneReuse) {
+        const cloned = this.curveClones.get(curve);
+        if (cloned) {
+            return cloned;
+        }
+        const all = [...this.bank.customCurves, ...this.created.customCurves];
+        // Curves are often unnamed, so reusing by name also needs the same points
+        const existing =
+            reuse === "name"
+                ? all.find((c) => c.name === curve.name && c.isIdentical(curve))
+                : this.findReused(curve, all, reuse);
+        if (existing) {
+            return existing;
+        }
+        // Curve names don't have to be unique (they are often empty), so the name stays
+        const newCurve = new CustomCurve(curve.points, curve.name);
+        this.curveClones.set(curve, newCurve);
+        this.created.customCurves.push(newCurve);
+        if (this.options.addToBank) {
+            this.bank.addCustomCurves(newCurve);
+        }
+        return newCurve;
     }
 
     /**

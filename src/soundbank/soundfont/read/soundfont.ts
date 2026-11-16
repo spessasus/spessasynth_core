@@ -7,6 +7,7 @@ import { applyPresetZones } from "./preset_zones";
 import { readPresets } from "./presets";
 import { readInstruments } from "./instruments";
 import { readModulators } from "./modulators";
+import { readCurves } from "./curves";
 import { RIFFChunk } from "../../../utils/riff_chunk";
 import { ConsoleColors } from "../../../utils/other";
 import { SpessaLog } from "../../../utils/loggin";
@@ -19,12 +20,13 @@ import { applyInstrumentZones } from "./instrument_zones";
 import { readZoneIndexes } from "./zones";
 import type { Generator } from "../../basic_soundbank/generator";
 import type { Modulator } from "../../basic_soundbank/modulator";
+import { fromSF2DefaultModulators, upgradeSF2Bank } from "../sf2_compatibility";
 import { parseDateString } from "../../../utils/date";
 import { StbVorbis } from "stb-vorbis";
 
 /**
  * Soundfont.ts
- * purpose: parses a soundfont2 file
+ * purpose: parses a soundfont2 and sfe 4 file
  */
 
 export class SoundFont2 extends BasicSoundBank {
@@ -38,7 +40,8 @@ export class SoundFont2 extends BasicSoundBank {
         sfe: boolean,
         options: SoundBankLoadOptions
     ) {
-        super(sfe ? "sfe" : "sf2");
+        // The default modulators are set once the file's own list is known
+        super(sfe ? "sfe" : "sf2", false);
         const mainFileArray = new IndexedByteArray(arrayBuffer);
         SpessaLog.group("%cParsing a SoundFont2 file...", ConsoleColors.info);
 
@@ -60,8 +63,7 @@ export class SoundFont2 extends BasicSoundBank {
         and the only other difference is that the main chunk isn't "sfbk" but rather "sfpk"
          */
         const isSF2Pack = type === "sfpk";
-        // Generators and modulator destinations above endOper are only read from SFE banks
-        const isSFE = type === "sfen";
+        const isSFeType = type === "sfen";
 
         // INFO
         const infoChunk = RIFFChunk.read(mainFileArray, rf64);
@@ -70,6 +72,9 @@ export class SoundFont2 extends BasicSoundBank {
         this.verifyText(infoString, "info");
 
         let xdtaChunk: RIFFChunk | undefined;
+        let dmodChunk: RIFFChunk | undefined;
+        let curveChunk: RIFFChunk | undefined;
+        let xmodChunk: RIFFChunk | undefined;
 
         while (infoChunk.data.length > infoChunk.data.currentIndex) {
             const chunk = RIFFChunk.read(infoChunk.data, rf64);
@@ -97,9 +102,19 @@ export class SoundFont2 extends BasicSoundBank {
 
                 // Dmod: default modulators
                 case "DMOD": {
-                    // Override default modulators
-                    this.defaultModulators = readModulators(chunk, isSFE);
-                    this.customDefaultModulators = true;
+                    // Read after INFO, it depends on the version
+                    dmodChunk = chunk;
+                    break;
+                }
+
+                // SFe custom curves and the extended DMOD records
+                case "CURV": {
+                    curveChunk = chunk;
+                    break;
+                }
+
+                case "XMOD": {
+                    xmodChunk = chunk;
                     break;
                 }
 
@@ -168,6 +183,38 @@ export class SoundFont2 extends BasicSoundBank {
             }
         }
         this.printInfo();
+        // Generators and modulator destinations above endOper are only read from SFe banks.
+        // SFe files below version 4 used other generator numbers, read them as SF2.
+        const isSFe = isSFeType && this.soundBankInfo.version.major >= 4;
+        this.bankType = isSFe ? "sfe" : "sf2";
+        if (isSFeType && this.soundBankInfo.version.major > 4) {
+            this.parsingError(
+                `SFe version ${this.soundBankInfo.version.major}.${this.soundBankInfo.version.minor} is not supported!`
+            );
+        }
+        if (isSFeType && !isSFe) {
+            SpessaLog.warn(
+                `SFe version ${this.soundBankInfo.version.major}.${this.soundBankInfo.version.minor} is not supported, reading as SF2!`
+            );
+        }
+        const curves = isSFe && curveChunk ? readCurves(curveChunk) : [];
+        // Modulators index the raw list, the bank keeps the valid curves
+        for (const curve of curves) {
+            if (curve) this.customCurves.push(curve);
+        }
+        if (dmodChunk) {
+            const read = readModulators(dmodChunk, isSFe, curves, xmodChunk);
+            this.defaultModulators = isSFe
+                ? read
+                : fromSF2DefaultModulators(this, read);
+        } else if (isSFe) {
+            // SFe banks always carry their list, a missing one means no default modulators
+            SpessaLog.warn(
+                "SFe bank without default modulators (DMOD), it has none."
+            );
+        } else {
+            this.resetDefaultModulators();
+        }
         // https://github.com/spessasus/soundfont-proposals/blob/main/extended_limits.md
         const xChunks: Partial<{
             phdr: RIFFChunk;
@@ -285,6 +332,34 @@ export class SoundFont2 extends BasicSoundBank {
         const shdrChunk = RIFFChunk.read(presetChunk.data, rf64);
         this.verifyHeader(shdrChunk, "shdr");
 
+        if (xdtaChunk !== undefined) {
+            const pairs: [RIFFChunk | undefined, RIFFChunk, boolean][] = [
+                [xChunks.phdr, phdrChunk, true],
+                [xChunks.pbag, pbagChunk, true],
+                [xChunks.pmod, pmodChunk, false],
+                [xChunks.pgen, pgenChunk, false],
+                [xChunks.inst, instChunk, true],
+                [xChunks.ibag, ibagChunk, true],
+                [xChunks.imod, imodChunk, false],
+                [xChunks.igen, igenChunk, false],
+                [xChunks.shdr, shdrChunk, true]
+            ];
+            if (
+                !pairs.every(
+                    ([x, p, sameSize]) =>
+                        x?.header.toLowerCase() === p.header.toLowerCase() &&
+                        (!sameSize || x.size === p.size)
+                )
+            ) {
+                SpessaLog.warn(
+                    "The xdta chunk does not match the pdta chunk, ignoring it."
+                );
+                xdtaChunk = undefined;
+                for (const key of Object.keys(xChunks))
+                    delete xChunks[key as keyof typeof xChunks];
+            }
+        }
+
         SpessaLog.info("%cParsing samples...", ConsoleColors.info);
 
         /**
@@ -320,8 +395,13 @@ export class SoundFont2 extends BasicSoundBank {
         this.addElements(this.samples, samples);
 
         // Read modulators and generators
-        const instrumentGenerators = readGenerators(igenChunk, isSFE);
-        const instrumentModulators = readModulators(imodChunk, isSFE);
+        const instrumentGenerators = readGenerators(igenChunk, isSFe);
+        const instrumentModulators = readModulators(
+            imodChunk,
+            isSFe,
+            curves,
+            xChunks.imod
+        );
 
         // Read the instruments
         // Keep the terminal record (EOI) when extending, the last zone count needs its index
@@ -373,8 +453,13 @@ export class SoundFont2 extends BasicSoundBank {
         );
 
         // Read preset modulators and generators
-        const presetGenerators: Generator[] = readGenerators(pgenChunk, isSFE);
-        const presetModulators: Modulator[] = readModulators(pmodChunk, isSFE);
+        const presetGenerators: Generator[] = readGenerators(pgenChunk, isSFe);
+        const presetModulators: Modulator[] = readModulators(
+            pmodChunk,
+            isSFe,
+            curves,
+            xChunks.pmod
+        );
 
         // Read presets
         // Keep the terminal record (EOP) when extending, the last zone count needs its index
@@ -423,6 +508,8 @@ export class SoundFont2 extends BasicSoundBank {
             presets
         );
 
+        // Convert to SFe
+        if (!isSFe) upgradeSF2Bank(this);
         this.flush();
         SpessaLog.info(
             `%cParsing finished! %c"${this.soundBankInfo.name}"%c has %c${this.presets.length}%c presets,

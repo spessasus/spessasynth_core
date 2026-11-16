@@ -39,7 +39,7 @@ for (const preset of presets) {
     bank.presets.push(preset);
 }
 try {
-    const file = bank.writeSFE();
+    const file = bank.writeSFe();
     const loaded = SoundBankLoader.fromArrayBuffer(file);
     check(
         "the written bank loads with every preset",

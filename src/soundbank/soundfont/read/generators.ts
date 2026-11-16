@@ -28,18 +28,18 @@ export class ReadGenerator extends Generator {
 /**
  * Reads the generators
  * @param generatorChunk pgen or igen
- * @param allowSFEGenerators if generators above endOper are allowed (SFE banks)
+ * @param allowSFeGenerators if generators above endOper are allowed (SFe banks)
  */
 export function readGenerators(
     generatorChunk: RIFFChunk,
-    allowSFEGenerators: boolean
+    allowSFeGenerators: boolean
 ) {
     const gens = new Array<Generator>();
     while (generatorChunk.data.length > generatorChunk.data.currentIndex) {
         const gen = new ReadGenerator(generatorChunk.data);
         // SF2 2.04 section 8.1.2: unknown generators are ignored
         // They are kept in the list as invalid since the zones index into it
-        if (!allowSFEGenerators && gen.type > GeneratorTypes.endOper)
+        if (!allowSFeGenerators && gen.type > GeneratorTypes.endOper)
             gen.type = GeneratorTypes.invalid;
         gens.push(gen);
     }

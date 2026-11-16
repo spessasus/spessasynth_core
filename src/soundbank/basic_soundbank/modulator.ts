@@ -15,6 +15,8 @@ import { writeWord } from "../../utils/byte_functions/little_endian";
 import type { IndexedByteArray } from "../../utils/indexed_array";
 import { ModulatorSource } from "./modulator_source";
 import type { SoundFontWriteIndexes } from "../soundfont/write/types";
+import { CustomCurve, type CustomCurveUser } from "./custom_curve";
+import type { ModulatorCurve } from "./modulator_curve";
 
 /**
  * Modulators.ts
@@ -22,6 +24,10 @@ import type { SoundFontWriteIndexes } from "../soundfont/write/types";
  **/
 
 export const MOD_BYTE_SIZE = 10;
+/**
+ * The size of an SFe extended modulator record (xdta pmod/imod and XMOD).
+ */
+export const XMOD_BYTE_SIZE = 10;
 
 export function getModSourceEnum(
     curveType: ModulatorCurveType,
@@ -48,6 +54,18 @@ export const DEFAULT_RESONANT_MOD_SOURCE = getModSourceEnum(
 ); // Linear forwards bipolar cc 71
 
 /**
+ * The amount source of the CC 71 resonance compensator: CC 71 as a switch, so only the upper half counts.
+ * @internal
+ */
+export const RESONANT_COMPENSATOR_AMOUNT_SOURCE = getModSourceEnum(
+    ModulatorCurveTypes.switch,
+    false,
+    false,
+    true,
+    MIDIControllers.filterResonance
+);
+
+/**
  * This class represents a single modulator (map from a source to a given synthesis parameter).
  *
  * > **Tip**
@@ -68,6 +86,13 @@ export class Modulator {
      * This is the multiplier of the transformation.
      */
     public transformAmount = 0;
+
+    /**
+     * The amount a reverb or chorus send modulator had in the SF2 file it was read from, before it was scaled.
+     * Several SF2 amounts give the same amount here, so the SF2 writer needs it to write the same file back.
+     * @internal
+     */
+    public sf2Amount?: number;
 
     /**
      * The transform type for this modulator.
@@ -108,6 +133,30 @@ export class Modulator {
         this.transformType = transformType;
     }
 
+    /**
+     * If any of the sources uses a custom curve (SFe only).
+     * @internal
+     */
+    public get usesCustomCurve() {
+        return (
+            this.primarySource.curveType === ModulatorCurveTypes.custom ||
+            this.secondarySource.curveType === ModulatorCurveTypes.custom
+        );
+    }
+
+    /**
+     * If a source uses a custom curve but has none set. Such a modulator is not written.
+     * @internal
+     */
+    public get isMissingCurve() {
+        return (
+            (this.primarySource.curveType === ModulatorCurveTypes.custom &&
+                !(this.primarySource.curve instanceof CustomCurve)) ||
+            (this.secondarySource.curveType === ModulatorCurveTypes.custom &&
+                !(this.secondarySource.curve instanceof CustomCurve))
+        );
+    }
+
     private get destinationName() {
         return Object.keys(GeneratorTypes).find(
             (k) =>
@@ -143,13 +192,74 @@ export class Modulator {
      * @returns The copied modulator.
      */
     public static copyFrom(mod: Modulator) {
-        return new Modulator(
+        const copy = new Modulator(
             ModulatorSource.copyFrom(mod.primarySource),
             ModulatorSource.copyFrom(mod.secondarySource),
             mod.destination,
             mod.transformAmount,
             mod.transformType
         );
+        copy.sf2Amount = mod.sf2Amount;
+        return copy;
+    }
+
+    /**
+     * Throws if any of the modulators can't be added to a zone or to the default modulators:
+     * one that already belongs somewhere, or the same modulator twice.
+     * Called before a list changes, so a failed call leaves it as it was.
+     * @param modulators The modulators about to be added.
+     * @param kept Modulators that stay in the list being changed, which may be among them.
+     * @internal
+     */
+    public static checkAddable(
+        modulators: readonly Modulator[],
+        kept: readonly Modulator[] = []
+    ) {
+        const seen = new Set<Modulator>();
+        for (const m of modulators) {
+            if (Object.isFrozen(m)) {
+                throw new Error(
+                    "The standard default modulators are for comparing only. Add copies of them instead, and the custom curves of the copies to the sound bank."
+                );
+            }
+            if (
+                seen.has(m) ||
+                (!kept.includes(m) &&
+                    (m.primarySource.user || m.secondarySource.user))
+            ) {
+                throw new Error(ALREADY_LINKED);
+            }
+            seen.add(m);
+        }
+    }
+
+    /**
+     * Links the custom curves of both sources to the element that holds this modulator.
+     * @param user The instrument, preset or sound bank (default modulators).
+     * @internal
+     */
+    public linkCurves(user: CustomCurveUser) {
+        if (this.primarySource.user || this.secondarySource.user) {
+            throw new Error(ALREADY_LINKED);
+        }
+        for (const source of [this.primarySource, this.secondarySource]) {
+            source.user = user;
+            if (source.curve instanceof CustomCurve) source.curve.linkTo(user);
+        }
+    }
+
+    /**
+     * Unlinks the custom curves of both sources, when the modulator leaves its zone or list.
+     * @internal
+     */
+    public unlinkCurves() {
+        for (const source of [this.primarySource, this.secondarySource]) {
+            const user = source.user;
+            if (!user) continue;
+            if (source.curve instanceof CustomCurve)
+                source.curve.unlinkFrom(user);
+            source.user = undefined;
+        }
     }
 
     public toString() {
@@ -177,6 +287,32 @@ export class Modulator {
             return;
         }
         indexes.mod++;
+    }
+
+    /**
+     * Writes the SFe extended record of this modulator.
+     * @param data the output
+     * @param curveIndex returns the index of a curve in the CURV chunk
+     * @internal
+     */
+    public writeExtended(
+        data: IndexedByteArray,
+        curveIndex: (curve: ModulatorCurve) => number
+    ) {
+        const p = this.primarySource;
+        const s = this.secondarySource;
+        writeWord(
+            data,
+            p.curveType === ModulatorCurveTypes.custom ? curveIndex(p.curve) : 0
+        );
+        writeWord(
+            data,
+            s.curveType === ModulatorCurveTypes.custom ? curveIndex(s.curve) : 0
+        );
+        // WReserved1 to wReserved3
+        writeWord(data, 0);
+        writeWord(data, 0);
+        writeWord(data, 0);
     }
 
     /**
@@ -286,128 +422,98 @@ const defaultSoundFont2Modulators = [
         0x00_db,
         0x0,
         GeneratorTypes.reverbEffectsSend,
-        200,
+        1000,
         0
     ),
 
     // Chorus effects to send
-    new DecodedModulator(0x00_dd, 0x0, GeneratorTypes.chorusEffectsSend, 200, 0)
+    new DecodedModulator(
+        0x00_dd,
+        0x0,
+        GeneratorTypes.chorusEffectsSend,
+        1000,
+        0
+    )
 ];
 
-/**
- * One term of an envelope time response: a bipolar CC source gated to one half of the CC.
- * @param cc the controller
- * @param curve the curve of the bipolar source
- * @param destination the envelope generator
- * @param amount the amount in timecents
- * @param below true for the half under 64, false for the half over it
- */
-function envelopeCC(
-    cc: number,
-    curve: ModulatorCurveType,
-    destination: GeneratorType,
-    amount: number,
-    below: boolean
-) {
-    return new DecodedModulator(
-        getModSourceEnum(curve, true, false, true, cc as ModulatorSourceIndex),
-        getModSourceEnum(
-            ModulatorCurveTypes.switch,
-            false,
-            below,
-            true,
-            cc as ModulatorSourceIndex
-        ),
-        destination,
-        amount,
-        0
+const getCurve = (name: string, points: [number, number][]) =>
+    new CustomCurve(
+        points.map(([cc, y]) => ({ x: cc << 7, y })),
+        name
     );
-}
+
+const ATTACK_TIME_CURVE = getCurve("Attack time", [
+    [0, 0],
+    [64, 8192],
+    [69, 8192],
+    [70, 8260],
+    [72, 8453],
+    [74, 8661],
+    [77, 8988],
+    [81, 9444],
+    [87, 10_149],
+    [95, 11_112],
+    [105, 12_337],
+    [119, 14_075],
+    [127, 15_074]
+]);
+
+const DECAY_RELEASE_TIME_CURVE = getCurve("Decay and release time", [
+    [0, 0],
+    [64, 8192],
+    [65, 8263],
+    [66, 8290],
+    [67, 8297],
+    [110, 8297],
+    [111, 8309],
+    [113, 8387],
+    [114, 8434],
+    [115, 8488],
+    [116, 8548],
+    [117, 8618],
+    [118, 8697],
+    [119, 8789],
+    [120, 8896],
+    [121, 9023],
+    [122, 9176],
+    [123, 9363],
+    [124, 9601],
+    [125, 9919],
+    [126, 10_384],
+    [127, 11_205]
+]);
+
+const envelopeTime = (
+    cc: number,
+    curve: CustomCurve,
+    destination: GeneratorType
+) =>
+    new Modulator(
+        new ModulatorSource(cc as ModulatorSourceIndex, curve, true, true),
+        new ModulatorSource(),
+        destination,
+        9600
+    );
 
 const defaultSpessaSynthModulators = [
     // Custom modulators heck yeah
-
-    // Attack
-    envelopeCC(
+    // Attack time to attackVolEnv
+    envelopeTime(
         MIDIControllers.attackTime,
-        ModulatorCurveTypes.linear,
-        GeneratorTypes.attackVolEnv,
-        9600,
-        true
+        ATTACK_TIME_CURVE,
+        GeneratorTypes.attackVolEnv
     ),
-    envelopeCC(
-        MIDIControllers.attackTime,
-        ModulatorCurveTypes.linear,
-        GeneratorTypes.attackVolEnv,
-        9657,
-        false
-    ),
-    envelopeCC(
-        MIDIControllers.attackTime,
-        ModulatorCurveTypes.convex,
-        GeneratorTypes.attackVolEnv,
-        -1445,
-        false
-    ),
-
-    // Decay
-    envelopeCC(
+    // Decay time to decayVolEnv
+    envelopeTime(
         MIDIControllers.decayTime,
-        ModulatorCurveTypes.linear,
-        GeneratorTypes.decayVolEnv,
-        9779,
-        true
+        DECAY_RELEASE_TIME_CURVE,
+        GeneratorTypes.decayVolEnv
     ),
-    envelopeCC(
-        MIDIControllers.decayTime,
-        ModulatorCurveTypes.linear,
-        GeneratorTypes.decayVolEnv,
-        -2997,
-        false
-    ),
-    envelopeCC(
-        MIDIControllers.decayTime,
-        ModulatorCurveTypes.concave,
-        GeneratorTypes.releaseVolEnv,
-        8035,
-        false
-    ),
-    envelopeCC(
-        MIDIControllers.decayTime,
-        ModulatorCurveTypes.convex,
-        GeneratorTypes.decayVolEnv,
-        435,
-        false
-    ),
-
-    // Release
-    envelopeCC(
+    // Release time to releaseVolEnv
+    envelopeTime(
         MIDIControllers.releaseTime,
-        ModulatorCurveTypes.linear,
-        GeneratorTypes.releaseVolEnv,
-        9779,
-        true
-    ),
-    envelopeCC(
-        MIDIControllers.releaseTime,
-        ModulatorCurveTypes.linear,
-        GeneratorTypes.releaseVolEnv,
-        -2997,
-        false
-    ),
-    envelopeCC(
-        MIDIControllers.releaseTime,
-        ModulatorCurveTypes.concave,
-        GeneratorTypes.releaseVolEnv,
-        8035,
-        false
-    ),
-    envelopeCC(
-        MIDIControllers.releaseTime,
-        ModulatorCurveTypes.convex,
-        GeneratorTypes.releaseVolEnv,
-        435,
-        false
+        DECAY_RELEASE_TIME_CURVE,
+        GeneratorTypes.releaseVolEnv
     ),
 
     // Cc 74 (brightness) to filterFc
@@ -433,6 +539,15 @@ const defaultSpessaSynthModulators = [
         250,
         0
     ),
+    // Cc 71 to gain: cancels the filter's gain reduction for the resonance cc 71 adds, as GS and XG don't get quieter
+    // Half of the amount above, only above 64 (where the resonance goes up)
+    new DecodedModulator(
+        DEFAULT_RESONANT_MOD_SOURCE,
+        RESONANT_COMPENSATOR_AMOUNT_SOURCE,
+        GeneratorTypes.gain,
+        125,
+        0
+    ),
     // Cc 67 (soft pedal) to filter fc
     new DecodedModulator(
         getModSourceEnum(
@@ -446,10 +561,91 @@ const defaultSpessaSynthModulators = [
         GeneratorTypes.initialFilterFc,
         -1200,
         0
+    ),
+    // CC 94 (variation depth) to the variation send
+    new DecodedModulator(
+        0x00_de,
+        0x0,
+        GeneratorTypes.variationEffectsSend,
+        1000,
+        0
     )
 ];
 
-export const SPESSASYNTH_DEFAULT_MODULATORS: Modulator[] = [
-    ...defaultSoundFont2Modulators,
-    ...defaultSpessaSynthModulators
-];
+const ALREADY_LINKED =
+    "This modulator already belongs to a zone or to the default modulators. Add a copy instead.";
+
+/**
+ * The default modulators of a new sound bank: the SoundFont 2 ones and the SpessaSynth ones.
+ *
+ * > **Warning**
+ * >
+ * > This list is for reading and comparing only. Its modulators are frozen and can't be added to a bank or a zone.
+ * > A new bank already holds its own copies, and {@link BasicSoundBank.resetDefaultModulators} brings them back.
+ * > A copy made with {@link Modulator.copyFrom} has its own copies of the custom curves,
+ * > which have to be added to the sound bank with {@link BasicSoundBank.addCustomCurves}.
+ *
+ * @group Sound Banks.Modulators
+ */
+export const SPESSASYNTH_DEFAULT_MODULATORS: readonly Modulator[] =
+    Object.freeze([
+        ...defaultSoundFont2Modulators,
+        ...defaultSpessaSynthModulators
+    ]);
+for (const m of SPESSASYNTH_DEFAULT_MODULATORS) {
+    // The curves too: editing one would change every bank made afterwards
+    Object.freeze(m.primarySource.curve);
+    Object.freeze(m.secondarySource.curve);
+    Object.freeze(m.primarySource);
+    Object.freeze(m.secondarySource);
+    Object.freeze(m);
+}
+
+/**
+ * Copies modulators for another bank, with one new copy of every custom curve they use.
+ * @param modulators The modulators to copy.
+ * @returns the copies and their curves.
+ * @internal
+ */
+export function copyWithOwnCurves(modulators: readonly Modulator[]) {
+    const curves = new Map<ModulatorCurve, CustomCurve>();
+    // The copies of the same curve share one new curve
+    const copySource = (source: ModulatorSource) => {
+        const curve = source.curve;
+        if (!(curve instanceof CustomCurve))
+            return ModulatorSource.copyFrom(source);
+        let own = curves.get(curve);
+        if (!own) {
+            own = new CustomCurve(curve.points, curve.name);
+            curves.set(curve, own);
+        }
+        return new ModulatorSource(
+            source.index,
+            own,
+            source.isCC,
+            source.isBipolar,
+            source.isNegative
+        );
+    };
+    const copies = modulators.map((m) => {
+        const copy = new Modulator(
+            copySource(m.primarySource),
+            copySource(m.secondarySource),
+            m.destination,
+            m.transformAmount,
+            m.transformType
+        );
+        copy.sf2Amount = m.sf2Amount;
+        return copy;
+    });
+    return { modulators: copies, curves: [...curves.values()] };
+}
+
+/**
+ * Copies {@link SPESSASYNTH_DEFAULT_MODULATORS} for a bank, with their own copies of the custom curves.
+ * @returns the modulators and the curves they use.
+ * @internal
+ */
+export function copyDefaultModulators() {
+    return copyWithOwnCurves(SPESSASYNTH_DEFAULT_MODULATORS);
+}

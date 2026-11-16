@@ -244,10 +244,10 @@ export function maxDifference(a: Float32Array, b: Float32Array) {
 }
 
 /**
- * Writes the bank as SFE and reads it back.
+ * Writes the bank as SFe and reads it back.
  */
 export function sfeRoundTrip(bank: BasicSoundBank) {
-    return SoundBankLoader.fromArrayBuffer(bank.writeSFE());
+    return SoundBankLoader.fromArrayBuffer(bank.writeSFe());
 }
 
 /**
@@ -266,7 +266,7 @@ export function zoneGenerator(bank: BasicSoundBank, type: GeneratorType) {
 }
 
 /**
- * Checks that the generators survive an SFE round trip and are dropped by an SF2 one.
+ * Checks that the generators survive an SFe round trip and are dropped by an SF2 one.
  */
 export function checkStorage(bank: BasicSoundBank, types: GeneratorType[]) {
     const sfe = sfeRoundTrip(bank);
@@ -275,7 +275,7 @@ export function checkStorage(bank: BasicSoundBank, types: GeneratorType[]) {
         const value = zoneGenerator(bank, type);
         check(
             zoneGenerator(sfe, type) === value,
-            `generator ${type} kept by SFE (${value})`
+            `generator ${type} kept by SFe (${value})`
         );
         check(
             zoneGenerator(sf2, type) === undefined,

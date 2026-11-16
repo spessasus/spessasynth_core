@@ -2,7 +2,7 @@
  * Voice.ts
  * purpose: prepares Voices from sample and generator data
  */
-import { LowpassFilter } from "./lowpass_filter";
+import { VoiceFilter } from "./voice_filter";
 import { VolumeEnvelope } from "./volume_envelope";
 import {
     MOD_ENV_2_GENERATORS,
@@ -28,9 +28,10 @@ const EXCLUSIVE_CUTOFF_TIME = -2320;
  * 1 - loop.
  * 2 - UNOFFICIAL: polyphone 2.4 added start on release.
  * 3 - loop then play when released.
+ * 4 - SFe: alternating loop, forward and back.
 
  */
-export type SampleLoopingMode = 0 | 1 | 2 | 3;
+export type SampleLoopingMode = 0 | 1 | 2 | 3 | 4;
 
 /**
  * Voice represents a single instance of the
@@ -67,7 +68,7 @@ export class Voice {
     /**
      * Lowpass filter applied to the voice.
      */
-    public readonly filter: LowpassFilter;
+    public readonly filter: VoiceFilter;
 
     /**
      * The unmodulated (copied to) generators of the voice.
@@ -97,7 +98,7 @@ export class Voice {
     public readonly modEnv = new ModulationEnvelope(MOD_ENV_GENERATORS);
 
     /**
-     * The second modulation envelope (SFE).
+     * The second modulation envelope (SFe).
      */
     public readonly modEnv2 = new ModulationEnvelope(MOD_ENV_2_GENERATORS);
 
@@ -105,11 +106,6 @@ export class Voice {
      * Volume envelope.
      */
     public readonly volEnv;
-
-    /**
-     * Resonance offset, it is affected by the default resonant modulator
-     */
-    public resonanceOffset = 0;
 
     /**
      * Priority of the voice. Used for stealing.
@@ -275,7 +271,7 @@ export class Voice {
 
     public constructor(sampleRate: number, bufferSize: number) {
         this.volEnv = new VolumeEnvelope(sampleRate, bufferSize);
-        this.filter = new LowpassFilter(sampleRate);
+        this.filter = new VoiceFilter(sampleRate);
     }
 
     /**

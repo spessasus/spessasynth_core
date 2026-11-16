@@ -17,7 +17,15 @@ for (let i = 0; i < timecentLookupTable.length; i++) {
  * @returns The time in seconds.
  */
 export function timecentsToSeconds(timecents: number): number {
-    if (timecents <= -32_767) {
+    // -32768 (or below, from a sum) = instant. Anything above clamps to at min -12k.
+    // See sfe-format.md
+    return timecents <= -32_768
+        ? 0
+        : rawTimecentsToSeconds(Math.max(-12_000, timecents));
+}
+
+export function rawTimecentsToSeconds(timecents: number) {
+    if (timecents <= -32_768) {
         return 0;
     }
     if (timecents < MIN_TIMECENT || timecents > MAX_TIMECENT) {

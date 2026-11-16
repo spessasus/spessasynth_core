@@ -73,7 +73,15 @@ export type GenericBankInfoFourCC =
  * @group Utilities.FourCC
  */
 export type SF2InfoFourCC =
-    GenericBankInfoFourCC | "ifil" | "isng" | "irom" | "iver" | "DMOD" | "LIST";
+    | GenericBankInfoFourCC
+    | "ifil"
+    | "isng"
+    | "irom"
+    | "iver"
+    | "DMOD"
+    | "LIST"
+    | "CURV"
+    | "XMOD";
 
 /**
  * RIFF Four Character Codes found in the SF2 structure.
@@ -145,7 +153,7 @@ export interface SoundBankInfoData {
      */
     name: string;
     /**
-     * The sound bank's version.
+     * The version of the file the sound bank was loaded from.
      */
     version: SF2VersionTag;
     /**
@@ -266,8 +274,8 @@ export type SetSampleFormatOptions = {
     | {
           /**
            * The sample format to use.
-           * - `pcm` - decompresses the sound bank and changes its version to `2.04` (SF2)
-           * - `compressed` - compresses the sound bank with a given function and changes its version to `3.0` (SF3)
+           * - `pcm` - decompresses the sound bank
+           * - `compressed` - compresses the sound bank with a given function
            *
            * Note that compressing usually results in permanent sample quality loss! Decompressing does not restore it.
            */
@@ -276,8 +284,8 @@ export type SetSampleFormatOptions = {
     | {
           /**
            * The sample format to use.
-           * - `pcm` - decompresses the sound bank and changes its version to `2.04` (SF2)
-           * - `compressed` - compresses the sound bank with a given function and changes its version to `3.0` (SF3)
+           * - `pcm` - decompresses the sound bank
+           * - `compressed` - compresses the sound bank with a given function
            *
            * Note that compressing usually results in permanent sample quality loss! Decompressing does not restore it.
            */
@@ -291,9 +299,8 @@ export type SetSampleFormatOptions = {
 
           /**
            * If the returned promise should reject when a sample fails to compress.
-           * By default, such a sample is left uncompressed (and a warning is logged),
-           * but the bank is still set to version 3.0.
-           * With this on, the method throws after trying every sample and the bank's version stays the same.
+           * By default, such a sample is left uncompressed (and a warning is logged).
+           * With this on, the method throws after trying every sample.
            */
           rejectOnFailure?: boolean;
       }
@@ -328,6 +335,13 @@ export interface SoundFont2WriteOptions extends SoundBankWriteOptions {
      * > **Note**
      * >
      * > The chunk will only be written if the modulators differ from the SpessaSynth defaults.
+     *
+     * > **Warning**
+     * >
+     * > A plain SF2 file can't store custom curves, so default modulators that use one are left out of the chunk.
+     * > The SpessaSynth envelope time modulators (CC 72, 73 and 75) use custom curves. They are added back on load
+     * > when the chunk has no CC 72, 73 or 75 modulator, so a bank that removed them should keep one with amount 0.
+     * > Other custom curve modulators are lost. Write the bank as SFe to keep them.
      */
     writeDefaultModulators: boolean;
 
@@ -342,15 +356,59 @@ export interface SoundFont2WriteOptions extends SoundBankWriteOptions {
 }
 
 /**
- * Options for writing an SFE 4 file.
+ * What changes in a sound bank when it is written as a plain SF2 file and read back.
+ * All zeros mean the bank comes back the same.
  *
  * @group Sound Banks.Writing
  */
-export interface SFEWriteOptions extends SoundBankWriteOptions {
+export interface SF2Losses {
+    /**
+     * The generators above 60 (SFe only) in the zones.
+     */
+    generators: number;
+    /**
+     * The zones with an alternating loop (`sampleModes` 4). They fall back to the global zone's loop mode or to no loop.
+     */
+    alternatingLoops: number;
+    /**
+     * The zone modulators with an SFe destination, a custom curve or an unknown source type.
+     */
+    modulators: number;
+    /**
+     * The default modulators with an SFe destination, a custom curve or an unknown source type.
+     */
+    defaultModulators: number;
+    /**
+     * The custom curves that would not come back: the ones of lost modulators and the unused ones.
+     * SF2 stores no curves, only the curves of the restored default modulators return.
+     */
+    customCurves: number;
+    /**
+     * The modulators the SF2 reader would add that the bank does not have:
+     * removed envelope time, variation send or resonance compensation modulators come back on load.
+     */
+    addedModulators: number;
+    /**
+     * The reverb and chorus send modulators whose amount would read back differently.
+     * SF2 stores a fifth of the amount as a whole number, so 502 reads back as 500.
+     */
+    sendAmounts: number;
+    /**
+     * The presets whose bank numbers would read back differently. SF2 stores one bank number per preset.
+     */
+    bankNumbers: number;
+}
+
+/**
+ * Options for writing an SFe 4 file.
+ *
+ * @group Sound Banks.Writing
+ */
+export interface SFeWriteOptions extends SoundBankWriteOptions {
     /**
      * If the RIFS (64-bit RIFF chunks) should be used.
      * Increases maximum size from 4GB to effectively infinite.
-     * Recommended, since SFE 4 is effectively incompatible with SF2.
+     * Only needed for banks over 4 GB, defaults to false.
      */
     rf64: boolean;
 }
@@ -461,8 +519,8 @@ export interface SoundBankCloneOptions {
     reuseByName: boolean;
 
     /**
-     * How the instruments and samples used by a cloned element are reused instead of copied.
-     * - `name` - reuse the first element in the bank with the same name.
+     * How the instruments, samples and custom curves used by a cloned element are reused instead of copied.
+     * - `name` - reuse the first element in the bank with the same name. A curve also needs the same points.
      * - `identity` - reuse the element itself if it is already in the bank.
      *   Use it to duplicate elements within one bank, as names often repeat in real banks.
      * - `none` - always copy them, under a free name if needed.
