@@ -166,7 +166,8 @@ export function getSF2BankNumber(preset: BasicPreset) {
 function scaleSends(modulators: readonly Modulator[]) {
     for (const m of modulators) {
         if (isSendModulator(m)) {
-            m.sf2Amount = m.transformAmount;
+            // Read only for everyone else, the reader is the one place that sets it on a finished modulator
+            (m as { sf2Amount?: number }).sf2Amount = m.transformAmount;
             m.transformAmount = fromSF2SendAmount(m.transformAmount);
         }
     }

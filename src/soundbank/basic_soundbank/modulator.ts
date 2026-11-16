@@ -90,9 +90,14 @@ export class Modulator {
     /**
      * The amount a reverb or chorus send modulator had in the SF2 file it was read from, before it was scaled.
      * Several SF2 amounts give the same amount here, so the SF2 writer needs it to write the same file back.
-     * @internal
+     * Undefined for every other modulator. It is ignored once the transform amount no longer matches it.
+     *
+     * > **Tip**
+     * >
+     * > Carry this value over when rebuilding a modulator from plain data (for example in another thread),
+     * > otherwise a SoundFont2 file may be written with different send amounts than it was read with.
      */
-    public sf2Amount?: number;
+    public readonly sf2Amount?: number;
 
     /**
      * The transform type for this modulator.
@@ -117,13 +122,15 @@ export class Modulator {
      * @param destination An optional destination can be set here.
      * @param amount An optional amount.
      * @param transformType An optional transform type.
+     * @param sf2Amount The amount a send modulator had in its SF2 file, see {@link sf2Amount}.
      */
     public constructor(
         primarySource = new ModulatorSource(),
         secondarySource = new ModulatorSource(),
         destination: GeneratorType = GeneratorTypes.invalid,
         amount = 0,
-        transformType: ModulatorTransformType = 0
+        transformType: ModulatorTransformType = 0,
+        sf2Amount?: number
     ) {
         this.primarySource = primarySource;
         this.secondarySource = secondarySource;
@@ -131,6 +138,7 @@ export class Modulator {
         this.destination = destination;
         this.transformAmount = amount;
         this.transformType = transformType;
+        this.sf2Amount = sf2Amount;
     }
 
     /**
@@ -192,15 +200,14 @@ export class Modulator {
      * @returns The copied modulator.
      */
     public static copyFrom(mod: Modulator) {
-        const copy = new Modulator(
+        return new Modulator(
             ModulatorSource.copyFrom(mod.primarySource),
             ModulatorSource.copyFrom(mod.secondarySource),
             mod.destination,
             mod.transformAmount,
-            mod.transformType
+            mod.transformType,
+            mod.sf2Amount
         );
-        copy.sf2Amount = mod.sf2Amount;
-        return copy;
     }
 
     /**
@@ -627,17 +634,17 @@ export function copyWithOwnCurves(modulators: readonly Modulator[]) {
             source.isNegative
         );
     };
-    const copies = modulators.map((m) => {
-        const copy = new Modulator(
-            copySource(m.primarySource),
-            copySource(m.secondarySource),
-            m.destination,
-            m.transformAmount,
-            m.transformType
-        );
-        copy.sf2Amount = m.sf2Amount;
-        return copy;
-    });
+    const copies = modulators.map(
+        (m) =>
+            new Modulator(
+                copySource(m.primarySource),
+                copySource(m.secondarySource),
+                m.destination,
+                m.transformAmount,
+                m.transformType,
+                m.sf2Amount
+            )
+    );
     return { modulators: copies, curves: [...curves.values()] };
 }
 
