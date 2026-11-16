@@ -1282,8 +1282,11 @@ export class BasicMIDI {
             }
         }
 
-        // Reverse the tempo changes
+        // Reverse the tempo changes, then sort them descending by ticks
+        // Tracks are parsed one after another, so the changes may not be in order
+        // See https://github.com/spessasus/spessasynth_core/issues/142
         this.tempoChanges.reverse();
+        this.tempoChanges.sort((a, b) => b.ticks - a.ticks);
 
         SpessaLog.info(
             `%cCorrecting loops, ports and detecting notes...`,
