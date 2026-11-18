@@ -3,8 +3,17 @@ export * from "./enums";
 export * from "./basic_soundbank/midi_patch";
 
 export { Generator } from "./basic_soundbank/generator";
-export { Modulator } from "./basic_soundbank/modulator";
+export {
+    Modulator,
+    SPESSASYNTH_DEFAULT_MODULATORS
+} from "./basic_soundbank/modulator";
 export { ModulatorSource } from "./basic_soundbank/modulator_source";
+export { ModulatorCurve } from "./basic_soundbank/modulator_curve";
+export {
+    CustomCurve,
+    type CustomCurvePoint,
+    type CustomCurveUser
+} from "./basic_soundbank/custom_curve";
 export { BasicZone } from "./basic_soundbank/basic_zone";
 export {
     BasicLinkedZone,

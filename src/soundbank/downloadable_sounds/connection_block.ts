@@ -17,6 +17,10 @@ import { BasicZone } from "../basic_soundbank/basic_zone";
 import { ConsoleColors } from "../../utils/other";
 import { ModulatorSource } from "../basic_soundbank/modulator_source";
 import { Modulator } from "../basic_soundbank/modulator";
+import {
+    followModulationDepth,
+    withoutModulationDepth
+} from "../soundfont/sf2_compatibility";
 import type { DownloadableSoundsArticulation } from "./articulation";
 import {
     DEFAULT_DLS_CHORUS,
@@ -29,6 +33,7 @@ import {
     DLSSources,
     type DLSTransform
 } from "./enums";
+import { MIDIControllers } from "../../midi/enums";
 
 const invalidGeneratorTypes = new Set<GeneratorType>([
     GeneratorTypes.sampleModes, // Set in wave sample
@@ -174,14 +179,20 @@ export class ConnectionBlock {
     }
 
     public static fromSFModulator(
-        m: Modulator,
+        modulator: Modulator,
         articulation: DownloadableSoundsArticulation
     ) {
         const failed = (msg: string) => {
             SpessaLog.warn(
-                `Failed converting SF modulator into DLS:\n ${m.toString()} \n(${msg})`
+                `Failed converting SF modulator into DLS:\n ${modulator.toString()} \n(${msg})`
             );
         };
+        // DLS has no Modulation Depth Range, the mod wheel vibrato is written with its plain amount
+        const m = withoutModulationDepth(modulator);
+        if (!m) {
+            failed("Modulation Depth Range is not supported");
+            return;
+        }
 
         if (m.transformType !== 0) {
             failed("Absolute transform type is not supported");
@@ -191,6 +202,13 @@ export class ConnectionBlock {
         if (
             Modulator.isIdentical(m, DEFAULT_DLS_CHORUS, true) ||
             Modulator.isIdentical(m, DEFAULT_DLS_REVERB, true)
+        ) {
+            return;
+        }
+        // The CC 71 to gain twins are added back when the file is loaded, DLS has no gain to store them
+        if (
+            m.destination === GeneratorTypes.gain &&
+            m.primarySource.isController(MIDIControllers.filterResonance)
         ) {
             return;
         }
@@ -340,8 +358,7 @@ export class ConnectionBlock {
             }
 
             case GeneratorTypes.initialAttenuation: {
-                // The amount does not get EMU corrected here, as this only applies to modulator attenuation
-                // The generator (affected) attenuation is handled in wsmp.
+                // The generator attenuation is handled in wsmp
                 return {
                     destination: DLSDestinations.gain,
                     amount: -amount,
@@ -590,11 +607,8 @@ export class ConnectionBlock {
                 break;
             }
             case DLSDestinations.gain: {
-                // Turn to centibels and apply emu correction
-                zone.addToGenerator(
-                    GeneratorTypes.initialAttenuation,
-                    -value / 0.4
-                );
+                // Turn to attenuation
+                zone.addToGenerator(GeneratorTypes.initialAttenuation, -value);
                 break;
             }
             case DLSDestinations.filterCutoff: {
@@ -791,6 +805,8 @@ export class ConnectionBlock {
             amount,
             0
         );
+        // A mod wheel vibrato follows RPN 5 like it does in SF2
+        if (specialDestination) followModulationDepth(mod);
         zone.addModulators(mod);
     }
 

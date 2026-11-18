@@ -18,11 +18,11 @@ console.info("Sound bank type:", bank.type);
 
 // Reparse and write again
 const bank2 = SoundBankLoader.fromArrayBuffer(
-    bank.writeSFE({
+    bank.writeSFe({
         software: bank.soundBankInfo.software
     })
 );
-const bin2 = bank2.writeSFE({
+const bin2 = bank2.writeSFe({
     software: bank.soundBankInfo.software
 });
 await fs.writeFile(sfeOut, new Uint8Array(bin2));

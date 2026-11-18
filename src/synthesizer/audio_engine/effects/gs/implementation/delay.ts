@@ -224,6 +224,11 @@ export class DefaultGSDelay implements GSDelayProcessor {
         this.buffer.fill(0);
     }
 
+    public clear() {
+        this.buffer.fill(0);
+        this.preLPFz = 0;
+    }
+
     /**
      * Process the effect and ADDS it to the output.
      * @param input The input buffer to process. It always starts at index 0.

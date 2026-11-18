@@ -28,7 +28,7 @@ Below is the list of supported MIDI messages.
 | Poly Pressure     | ✔️         | Recognized, but no default behavior (Per SF2 specification). It has to be defined with modulators or System Exclusives. |
 | Controller Change | ✔️         | [More info](#default-supported-controllers)                                                                             |
 | Program Change    | ✔️         | More info: {@link MIDIPatch}                                                                                            |
-| Channel Pressure  | ✔️         | 50 cents of vibrato (Per SF2 specification)                                                                             |
+| Channel Pressure  | ✔️         | Recognized, but no default behavior. It has to be defined with modulators or System Exclusives.                         |
 | Pitch Wheel       | ✔️         | Controlled by Pitch Wheel Range. [More info](#per-note-pitch-wheel).                                                    |
 | System Exclusive  | ✔️         | [More info](#system-exclusives)                                                                                         |
 | Time Code         | ❌         | Not Applicable                                                                                                          |
@@ -75,7 +75,7 @@ Legend for the "Type" column:
 | CC#                  | Controller Name                     | Type     | Behavior                                                                                                                                                                                                           |
 | -------------------- | ----------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | 0                    | Bank Select                         | Engine   | Changes the bank number that is used in Program Change. More info: {@link MIDIPatch}                                                                                                                               |
-| 1                    | Modulation Wheel                    | SF2      | Controls the vibrato for the given patch.                                                                                                                                                                          |
+| 1                    | Modulation Wheel                    | SF2      | Controls the vibrato for the given patch. Its depth follows RPN 5 through the Modulation Depth Range source.                                                                                                       |
 | 5                    | Portamento Time                     | Engine   | Controls the portamento time. [More info](#portamento-implementation)                                                                                                                                              |
 | 6                    | Data Entry MSB                      | Engine   | Sets the selected RPN or NRPN to the given value. Upper 7 bits. [More info](#parameter-numbers)                                                                                                                    |
 | 7                    | Main Volume                         | SF2      | Changes the channel's volume.                                                                                                                                                                                      |
@@ -93,9 +93,9 @@ Legend for the "Type" column:
 | 74                   | Brightness                          | Extended | Controls the brightness (lowpass frequency) of the given patch.                                                                                                                                                    |
 | 75                   | Decay time                          | Extended | Controls the decay time for the given patch.                                                                                                                                                                       |
 | 84                   | Portamento Control                  | Engine   | Sets the key the next note glides from. Forces portamento once, even if portamento is off. The key persists across channel reset, but a pending forced glide is cancelled. [More info](#portamento-implementation) |
-| 91                   | Reverb Depth                        | SF2      | Controls the reverb effect send for the given channel. [More info](modulator-information.md#reverb-and-chorus-modulators)                                                                                          |
-| 93                   | Chorus Depth                        | SF2      | Controls the chorus effect for the given channel. [More info](modulator-information.md#reverb-and-chorus-modulators)                                                                                               |
-| 94                   | Variation Depth                     | Engine   | In GS mode, it controls the delay effect for the given channel.[^1]                                                                                                                                                |
+| 91                   | Reverb Depth                        | SF2      | Controls the reverb effect send for the given channel. [More info](https://spessasus.github.io/spessasynth_sfe/spec.html#102-effects-send-amounts)                                                                 |
+| 93                   | Chorus Depth                        | SF2      | Controls the chorus effect for the given channel. [More info](https://spessasus.github.io/spessasynth_sfe/spec.html#102-effects-send-amounts)                                                                      |
+| 94                   | Variation Depth                     | Extended | In GS mode, it controls the delay effect for the given channel.[^1] [More info](https://spessasus.github.io/spessasynth_sfe/spec.html#73-default-modulators)                                                       |
 | 98                   | Non-Registered Parameter Number LSB | Engine   | Selects the LSB of the Non-Registered Parameter Number. [More info](#supported-non-registered-parameters)                                                                                                          |
 | 99                   | Non-Registered Parameter Number MSB | Engine   | Selects the MSB of the Non-Registered Parameter Number. [More info](#supported-non-registered-parameters)                                                                                                          |
 | 100                  | Registered Parameter Number LSB     | Engine   | Selects the LSB of the Registered Parameter Number. [More info](#supported-registered-parameters)                                                                                                                  |
@@ -134,14 +134,11 @@ Below are all the controller values which are not zero when the controllers are 
 | 78        | Vibrato Delay                       | 64                                       |
 | 81        | General Purpose Controller 6        | 64                                       |
 | 83        | General Purpose Controller 8        | 64                                       |
+| 91        | Reverb Send                         | 40                                       |
 | 98        | Non-Registered Parameter Number LSB | 127 (NULL)                               |
 | 99        | Non-Registered Parameter Number MSB | 127 (NULL)                               |
 | 100       | Registered Parameter Number LSB     | 127 (NULL)                               |
 | 101       | Registered Parameter Number MSB     | 127 (NULL)                               |
-
-> **Note**
->
-> Reverb is 0 by default, contrary to the MIDI specification as it can introduce unwanted sounds.
 
 ### Parameter Numbers
 
@@ -156,6 +153,8 @@ Below is the list of currently implemented Registered Parameters.
 | 0       | 2       | Channel Coarse Tuning    | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.keyShift `keyShift`}                                    | 0 keys                       |
 | 0       | 5       | Channel Modulation Depth | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.modulationDepth `modulationDepth`}                      | Default SF2 depth (50 cents) |
 | 127     | 127     | Reset parameters         | Resets the selected RPN/NRPN to NULL (unspecified state). All data entries in this state are recognized as ignored. | N.A.                         |
+
+Drum channels ignore the fine and the coarse tuning. The exception is XG, where the coarse tuning (and so XG NOTE SHIFT and GS PITCH KEY SHIFT) is played as a pitch shift of that many semitones, without moving the key number.
 
 #### Supported Non-Registered Parameters
 
@@ -207,7 +206,7 @@ Calculation for the specific NRPN parameters are as follows (value is the data e
 
 > **Note**
 >
-> Custom vibrato NRPNs are ignored when the channel has active dynamic modulators
+> Custom vibrato NRPNs are ignored when the channel's controller matrix is active
 > (for example after GS `*CONTROL` or XG controller-depth messages),
 > when {@link ChannelSystemParameter.nrpnParamLock} is set,
 > and when the data value is 64 (which leaves the vibrato off).
@@ -246,12 +245,19 @@ There are a few differences from FluidSynth's implementation:
 ## Supported Bank Selection Systems
 
 See {@link MIDIPatch} for more information.
+The full selection algorithm is in section 11.2 of the [SFe specification](https://spessasus.github.io/spessasynth_sfe/spec.html#112-preset-selection).
 
 ### GM
 
 General MIDI (Level 1).
 
-Currently equivalent to GS.
+Bank Select (CC#0 and CC#32), NRPN and all GS and XG System Exclusives except the resets are ignored,
+as the General MIDI specification asks. Everything else works like GS.
+
+> **Note**
+>
+> The MIDI editor and the RMIDI writer turn a GM file into a GS one. Bank selects and NRPN that GM ignored are
+> then received, so such a file can sound different after it was edited or written as RMIDI.
 
 ### GS
 
@@ -266,6 +272,7 @@ General MIDI Level 2.
 
 Bank LSB and MSB are processed.
 Default bank MSB is 121 instead of 0.
+Channel 10 starts with bank MSB 120 and turns melodic with bank MSB 121.
 Bank MSB 120 (GM2 drums) or 127 (XG drums) turns a channel into a drum channel
 (126 SFX drums only match by direct preset match).
 Drums will be selected according to the [XG Validity Test](#xg-validity-test)
@@ -276,7 +283,8 @@ Yamaha XG.
 
 Bank LSB and MSB are processed.
 Bank MSB 120 or 127 turns a channel into a drum channel
-(126 SFX drums only match by direct preset match).
+(126 SFX drums only match by direct preset match, except on channel 10 which cannot become melodic:
+there a bank MSB of 126 without a direct match falls back to drums, and any bank MSB other than 126 and 127 is ignored).
 Drums will be selected according to the [XG Validity Test](#xg-validity-test)
 
 #### XG Validity Test
@@ -314,9 +322,9 @@ A {@link SynthesizerEvent.displayMessage `displayMessage`} event will be emitted
 
 These are global parameters, affecting the entire synthesizer.
 
-| Name                           | Description                                                                                                                                                                                                          |
-| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| SYSTEM MODE SET (SC-88+ Reset) | Resets the synthesizer and sets the Global MIDI Parameter {@link GlobalMIDIParameter.system `system`} to `gs`. Value `01` (`Double Module Mode`) also makes the synthesizer ensure that it has at least 32 channels. |
+| Name                           | Description                                                                                                                                                                                                                                                                                               |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SYSTEM MODE SET (SC-88+ Reset) | Resets the synthesizer and sets the Global MIDI Parameter {@link GlobalMIDIParameter.system `system`} to `gs`. Value `00` (`Single Module Mode`) and `01` (`Double Module Mode`) are accepted, any other value is ignored. Value `01` also makes the synthesizer ensure that it has at least 32 channels. |
 
 #### Patch Common Parameters
 
@@ -440,19 +448,20 @@ Part (channel) parameters set a specific parameter for a specific channel.
 | EQ ON/OFF                         | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.eqEnabled `eqEnabled`}.                                                                   |
 | PART EFX ASSIGN                   | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.efxAssign `efxAssign`}.                                                                   |
 
-[^3]: Unlike with Sound Canvases, there's no limit to drum channels the synthesizer can have. The Drum Map number is stored in Channel MIDI Parameter {@link ChannelMIDIParameter.drumMap `drumMap`}. Switching resets the bank to 0 and the program to 0 and changing the drum map number re-selects the kit the same way.
+[^3]: Unlike with Sound Canvases, there's no limit to drum channels the synthesizer can have. The Drum Map number is stored in Channel MIDI Parameter {@link ChannelMIDIParameter.drumMap `drumMap`}, the same value that XG PART MODE sets. In GS, switching drums or changing the drum map number resets the bank to 0 and selects program 0. In XG and GM2 the message acts as XG PART MODE.
 
 #### Patch Part Parameters (Controllers)
 
 All of them are supported! At least, in theory.
 These define how a controller affects the sound.
 See page 198 of the SC-88Pro Manual.
-This is implemented using a dynamic modulator system and additional generators to cover the linear time and hertz range.
+This is implemented as a controller matrix stage that scales each cell onto the range from the manual and applies
+amplitude linearly. The changes apply to sounding notes too. [More info](#controller-matrix)
 
 There are two special cases that are directly aliased to Channel MIDI Parameters:
 
-- MOD LFO1 PITCH DEPTH - Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.modulationDepth `modulationDepth`}.
-- BEND PITCH CONTROL - Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.pitchWheelRange `pitchWheelRange`}.
+- MOD LFO1 PITCH DEPTH - Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.modulationDepth `modulationDepth`} to about 5 times the value in cents, so the default 10 is 50 cents. It is stored like RPN 5 with the 14-bit value `v = round(6.4 * value)`.
+- BEND PITCH CONTROL - Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.pitchWheelRange `pitchWheelRange`}, from 0 to 24. A value below the center sets the range to 0, so the wheel does nothing.
 
 #### Drum Setup Parameters
 
@@ -477,7 +486,10 @@ These search for a matching drum channel with the correct `drumMap` Channel MIDI
 
 The following messages create a custom drum set, by setting which key from which drum set is bound to a specific key in the user drum set.
 Then the parameters above may also be applied to the key.
-Instruments are available on programs 64 and 65 in GS mode.
+The two sets are the presets of programs 64 and 65 (bank MSB 0, bank LSB 0). They are found only by an exact request for
+program 64 or 65 on a GM or GS drum channel, never in XG and GM2. A preset of a sound bank at the same place hides
+the user drum set, and they never take part in the fallbacks, so a request with another bank LSB does not end up there.
+They are only listed once a sound bank with presets is loaded.
 
 | Name                   | Description                                                                                                                                                | Parameter Name     |
 | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
@@ -606,7 +618,7 @@ Part (channel) parameters set a specific parameter for a specific channel.
 | PORTAMENTO SWITCH              | Aliased to MIDI CC#65 (Portamento On/Off), as a switch. ON is 127, OFF is 0.                                                                          |
 | PORTAMENTO TIME                | Aliased to MIDI CC#5 (Portamento Time).                                                                                                               |
 
-[^4]: In XG, the conventional drum channel (9 within each 16-channel group) cannot be switched back to melodic mode. Switching to drums re-initializes the kit, resetting the program to 0, while switching back to melodic keeps the program.
+[^4]: In XG, the conventional drum channel (9 within each 16-channel group) cannot be switched back to melodic mode. Switching to drums re-initializes the kit, resetting the program to 0, while switching back to melodic keeps the program. When switching to drums, a channel whose bank MSB is already 120 or 127 keeps it and selects nothing, unless it was not a drum channel before, then it selects program 0. USE FOR RHYTHM PART sets the same value and acts the same way in XG and GM2, and so does PART MODE in GS. GM ignores both messages. After a system reset the value is 0, except on channel 10 where it is 2 in XG and 1 otherwise.
 
 #### Patch Part Controller Depths
 
@@ -620,12 +632,14 @@ Examples:
 - AC2 LFO AMOD DEPTH
 
 See pages 42 and 43 of the XG specification.
-This is implemented using a dynamic modulator system and additional generators to cover the linear amplitude range.
+This is implemented as a controller matrix stage that scales each cell onto the range from the manual and applies
+amplitude in decibels. The LFO depths drive the vibrato LFO.
+[More info](#controller-matrix)
 
 There are two special cases that are directly aliased to Channel MIDI Parameters:
 
-- MW LFO PMOD DEPTH - Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.modulationDepth `modulationDepth`}.
-- BEND PITCH CONTROL - Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.pitchWheelRange `pitchWheelRange`}.
+- MW LFO PMOD DEPTH - Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.modulationDepth `modulationDepth`} to about 5 times the value in cents, at most 200, so the default 10 is 50 cents. It is stored like RPN 5 with the 14-bit value `v = round(6.4 * min(value, 40))`.
+- BEND PITCH CONTROL - Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.pitchWheelRange `pitchWheelRange`}, from 0 to 24. A value below the center sets the range to 0, so the wheel does nothing.
 
 #### Drum Setup
 
@@ -716,6 +730,35 @@ Messages that are not part of the standards above.
 | Roland MT-32 Master Volume (Model ID `16`) | `F0 41 dd 16 12 10 xx xx vv cs F7`, emitted by Falcosoft MIDI Player. Sets the Global MIDI Parameter {@link GlobalMIDIParameter.volume `volume`} to `vv / 100`. Only the first address byte (`10`) is checked.                                                                                                                               |
 
 ## Implementation Details
+
+### Controller Matrix
+
+The GS and XG System Exclusive messages that route controllers to pitch, cutoff, amplitude and the LFOs (the
+"controller matrix") are handled by a small stage of the engine. They do not use generators or modulators.
+
+Each cell is scaled linearly onto the range its manual gives, multiplied by its source and summed per destination:
+
+| Destination         | Range (GS and XG)                | Applied as                                       |
+| ------------------- | -------------------------------- | ------------------------------------------------ |
+| Pitch               | -24 to +24 semitones (0x28-0x58) | cents added to the pitch                         |
+| Cutoff              | -9600 to +9600 cents             | cents added to the cutoff, before `maxFilterFc`  |
+| Amplitude           | -100 to +100 %                   | GS: linear, XG: -96 dB to +6 dB                  |
+| LFO rate (GS)       | -10 to +10 Hz                    | added to the LFO frequency, 0 Hz stops the LFO   |
+| LFO pitch depth     | 0 to 600 cents                   | added to the zone's depth                        |
+| LFO filter depth    | 0 to 2400 cents                  | added to the zone's depth                        |
+| LFO amplitude depth | 0 to 100 %                       | GS: linear, XG: a swing from the level to -96 dB |
+
+- Centered cells scale `(value - 64) / 64` onto the range, the LFO depths `value / 127`.
+- The sources go from 0 to 1, and the pitch wheel from -1 to 1. There is no clamp on the sums.
+- LFO 1 is the Vibrato LFO and LFO 2 is the Modulation LFO. XG drives only the Vibrato LFO. The depths play at
+  full strength from the note on, and the zone's LFO delay and fade only hold back the zone's own depths.
+- The pitch bend to pitch cells are the pitch bend range (RPN 0), from 0 to 24 semitones. They act through the pitch
+  wheel modulators.
+- The modulation wheel to LFO 1 pitch depth cell (GS MOD LFO1 PITCH DEPTH, XG MW LFO PMOD DEPTH) is not a matrix
+  cell. It sets the modulation depth (RPN 5) to about 5 times its value in cents, and the last of the two that is received
+  applies. The bank reads it through the Modulation Depth Range modulator source, which the default CC 1 to
+  `vibLfoToPitch` modulator has as its amount source. A modulator without that source does not follow it.
+- The assignable controller cells follow the controller number currently assigned to them.
 
 ### Overlapping Notes
 

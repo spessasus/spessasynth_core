@@ -202,7 +202,8 @@ export type GlobalMIDIParameterChangeEvent = {
  * @group Synthesizer.Events
  */
 export type FXType<K> =
-    Exclude<keyof K, "process" | "getSnapshot" | "applySnapshot"> | "macro";
+    | Exclude<keyof K, "process" | "getSnapshot" | "applySnapshot" | "clear">
+    | "macro";
 
 /**
  * This event is triggered when an effect processor has one of its parameters changed.

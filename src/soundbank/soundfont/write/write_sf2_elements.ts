@@ -4,25 +4,37 @@ import { GEN_BYTE_SIZE, Generator } from "../../basic_soundbank/generator";
 import {
     DecodedModulator,
     MOD_BYTE_SIZE,
-    Modulator
+    Modulator,
+    XMOD_BYTE_SIZE
 } from "../../basic_soundbank/modulator";
+import type { ModulatorCurve } from "../../basic_soundbank/modulator_curve";
 import { BAG_BYTE_SIZE, BasicZone } from "../../basic_soundbank/basic_zone";
-import type { ExtendedSF2Chunks } from "./types";
+import type { ExtendedSF2Chunks, SoundFontWriteFormat } from "./types";
 import { INST_BYTE_SIZE } from "../../basic_soundbank/basic_instrument";
 import { PHDR_BYTE_SIZE } from "../../basic_soundbank/basic_preset";
 import { RIFFChunk } from "../../../utils/riff_chunk";
 import { writeBinaryStringIndexed } from "../../../utils/byte_functions/string";
 import { writeWord } from "../../../utils/byte_functions/little_endian";
-import { GeneratorTypes } from "../../basic_soundbank/generator_types";
+import {
+    sf2KeepsGenerator,
+    toSF2Generator,
+    toSF2Modulators
+} from "../sf2_compatibility";
 
+/**
+ *
+ * @param bank
+ * @param format SF2 or SFe
+ * @param rf64
+ * @param isPreset
+ * @param curveIndex SFe only: the index of a custom curve, for the extended modulator records
+ */
 export function writeSF2Elements(
     bank: BasicSoundBank,
+    format: SoundFontWriteFormat,
     rf64: boolean,
     isPreset: boolean,
-    // Preset only
-    writeBankLSB = false,
-    // Generators and modulator destinations above endOper, SFE only
-    writeSFEGenerators = false
+    curveIndex?: (curve: ModulatorCurve) => number
 ): {
     gen: ExtendedSF2Chunks;
     mod: ExtendedSF2Chunks;
@@ -54,9 +66,13 @@ export function writeSF2Elements(
         generatorIndexes.push(currentGenIndex);
         let gens = z.getWriteGenerators(bank);
         let mods = z.modulators;
-        if (!writeSFEGenerators) {
-            gens = gens.filter((g) => g.type <= GeneratorTypes.endOper);
-            mods = mods.filter((m) => m.destination <= GeneratorTypes.endOper);
+        if (format === "sfe") {
+            mods = mods.filter((m) => !m.isMissingCurve);
+        } else {
+            gens = gens
+                .filter((g) => sf2KeepsGenerator(g.type, g.value))
+                .map((g) => toSF2Generator(g));
+            mods = toSF2Modulators(mods);
         }
         currentGenIndex += gens.length;
         generators.push(...gens);
@@ -86,7 +102,25 @@ export function writeSF2Elements(
 
     const modSize = modulators.length * MOD_BYTE_SIZE;
     const modData = new IndexedByteArray(modSize);
-    for (const m of modulators) m.write(modData);
+    for (const m of modulators)
+        m.write(modData, undefined, curveIndex !== undefined);
+
+    // SFe extended modulator records (custom curves), one per flagged modulator, then the terminal.
+    // Without them, xdta's pmod and imod only hold the terminal record.
+    const customModulators =
+        curveIndex === undefined
+            ? []
+            : modulators.filter((m) => m.usesCustomCurve);
+    const writeExtendedMods = customModulators.length > 0;
+    // SF2 keeps the terminal of the extended limits proposal, the size of a modulator record
+    const xModData = new IndexedByteArray(
+        curveIndex === undefined
+            ? MOD_BYTE_SIZE
+            : (customModulators.length + 1) * XMOD_BYTE_SIZE
+    );
+    if (curveIndex) {
+        for (const m of customModulators) m.writeExtended(xModData, curveIndex);
+    }
 
     const bagSize = modulatorIndexes.length * BAG_BYTE_SIZE;
     const bagData: ExtendedSF2Chunks = {
@@ -110,7 +144,7 @@ export function writeSF2Elements(
     };
 
     for (const [i, el] of elements.entries())
-        el.write(hdrData, zoneIndexes[i], writeBankLSB);
+        el.write(hdrData, zoneIndexes[i], format);
 
     // Write terminal header records
     if (isPreset) {
@@ -134,6 +168,7 @@ export function writeSF2Elements(
 
     return {
         writeXdta:
+            writeExtendedMods ||
             Math.max(currentGenIndex, currentModIndex, zoneIndex) > 0xff_ff,
         gen: {
             pdta: RIFFChunk.write(genHeader, genData, rf64),
@@ -146,12 +181,8 @@ export function writeSF2Elements(
         },
         mod: {
             pdta: RIFFChunk.write(modHeader, modData, rf64),
-            // This chunk exists solely to preserve parser compatibility and contains only the terminal modulator record.
-            xdta: RIFFChunk.write(
-                modHeader,
-                new IndexedByteArray(MOD_BYTE_SIZE),
-                rf64
-            )
+            // Only the terminal record (parser compatibility), or the SFe extended records
+            xdta: RIFFChunk.write(modHeader, xModData, rf64)
         },
         bag: {
             pdta: RIFFChunk.write(bagHeader, bagData.pdta, rf64),

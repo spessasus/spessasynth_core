@@ -60,6 +60,11 @@ export const ModulatorControllerSources = {
      */
     pitchWheelRange: 16,
     /**
+     * The current modulation depth range (RPN 5) on the channel, where 16 semitones is full.
+     * The default modulation wheel to vibrato modulator uses it as its amount source.
+     */
+    modulationDepthRange: 17,
+    /**
      * Unsupported and discarded if encountered.
      */
     link: 127
@@ -94,7 +99,11 @@ export const ModulatorCurveTypes = {
     /**
      * First half is 0, second half is 1.
      */
-    switch: 3
+    switch: 3,
+    /**
+     * A curve stored in the bank (SFe only), see {@link CustomCurve}.
+     */
+    custom: 4
 } as const;
 
 /**

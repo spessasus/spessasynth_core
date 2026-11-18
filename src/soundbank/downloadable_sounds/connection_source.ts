@@ -129,7 +129,10 @@ export class ConnectionSource {
             }
         }
         // Unable to convert into DLS
-        if (sourceEnum === undefined) {
+        if (
+            sourceEnum === undefined ||
+            source.curveType === ModulatorCurveTypes.custom
+        ) {
             return undefined;
         }
 

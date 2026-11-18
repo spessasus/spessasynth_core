@@ -32,6 +32,7 @@ export type { GlobalSystemParameter } from "./audio_engine/parameters/system";
 export type { ChannelSystemParameter } from "./audio_engine/channel/parameters/system";
 export type { ChannelMIDIParameter } from "./audio_engine/channel/parameters/midi";
 export type { SynthesizerSnapshot } from "./audio_engine/synthesizer_snapshot";
+export type { ControllerMatrixSnapshot } from "./audio_engine/channel/controller_matrix";
 export {
     DEFAULT_DRUM_REVERB,
     DEFAULT_MIDI_CONTROLLERS

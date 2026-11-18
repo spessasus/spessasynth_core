@@ -2360,7 +2360,8 @@ export class MIDIUtils {
 
                 case 0x20: {
                     // MW LFO PMOD Depth (alias to modulation wheel range)
-                    const cents = (value / 127) * 600;
+                    // Sets the modulation depth range (RPN 5) to value * 5 cents
+                    const cents = value * 5;
                     return [
                         {
                             type: "Channel MIDI Param",
@@ -2373,7 +2374,8 @@ export class MIDIUtils {
 
                 case 0x23: {
                     // Bend pitch control (alias to pitch wheel range)
-                    const centeredValue = value - 64;
+                    // A value below the center gives no bend, like 0
+                    const centeredValue = Math.max(0, Math.min(24, value - 64));
                     return [
                         {
                             type: "Channel MIDI Param",
@@ -3580,7 +3582,8 @@ export class MIDIUtils {
                         // Special case:
                         // If the source is a mod wheel, it's a strange way of setting the modulation depth
                         // Testcase: J-Cycle.mid (it affects gm.dls which uses LFO1 for modulation)
-                        const cents = (value / 127) * 600;
+                        // Sets the modulation depth range (RPN 5) to value * 5 cents
+                        const cents = value * 5;
                         return [
                             {
                                 type: "Channel MIDI Param",
@@ -3597,7 +3600,11 @@ export class MIDIUtils {
                         // Special case:
                         // If the source is a pitch wheel, it's a strange way of setting the pitch wheel range
                         // Testcase: th07_03.mid
-                        const centeredValue = value - 64;
+                        // A value below the center gives no bend, like 0
+                        const centeredValue = Math.max(
+                            0,
+                            Math.min(24, value - 64)
+                        );
                         return [
                             {
                                 type: "Channel MIDI Param",

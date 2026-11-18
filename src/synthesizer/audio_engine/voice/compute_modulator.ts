@@ -6,8 +6,6 @@ import {
 import type { MIDIChannel } from "../channel/midi_channel";
 import type { Voice } from "./voice";
 
-const EFFECT_MODULATOR_TRANSFORM_MULTIPLIER = 1000 / 200;
-
 /**
  * Buffer for the generators with the NRPN offsets applied,
  * To avoid allocating on the audio thread.
@@ -43,12 +41,7 @@ export function computeModulator(
         voice
     );
 
-    // See the comment for isEffectModulator (voice_modulator.ts) for explanation
-    let transformAmount = modulator.transformAmount;
-    if (modulator.isEffectModulator && transformAmount <= 1000) {
-        transformAmount *= EFFECT_MODULATOR_TRANSFORM_MULTIPLIER;
-        transformAmount = Math.min(transformAmount, 1000);
-    }
+    const transformAmount = modulator.transformAmount;
 
     // Compute the modulator
     let computedValue = sourceValue * secondSrcValue * transformAmount;
@@ -57,26 +50,6 @@ export function computeModulator(
         // Abs value
         computedValue = Math.abs(computedValue);
     }
-
-    // Resonant modulator: take its value and ensure that it won't change the final gain
-    if (modulator.isDefaultResonantModulator) {
-        // Half the gain, negates the filter
-        voice.resonanceOffset = Math.max(0, computedValue / 2);
-    }
-
-    // Modulation depth
-    if (modulator.isModWheelModulator)
-        /*
-        The modulation Depth is in cents, convert to a multiplier.
-        
-        The MIDI specification assumes the default modulation depth is 50 cents,
-        but it may vary for different sound banks.
-        For example, if you want a modulation depth of 100 cents,
-        the multiplier will be 2,
-        which, for a preset with a depth of 50,
-        will create a total modulation depth of 100 cents.
-         */
-        computedValue *= this._midiParameters.modulationDepth / 50;
 
     voice.modulatorValues[modulatorIndex] = computedValue;
     return computedValue;
@@ -102,7 +75,11 @@ export function computeModulators(
         OFFSET_GENERATORS.set(generators);
         generators = OFFSET_GENERATORS;
         for (let i = 0; i < generators.length; i++) {
-            generators[i] += g[i];
+            // An Int16Array wraps, so a negative offset would turn -32768 (instant) into a long time
+            generators[i] = Math.min(
+                32_767,
+                Math.max(-32_768, generators[i] + g[i])
+            );
         }
     }
     const modulatedGenerators = voice.modulatedGenerators;

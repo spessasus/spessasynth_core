@@ -14,16 +14,17 @@ Below is useful information regarding the implementation of modulators in `spess
 Below is the table of modulator sources if the CC flag is not set.
 If it is set, the index is the MIDI controller number.
 
-| Index | Name               | Description                                                                                                                                                                                                         |
-| ----- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0     | No controller = 1  | Always returns 1.                                                                                                                                                                                                   |
-| 2     | Note on velocity   | The MIDI velocity the note was pressed with.                                                                                                                                                                        |
-| 3     | Note on key number | The MIDI key number received.                                                                                                                                                                                       |
-| 10    | Poly pressure      | The MIDI poly pressure message received for this note number.                                                                                                                                                       |
-| 13    | Channel pressure   | The MIDI channel pressure message received for this channel.                                                                                                                                                        |
-| 14    | Pitch Wheel        | The pitch wheel value, 14-bit.                                                                                                                                                                                      |
-| 16    | Pitch Wheel range  | The range of the pitch wheel, in semitones.                                                                                                                                                                         |
-| 127   | Link (UNSUPPORTED) | Other modulator. This feature is underspecified and not implemented, [similarly to fluidsynth](https://github.com/FluidSynth/fluidsynth/wiki/SoundFont#fluidsynths-implementation-details-of-the-soundfont-2-spec). |
+| Index | Name                   | Description                                                                                                                                                                                                                                                                                                                              |
+| ----- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0     | No controller = 1      | Always returns 1.                                                                                                                                                                                                                                                                                                                        |
+| 2     | Note on velocity       | The MIDI velocity the note was pressed with.                                                                                                                                                                                                                                                                                             |
+| 3     | Note on key number     | The MIDI key number received.                                                                                                                                                                                                                                                                                                            |
+| 10    | Poly pressure          | The MIDI poly pressure message received for this note number.                                                                                                                                                                                                                                                                            |
+| 13    | Channel pressure       | The MIDI channel pressure message received for this channel.                                                                                                                                                                                                                                                                             |
+| 14    | Pitch Wheel            | The pitch wheel value, 14-bit.                                                                                                                                                                                                                                                                                                           |
+| 16    | Pitch Wheel range      | The range of the pitch wheel, in semitones.                                                                                                                                                                                                                                                                                              |
+| 17    | Modulation Depth Range | The modulation depth range (RPN 5), where 16 semitones is full. The default mod wheel vibrato modulator uses it as its amount source.                                                                                                                                                                                                    |
+| 127   | Link (RESERVED)        | Other modulator. This feature is underspecified and not implemented, [similarly to fluidsynth](https://github.com/FluidSynth/fluidsynth/wiki/SoundFont#fluidsynths-implementation-details-of-the-soundfont-2-spec). A modulator that uses it as a source or amount source, or has a destination with bit 15 set, is ignored (see below). |
 
 ## Modulator curve types
 
@@ -32,116 +33,99 @@ Below are the defined curve types of modulators:
 - 0 Linear - normal linear scale
 - 1 Concave - logarithmic ramp
 - 2 Convex - exponential ramp, the inverse of concave
-- 3 Switch - 0.5 and below is 0 (or -1 for bipolar), above is 1
+- 3 Switch - below 0.5 is 0 (or -1 for bipolar), 0.5 and above is 1. The negative direction is the opposite
+- 4 Custom (SFe) - a curve stored in the bank, see [SFe Format](https://spessasus.github.io/spessasynth_sfe/spec.html#721-custom-curves)
+
+## Ignored modulators
+
+[Section 7.4 of the SFe specification](https://spessasus.github.io/spessasynth_sfe/spec.html#74-ignored-modulators) lists the modulators that a reader ignores:
+a linked modulator, an unknown transform type, an unknown destination, an unknown source type, an illegal or reserved controller as a source and a custom curve that
+is missing or invalid. The SF2 and SFe readers set the destination of such a modulator to
+`GeneratorTypes.invalid` (-1) and keep it in its zone, so it supersedes nothing and does nothing.
+
+In an SFe file the transform enumerator of a modulator has the extended flag in bit 15, which every modulator that uses
+a custom curve must have ([section 5.5.1](https://spessasus.github.io/spessasynth_sfe/spec.html#551-the-extended-modulator-records)). The flag is not part of
+{@link Modulator.transformType}, which only holds the transform. The SFe writer sets it when a modulator uses a custom
+curve, and the SF2 writer never does.
 
 ## Default Modulators
 
-Below is the default modulator list for SpessaSynth.
+`spessasynth_core` follows the [SpessaSynth SFe 4 specification](https://spessasus.github.io/spessasynth_sfe/spec.html):
 
-> **Important**
->
-> SpessaSynth implements the [default modulators proposal](https://github.com/spessasus/soundfont-proposals/blob/main/default_modulators.md).
+- The default modulators of a new bank are the list of
+  [section 7.3](https://spessasus.github.io/spessasynth_sfe/spec.html#73-default-modulators), with its two custom curves. They are available as
+  {@link SPESSASYNTH_DEFAULT_MODULATORS}, and every bank owns a copy in {@link BasicSoundBank.defaultModulators}.
+- SF2 and SF3 files are converted when they are loaded, as
+  [section 9.2](https://spessasus.github.io/spessasynth_sfe/spec.html#92-conversion-from-soundfont-2) describes: the initial attenuation generators are
+  multiplied by 0.4 and rounded, the reverb and chorus send amounts are multiplied by 5, the default modulators SF2
+  can't store are added, every CC 71 to resonance modulator gets its
+  CC 71 to gain compensator, and a CC 1 to `modLfoToPitch` or `vibLfoToPitch` modulator with no amount source (amount
+  from -1023 to 1023) gets the Modulation Depth Range as its amount source and 32 times its amount.
+- The mod wheel vibrato follows RPN 5 (and the GS MOD LFO1 PITCH DEPTH and XG MW LFO PMOD DEPTH messages, which set it)
+  only through the Modulation Depth Range source. The engine does not scale any other modulator by it.
+- Writing a bank as SF2 follows [section 9.1](https://spessasus.github.io/spessasynth_sfe/spec.html#91-conversion-to-soundfont-2).
+- The reasons behind the list and the conversion are in
+  [section 10](https://spessasus.github.io/spessasynth_sfe/spec.html#10-design-rationale).
 
-Units used in the tables below:
+It also implements the
+[default modulators proposal](https://github.com/spessasus/soundfont-proposals/blob/main/default_modulators.md)
+(the `DMOD` chunk) for SF2 files.
 
-- cB - centibels, 1/10 of a decibel.
-- ‰ - 1/10 of a percent.
+## Notes for spessasynth_core
 
-### SF2 Default
+What follows is specific to this library and not part of the format.
 
-These are the default modulators, as defined by the SF2.04 specification.
+### SF2 round trips are not exact
 
-`-` denotes source enumeration `0x0` (no controller linear unipolar positive).
+Loading an SF2 file and writing it again as SF2 can change a few values once, and nothing after that. Writing a bank
+as SF2 and loading it again can change values too, as the end of the list says.
 
-> **Note**
->
-> The [velocity to filter modulator is intentionally disabled](https://www.fluidsynth.org/wiki/SoundFont/#fluidsynths-implementation-details-of-the-soundfont-2-spec).
+- Every `initialAttenuation` generator is converted on load (multiplied by 0.4 and rounded) and on write (divided by
+  0.4, rounded and limited to -32768 to 32767), so a value of the file may change by one unit. The bank holds true
+  centibels, the same as `gain`. The amounts of the modulators that target it are not changed.
+- A send modulator of the default form (CC 91 to the reverb send or CC 93 to the chorus send) is written with a fifth
+  of its amount, rounded. This applies to zones and to the default modulators (`DMOD`), so a full send of `1000` is
+  `200` in both. A file amount above `200` reads as a full send, and so it is written back as `200`. Other SF2
+  synthesizers then play the default send where the file asked for more.
+- The CC 71 to gain compensators and the added default modulators are left out, and added again on the next load.
+- A modulator with the Modulation Depth Range as its source is dropped. The mod wheel vibrato that has it as its amount
+  source and a destination of `modLfoToPitch` or `vibLfoToPitch` (the default one has the amount `1600`) is written
+  without the amount source and with its amount divided by 32, rounded to the nearest whole number and limited to -1023
+  to 1023, so the default `1600` is `50`. Any other modulator that uses the range is dropped. The loss report counts
+  all of these.
+- For a bank that is written as SF2 and loaded again, the attenuation comes back exactly (from -13107 to 13107). The
+  amount of a send of the default form becomes a multiple of 5 and at most 1000, so `503` becomes `505`. The amount of
+  the converted mod wheel vibrato becomes a multiple of 32, limited to -32736 to 32736. A mod wheel vibrato without the
+  range and with an amount from -1023 to 1023 comes back with the range and 32 times the amount, so it follows RPN 5
+  afterwards.
 
-| Source                      | Source Transform          | Secondary source                           | Destination          | Transform amount |
-| --------------------------- | ------------------------- | ------------------------------------------ | -------------------- | ---------------- |
-| Note On Velocity            | Negative Unipolar Concave | -                                          | Initial attenuation  | 960 cB           |
-| **CC 1** (Modulation Wheel) | Positive Unipolar Linear  | -                                          | Vibrato LFO to pitch | 50 cents         |
-| **CC 7** (Volume)           | Negative Unipolar Concave | -                                          | Initial attenuation  | 960 cB           |
-| **Channel Pressure**        | Positive Unipolar Linear  | -                                          | Vibrato LFO to pitch | 50 cents         |
-| **Pitch Wheel**             | Positive Bipolar Linear   | Pitch wheel range Positive Unipolar Linear | Fine tune            | 12700 cents      |
-| **CC 10** (Pan)             | Positive Bipolar Linear   | -                                          | Pan                  | 500 ‰            |
-| **CC 11** (Expression)      | Negative Unipolar Concave | -                                          | Initial attenuation  | 960 cB           |
-| **CC 91** (Reverb Depth)    | Positive Unipolar Linear  | -                                          | Reverb effects send  | 200 ‰            |
-| **CC 93** (Chorus Depth)    | Positive Unipolar Linear  | -                                          | Chorus effects send  | 200 ‰            |
+{@link BasicSoundBank.getSF2Losses} counts what a bank would lose when written as SF2.
 
-### Custom modulators
+### Envelope time modulators in SF2
 
-SpessaSynth applies a few extra modulators for extended compatibility with various MIDI standards.
+An SF2 file can't store custom curves, which has two consequences:
 
-| Source                       | Source Transform         | Secondary source | Destination              | Transform amount |
-| ---------------------------- | ------------------------ | ---------------- | ------------------------ | ---------------- |
-| **CC 67** (Soft Pedal)       | Switch Unipolar Positive | -                | Initial Filter Cutoff    | -1200 abs cents  |
-| **CC 71** (Filter Resonance) | Positive Bipolar Linear  | -                | Initial Filter Resonance | 250 cB           |
-| **CC 74** (Filter Cutoff)    | Positive Bipolar Linear  | -                | Initial Filter Cutoff    | 9600 abs cents   |
+- An SF2 bank can't name the envelope time modulators in a zone, so it can't override them there. It can replace the
+  whole list with a `DMOD` chunk instead.
+- If the default modulators are changed and the bank is written as SF2, the written `DMOD` chunk leaves them out.
+  When that file is loaded, they are added back, unless the chunk is empty or has a CC 72, 73 or 75 modulator of its
+  own (one with amount 0 is enough to keep them out). Writing the bank as SFe keeps them as they are.
 
-### Envelope time modulators
+### DLS files
 
-Envelope time modulators each use several modulators.
-All of them have the CC as a bipolar primary source.
-The secondary source is a switch on the same CC that limits the modulator to one half of its range:
+- DLS files get the CC 71 to gain compensators when they are loaded, like SF2 files. The DLS writer leaves them out.
+- The send amounts of DLS files are not converted, since their default is already `1000`.
+- An SF2 bank written as DLS stores the converted amounts. A file amount of `350` is a full send here, which is the
+  DLS default, so it is written as a full send and no longer as `350`.
 
-- `CC < 64` - Negative Unipolar Switch
-- `CC >= 64` - Positive Unipolar Switch
+### Differences from versions before SFe 4
 
-Their sum forms the response curve of the time controllers.
+- The synthesizer multiplied the sum of the preset and instrument `initialAttenuation` by 0.4 and rounded it down.
+  The SF2 reader now converts each generator by itself (rounded to the nearest whole number), so a preset and an
+  instrument value of 7 give 6 centibels where they gave 5.
 
-| Primary source              | Primary transform        | Secondary source | Destination             | Transform amount |
-| --------------------------- | ------------------------ | ---------------- | ----------------------- | ---------------- |
-| **CC 73** (Vol Env Attack)  | Positive Bipolar Linear  | `CC < 64`        | Volume envelope attack  | 9600 timecents   |
-| **CC 73** (Vol Env Attack)  | Positive Bipolar Linear  | `CC >= 64`       | Volume envelope attack  | 9657 timecents   |
-| **CC 73** (Vol Env Attack)  | Positive Bipolar Convex  | `CC >= 64`       | Volume envelope attack  | -1445 timecents  |
-| **CC 75** (Vol Env Decay)   | Positive Bipolar Linear  | `CC < 64`        | Volume envelope decay   | 9779 timecents   |
-| **CC 75** (Vol Env Decay)   | Positive Bipolar Linear  | `CC >= 64`       | Volume envelope decay   | -2997 timecents  |
-| **CC 75** (Vol Env Decay)   | Positive Bipolar Concave | `CC >= 64`       | Volume envelope release | 8035 timecents   |
-| **CC 75** (Vol Env Decay)   | Positive Bipolar Convex  | `CC >= 64`       | Volume envelope decay   | 435 timecents    |
-| **CC 72** (Vol Env Release) | Positive Bipolar Linear  | `CC < 64`        | Volume envelope release | 9779 timecents   |
-| **CC 72** (Vol Env Release) | Positive Bipolar Linear  | `CC >= 64`       | Volume envelope release | -2997 timecents  |
-| **CC 72** (Vol Env Release) | Positive Bipolar Concave | `CC >= 64`       | Volume envelope release | 8035 timecents   |
-| **CC 72** (Vol Env Release) | Positive Bipolar Convex  | `CC >= 64`       | Volume envelope release | 435 timecents    |
-
-### Resonant modulator
-
-SpessaSynth treats a specific modulator as a _resonant modulator._ That is:
-
-- Source 1: CC 71 Positive Bipolar Linear
-- Source 2: No controller Positive Unipolar Linear (0x0)
-- Destination: Initial Filter Resonance
-
-This modulator is coded to not affect the DSP gain like the SF2 specification requires.
-This is done because neither XG nor GS reacted that way to CC 71.
-Other than that, the filter is fully to the spec.
-All other modulators/generators affect the gain as the spec requires.
-
-This approach allows the soundfont engineer to overwrite or delete the modulator, while maintaining the same behavior.
-
-### Reverb and Chorus modulators
-
-SpessaSynth has custom behavior for these modulators, emulating BASSMIDI:
-
-- The modulators affected are all modulators
-  that use **Reverb depth Positive Unipolar Linear or Chorus depth Positive Unipolar Linear** as a primary source
-  and **No Controller** as the secondary source and either **reverbEffectsSend** or **chorusEffectsSend** as the
-  destination
-- The transform amount is multiplied by **5** if the initial transform amount is 1000 or below
-- If the transform is multiplied, it is capped at **1000**.
-
-#### Reasoning
-
-The amount of `200` (SF2 default) is too low for these modulators, according to Ian from [Un4seen.](https://www.un4seen.com/)
-I agree with this,
-and also set the default to `1000` (actually it's `200` multiplied by `5` which is `1000`).
-But this poses a few problems without using the solution above:
-
-- Sound banks that assume default reverb of `200` will have almost inaudible effects.
-  For example, a soundfont might want to slightly decrease the reverb, by setting it to `150`, for example.
-  It is way less than the default `1000`,
-  and the approach above will make it `150 * 5 = 750` which is still less than default,
-  but more audible.
-- This approach still allows disabling these modulators.
-- Some soundfonts assume a default reverb of `1000` and set some to `800` or similar.
-  Using default `200` will cause a big imbalance between the custom and default modulators.
+- A DLS file with a send amount of its own below `1000` used to be multiplied by 5 as well, and is now played as
+  written.
+- A preset zone send modulator that adds to an instrument zone one is converted on its own. The sum used to be
+  multiplied and capped as a whole, so two amounts that add up to more than `200` in the file now give a steeper
+  send.

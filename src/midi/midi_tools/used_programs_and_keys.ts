@@ -211,7 +211,10 @@ export function getUsedProgramsAndKeys<T extends MIDIPatchFull>(
                             event
                         );
                         // RPN#02 Coarse Tune is key-shift according to GM2 section 3.4.3
+                        // GM ignores NRPN
                         if (
+                            ((system as MIDISystem) !== "gm" ||
+                                ch.param.isRegistered) &&
                             analyzed?.type === "Channel MIDI Param" &&
                             analyzed.parameter === "keyShift"
                         )
@@ -227,12 +230,13 @@ export function getUsedProgramsAndKeys<T extends MIDIPatchFull>(
                     }
 
                     case MIDIControllers.bankSelect: {
-                        ch.bankMSB = value;
+                        // GM ignores bank selects
+                        if ((system as MIDISystem) !== "gm") ch.bankMSB = value;
                         break;
                     }
 
                     case MIDIControllers.bankSelectLSB: {
-                        ch.bankLSB = value;
+                        if ((system as MIDISystem) !== "gm") ch.bankLSB = value;
                         break;
                     }
                 }
@@ -302,7 +306,19 @@ export function getUsedProgramsAndKeys<T extends MIDIPatchFull>(
                 // Check for drum sysex
 
                 const syxs = MIDIUtils.analyzeSysEx(e.data);
+                // GM only receives the mode messages of GS and XG (0x41 and 0x43), as the synthesizer does
+                const isGMIgnored =
+                    (system as MIDISystem) === "gm" &&
+                    (e.data[0] === 0x41 || e.data[0] === 0x43);
                 for (const syx of syxs) {
+                    if (
+                        isGMIgnored &&
+                        !(
+                            syx.type === "Global MIDI Param" &&
+                            syx.parameter === "system"
+                        )
+                    )
+                        continue;
                     switch (syx.type) {
                         default: {
                             break;

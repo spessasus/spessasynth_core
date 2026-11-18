@@ -753,8 +753,8 @@ export abstract class TrackerModule {
      * @param preAmp The pre-amp value.
      */
     protected setPreAmp(preAmp: number) {
-        // Calibrated against OpenMPT. The synthesizer applies 0.4 of the generator's attenuation
-        this.attenuation = Math.round(85 + 500 * Math.log10(64 / preAmp));
+        // Calibrated against OpenMPT
+        this.attenuation = Math.round(34 + 200 * Math.log10(64 / preAmp));
     }
 
     protected setSpeed(speed: number) {

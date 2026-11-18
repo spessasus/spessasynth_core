@@ -106,8 +106,10 @@ export class CachedVoice {
         this.playbackStep =
             (sample.sampleRate / sampleRate) *
             Math.pow(2, sample.pitchCorrection / 1200); // Cent tuning
-        this.loopingMode = generators[
-            GeneratorTypes.sampleModes
-        ] as SampleLoopingMode;
+        // Unknown modes do not loop
+        const mode = generators[GeneratorTypes.sampleModes];
+        this.loopingMode = (
+            mode >= 0 && mode <= 4 ? mode : 0
+        ) as SampleLoopingMode;
     }
 }

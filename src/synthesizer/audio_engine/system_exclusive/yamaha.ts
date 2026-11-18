@@ -1,12 +1,26 @@
+import {
+    type MatrixDestination,
+    MatrixDestinations,
+    type MatrixSource,
+    MatrixSources
+} from "../channel/enums";
 import { SpessaLog } from "../../../utils/loggin";
 import { type MIDIController, MIDIControllers } from "../../../midi/enums";
 import type { SpessaSynthProcessor } from "../../processor";
 import type { SysExAcceptedArray } from "../../../midi/types";
-import { ModulatorControllerSources } from "../../../soundbank/enums";
 import {
     DEFAULT_XG_DRUM_MAP,
     MELODIC_MAP
 } from "../../../midi/midi_tools/sysex_data";
+
+const XG_MATRIX_DESTINATIONS: MatrixDestination[] = [
+    MatrixDestinations.pitch,
+    MatrixDestinations.cutoff,
+    MatrixDestinations.amplitude,
+    MatrixDestinations.lfo1Pitch,
+    MatrixDestinations.lfo1Filter,
+    MatrixDestinations.lfo1Amplitude
+];
 
 /**
  * Handles a Yamaha XG system exclusive
@@ -26,6 +40,13 @@ export function yamahaSystemExclusive(
         const a3 = syx[5]; // Address 3
         // Data = syx[6]
         const data = syx[6];
+        // GM only receives the mode messages (XG system on and all parameter reset)
+        if (
+            this.midiParameters.system === "gm" &&
+            !(a1 === 0x00 && a2 === 0x00 && (a3 === 0x7e || a3 === 0x7f))
+        ) {
+            return;
+        }
         // XG system parameter
         if (a1 === 0x00 && a2 === 0x00) {
             switch (a3) {
@@ -562,23 +583,10 @@ export function yamahaSystemExclusive(
 
                 // Part mode
                 case 0x07: {
-                    const drums = data !== MELODIC_MAP;
-                    // Testcase: xg part_mode_drum
-                    // Verified with s-yxg50
-                    // SetDrums switches the bank and keeps the program,
-                    // But switching *to* drums re-initializes the kit
-                    // To program 0 instead!
-                    // But not if it's already drum
-                    // Testcase: 15. U.N. Owen was her (yoimutu).mid
-                    const drumsBefore = ch.drumChannel;
-                    ch.setDrums(drums);
-                    if (drums && !drumsBefore) {
-                        ch.programChange(0);
-                    }
-                    ch.setMIDIParameter("drumMap", data);
+                    ch.setPartMode(data);
                     SpessaLog.xgInfo(
                         `Part Mode on ${channel}`,
-                        drums ? "DRUM" : "MELODIC"
+                        data === MELODIC_MAP ? "MELODIC" : "DRUM"
                     );
                     break;
                 }
@@ -648,6 +656,12 @@ export function yamahaSystemExclusive(
                     break;
                 }
 
+                // Variation send
+                case 0x14: {
+                    ch.controllerChange(MIDIControllers.variationDepth, data);
+                    break;
+                }
+
                 // Vibrato rate
                 case 0x15: {
                     ch.controllerChange(MIDIControllers.vibratoRate, data);
@@ -703,11 +717,14 @@ export function yamahaSystemExclusive(
 
                 // MW LFO PMOD Depth (alias to modulation wheel range)
                 case 0x20: {
-                    const cents = (data / 127) * 600;
-                    ch.setMIDIParameter("modulationDepth", cents);
+                    // Sets the modulation depth range (RPN 5) to data * 5 cents, so the default 10 is 50 cents.
+                    // XG engines stop at about 200 cents (measured on S-YXG50)
+                    const depth = ch.setModulationDepthRange(
+                        Math.round(6.4 * Math.min(data, 40))
+                    );
                     SpessaLog.xgInfo(
-                        `Modulation Wheel Range for ${channel}`,
-                        cents,
+                        `Modulation wheel depth for ${channel}`,
+                        depth,
                         "cents"
                     );
                     break;
@@ -715,11 +732,12 @@ export function yamahaSystemExclusive(
 
                 // Bend pitch control (alias to pitch wheel range)
                 case 0x23: {
-                    const centeredValue = data - 64;
-                    ch.setMIDIParameter("pitchWheelRange", centeredValue);
+                    // A control below the center gives no bend at all
+                    const range = Math.max(0, Math.min(24, data - 64));
+                    ch.setMIDIParameter("pitchWheelRange", range);
                     SpessaLog.xgInfo(
                         `Pitch Wheel Range for ${channel}`,
-                        centeredValue,
+                        range,
                         "semitones"
                     );
                     break;
@@ -796,50 +814,34 @@ export function yamahaSystemExclusive(
                 case 0x64:
                 case 0x65:
                 case 0x66: {
-                    let startAddr;
-                    let source: number;
-                    let isCC = false;
-                    let sourceName;
-                    let bipolar = false;
-
+                    let startAddr: number;
+                    let source: MatrixSource;
                     if (a3 <= 0x22) {
                         startAddr = 0x1d;
-                        source = MIDIControllers.modulationWheel;
-                        isCC = true;
-                        sourceName = "mod wheel";
+                        source = MatrixSources.modulationWheel;
                     } else if (a3 <= 0x28) {
                         startAddr = 0x23;
-                        source = ModulatorControllerSources.pitchWheel;
-                        sourceName = "pitch wheel";
-                        bipolar = true;
+                        source = MatrixSources.pitchWheel;
                     } else if (a3 <= 0x52) {
                         startAddr = 0x4d;
-                        source = ModulatorControllerSources.channelPressure;
-                        sourceName = "channel pressure";
+                        source = MatrixSources.channelPressure;
                     } else if (a3 <= 0x58) {
                         startAddr = 0x53;
-                        source = ModulatorControllerSources.polyPressure;
-                        sourceName = "poly pressure";
+                        source = MatrixSources.polyPressure;
                     } else if (a3 <= 0x5f) {
                         startAddr = 0x5a;
-                        source = ch.midiParameters.cc1;
-                        isCC = true;
-                        sourceName = "AC1";
+                        source = MatrixSources.cc1;
                     } else {
                         startAddr = 0x61;
-                        source = ch.midiParameters.cc2;
-                        isCC = true;
-                        sourceName = "AC2";
+                        source = MatrixSources.cc2;
                     }
-
-                    // Map to GS
-                    ch.dynamicModulators.setupReceiverXG(
-                        a3 - startAddr,
-                        data,
-                        source,
-                        isCC,
-                        sourceName,
-                        bipolar
+                    const destination = XG_MATRIX_DESTINATIONS[a3 - startAddr];
+                    // Value is tested in tests/synth/matrix/matrix_test.ts
+                    // Ensure the test matches s-yxg50 before changing
+                    ch.setMatrixCell("xg", source, destination, data);
+                    SpessaLog.xgInfo(
+                        `Controller matrix for ${channel}, source ${source} destination ${destination}`,
+                        data
                     );
                     break;
                 }

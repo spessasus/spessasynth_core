@@ -36,3 +36,9 @@ export interface SoundFontWriteIndexes {
      */
     hdr: number;
 }
+
+/**
+ * The format a SoundFont writer writes. SFe is the bank model itself, SF2 follows the rules in sf2_compatibility.ts.
+ * @internal
+ */
+export type SoundFontWriteFormat = "sf2" | "sfe";

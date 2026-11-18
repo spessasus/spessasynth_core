@@ -120,6 +120,13 @@ export interface GSDelayProcessor extends GSDelayParameter {
     ): void;
 
     /**
+     * Clears the delay line, so nothing that was fed in before plays later.
+     * The synthesizer calls it on a reset, which is when it stops running the delay.
+     * A processor without this method keeps its tail and plays the rest of it when it runs again.
+     */
+    clear?(): void;
+
+    /**
      * Gets a snapshot of this effect processor instance.
      */
     getSnapshot(): GSDelayParameter;

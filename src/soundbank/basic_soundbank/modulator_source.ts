@@ -8,14 +8,10 @@ import {
     bitMaskToBool,
     toNumericBool
 } from "../../utils/byte_functions/bit_mask";
-import {
-    getModulatorCurveValue,
-    MOD_CURVE_TYPES_AMOUNT,
-    MOD_SOURCE_TRANSFORM_POSSIBILITIES,
-    MODULATOR_RESOLUTION
-} from "./modulator_curves";
+import { ModulatorCurve } from "./modulator_curve";
+import { CustomCurve, type CustomCurveUser } from "./custom_curve";
 import type { Voice } from "../../synthesizer/audio_engine/voice/voice";
-import { MIDIControllers } from "../../midi/enums";
+import { type MIDIController, MIDIControllers } from "../../midi/enums";
 
 /**
  * Represents a single {@link Modulator} source.
@@ -51,21 +47,25 @@ export class ModulatorSource {
     public isCC;
 
     /**
-     * This field specifies how the minimum value approaches the maximum value.
+     * The element whose modulator uses this source, while the modulator is in a zone or in the default modulators.
+     * Setting a {@link CustomCurve} then links it to that element.
+     * @internal
      */
-    public curveType: ModulatorCurveType;
+    public user?: CustomCurveUser;
+
+    private storedCurve: ModulatorCurve;
 
     /**
      * Creates a new modulator source.
      * @param index The controller or MIDI CC number, see `isCC`.
-     * @param curveType How the minimum value approaches the maximum value.
+     * @param curve How the minimum value approaches the maximum value: a curve type or a curve, such as a {@link CustomCurve}.
      * @param isCC If the index is a MIDI CC instead of a general controller.
      * @param isBipolar If the source is bipolar (-1 to 1) instead of unipolar (0 to 1).
      * @param isNegative If the direction of the source is flipped.
      */
     public constructor(
         index: ModulatorSourceIndex = ModulatorControllerSources.noController,
-        curveType: ModulatorCurveType = ModulatorCurveTypes.linear,
+        curve: ModulatorCurveType | ModulatorCurve = ModulatorCurveTypes.linear,
         isCC = false,
         isBipolar = false,
         isNegative = false
@@ -74,7 +74,44 @@ export class ModulatorSource {
         this.isNegative = isNegative;
         this.index = index;
         this.isCC = isCC;
-        this.curveType = curveType;
+        this.storedCurve =
+            typeof curve === "number" ? ModulatorCurve.fromType(curve) : curve;
+    }
+
+    /**
+     * The curve, which specifies how the minimum value approaches the maximum value.
+     * A {@link CustomCurve} is SFe only. The direction reverses the source value (16384 - x) before the curve.
+     *
+     * > **Note**
+     * >
+     * > When the modulator belongs to a zone or the default modulators, setting a {@link CustomCurve} links it
+     * > to that element, like a zone's sample. The curve should be in the sound bank's
+     * > {@link BasicSoundBank.customCurves}.
+     */
+    public get curve() {
+        return this.storedCurve;
+    }
+
+    public set curve(curve: ModulatorCurve) {
+        const user = this.user;
+        if (user) {
+            if (this.storedCurve instanceof CustomCurve)
+                this.storedCurve.unlinkFrom(user);
+            if (curve instanceof CustomCurve) curve.linkTo(user);
+        }
+        this.storedCurve = curve;
+    }
+
+    /**
+     * The curve type. Setting it selects that built-in curve.
+     * A custom type without a {@link CustomCurve} outputs 0.
+     */
+    public get curveType() {
+        return this.curve.type;
+    }
+
+    public set curveType(type: ModulatorCurveType) {
+        this.curve = ModulatorCurve.fromType(type);
     }
 
     private get sourceName() {
@@ -92,17 +129,6 @@ export class ModulatorSource {
               ) ?? this.index.toString());
     }
 
-    private get curveTypeName() {
-        return (
-            Object.keys(ModulatorCurveTypes).find(
-                (k) =>
-                    ModulatorCurveTypes[
-                        k as keyof typeof ModulatorCurveTypes
-                    ] === this.curveType
-            ) ?? this.curveType.toString()
-        );
-    }
-
     /**
      * @internal
      * @param sourceEnum
@@ -112,7 +138,8 @@ export class ModulatorSource {
         const isNegative = bitMaskToBool(sourceEnum, 8);
         const isCC = bitMaskToBool(sourceEnum, 7);
         const index = (sourceEnum & 127) as ModulatorSourceIndex;
-        const curveType = ((sourceEnum >> 10) & 0x3) as ModulatorCurveType;
+        // 6 bits, SF2 curve types are 0 to 3, SFe adds 4 (custom)
+        const curveType = ((sourceEnum >> 10) & 0x3f) as ModulatorCurveType;
         return new ModulatorSource(
             index,
             curveType,
@@ -123,15 +150,25 @@ export class ModulatorSource {
     }
 
     /**
-     * Copies the modulator source.
+     * Copies a modulator source, with the same curve.
+     * A source belongs to one modulator, so use a copy to build another modulator from an existing one's source.
+     *
+     * > **Note**
+     * >
+     * > The custom curves of {@link SPESSASYNTH_DEFAULT_MODULATORS} are shared by every bank and can't be linked,
+     * > so a copy of such a source gets a new copy of the curve. Add it to the sound bank's
+     * > {@link BasicSoundBank.customCurves} like any other curve.
+     *
      * @param source The source to copy from.
      * @returns the copied source.
-     * @internal
      */
     public static copyFrom(source: ModulatorSource) {
+        const curve = source.curve;
         return new ModulatorSource(
             source.index,
-            source.curveType,
+            curve instanceof CustomCurve && Object.isFrozen(curve)
+                ? new CustomCurve(curve.points, curve.name)
+                : curve,
             source.isCC,
             source.isBipolar,
             source.isNegative
@@ -139,7 +176,7 @@ export class ModulatorSource {
     }
 
     public toString() {
-        return `${this.sourceName} ${this.curveTypeName} ${this.isBipolar ? "bipolar" : "unipolar"} ${this.isNegative ? "negative" : "positive"}`;
+        return `${this.sourceName} ${this.curve.toString()} ${this.isBipolar ? "bipolar" : "unipolar"} ${this.isNegative ? "negative" : "positive"}`;
     }
 
     /**
@@ -165,8 +202,17 @@ export class ModulatorSource {
             this.isNegative === source.isNegative &&
             this.isCC === source.isCC &&
             this.isBipolar === source.isBipolar &&
-            this.curveType === source.curveType
+            // Custom curves are the same only if their points are
+            this.curve.isIdentical(source.curve)
         );
+    }
+
+    /**
+     * Checks if the source is a given MIDI Controller.
+     * @param controller The controller to check.
+     */
+    public isController(controller: MIDIController) {
+        return this.isCC && this.index === controller;
     }
 
     /**
@@ -220,51 +266,34 @@ export class ModulatorSource {
                     // Therefore, something like "0.5 << 7" won't work,
                     // So we multiply it by 128 which is essentially the same here
                     // But it allows for fractional pitch wheel range!
-                    rawValue = Math.floor(
-                        channel.midiParameters.pitchWheelRange * 128
+                    // Ranges of 128 semitones and more would read past the curve tables
+                    rawValue = Math.min(
+                        16_383,
+                        Math.floor(channel.midiParameters.pitchWheelRange * 128)
+                    );
+                    break;
+                }
+
+                case ModulatorControllerSources.modulationDepthRange: {
+                    // The parameter is in cents, RPN 5 value is cents * 1.28 (100/128 cents per step)
+                    // The source is full at 16 semitones, so it is 8 times that value
+                    rawValue = Math.min(
+                        16_383,
+                        Math.round(
+                            channel.midiParameters.modulationDepth * 1.28
+                        ) * 8
                     );
                 }
             }
         }
 
-        // Transform the value
-        // 2-bit number as in 0bPD
-        const transformType =
-            (this.isBipolar ? 0b10 : 0b00) | (this.isNegative ? 1 : 0);
-
-        return MODULATOR_TRANSFORMS[
-            MODULATOR_RESOLUTION *
-                (this.curveType * MOD_CURVE_TYPES_AMOUNT + transformType) +
-                rawValue
-        ];
-    }
-}
-
-/**
- * To get the value, you do
- * MODULATOR_RESOLUTION * (MOD_CURVE_TYPES_AMOUNT * curveType + transformType) + your raw value as 14-bit number (0 - 16,383)
- */
-const MODULATOR_TRANSFORMS = new Float32Array(
-    MODULATOR_RESOLUTION *
-        MOD_SOURCE_TRANSFORM_POSSIBILITIES *
-        MOD_CURVE_TYPES_AMOUNT
-);
-
-for (let curveType = 0; curveType < MOD_CURVE_TYPES_AMOUNT; curveType++) {
-    for (
-        let transformType = 0;
-        transformType < MOD_SOURCE_TRANSFORM_POSSIBILITIES;
-        transformType++
-    ) {
-        const tableIndex =
-            MODULATOR_RESOLUTION *
-            (curveType * MOD_CURVE_TYPES_AMOUNT + transformType);
-        for (let value = 0; value < MODULATOR_RESOLUTION; value++) {
-            MODULATOR_TRANSFORMS[tableIndex + value] = getModulatorCurveValue(
-                transformType,
-                curveType as ModulatorCurveType,
-                value / MODULATOR_RESOLUTION
-            );
+        const curve = this.storedCurve;
+        if (curve instanceof CustomCurve) {
+            return curve.getValue(rawValue, this.isBipolar, this.isNegative);
         }
+        // 2-bit transform as in 0bPD
+        return curve.tables[
+            (this.isBipolar ? 0b10 : 0b00) | (this.isNegative ? 1 : 0)
+        ][rawValue];
     }
 }

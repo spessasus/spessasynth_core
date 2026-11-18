@@ -76,9 +76,7 @@ export function dataEntry(this: MIDIChannel) {
 
             // Modulation depth
             case RegisteredParameterTypes.modulationDepth: {
-                // Cents, so data / 128 * 100 is data / 1.28
-                const cents = dataValue / 1.28;
-                this.setMIDIParameter("modulationDepth", cents);
+                const cents = this.setModulationDepthRange(dataValue);
                 SpessaLog.coolInfo(
                     `Modulation depth for ${this.channel}`,
                     Math.round(cents),
@@ -104,6 +102,8 @@ export function dataEntry(this: MIDIChannel) {
         // Hardcoded NRPN NULL to avoid AWE32 errors
         return;
     }
+    // GM ignores NRPN
+    if (this.channelSystem === "gm") return;
     const dataCoarse = dataValue >> 7;
     // Skip drums early
     if (
@@ -165,7 +165,7 @@ export function dataEntry(this: MIDIChannel) {
                      */
                     if (
                         this.synthCore.systemParameters.customVibrato &&
-                        !this.dynamicModulators.active
+                        !this.matrix.active
                     ) {
                         if (parameterLock || dataCoarse === 64) return;
                         this.addDefaultVibrato();
@@ -188,7 +188,7 @@ export function dataEntry(this: MIDIChannel) {
                 case NonRegisteredParameterTypesLSB.vibratoDepth: {
                     if (
                         this.synthCore.systemParameters.customVibrato &&
-                        !this.dynamicModulators.active
+                        !this.matrix.active
                     ) {
                         if (parameterLock || dataCoarse === 64) return;
                         this.addDefaultVibrato();
@@ -211,7 +211,7 @@ export function dataEntry(this: MIDIChannel) {
                 case NonRegisteredParameterTypesLSB.vibratoDelay: {
                     if (
                         this.synthCore.systemParameters.customVibrato &&
-                        !this.dynamicModulators.active
+                        !this.matrix.active
                     ) {
                         if (parameterLock || dataCoarse === 64) return;
                         this.addDefaultVibrato();

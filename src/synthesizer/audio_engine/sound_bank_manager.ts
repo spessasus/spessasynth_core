@@ -195,12 +195,14 @@ export class SoundBankManager {
      * Gets a given preset from the sound bank stack.
      * @param patch The MIDI patch to search for.
      * @param system The MIDI system to select the preset for.
+     * @param channel10 If the request comes from channel 10, see {@link MIDIPatchTools.selectPatch}.
      * @returns The preset with the added bank offset or undefined if no sound banks are present.
      * @internal
      */
     public getPreset(
         patch: MIDIPatch,
-        system: MIDISystem
+        system: MIDISystem,
+        channel10 = false
     ): SynthesizerPatch | undefined {
         if (
             this.soundBankList.length === 0 ||
@@ -209,10 +211,23 @@ export class SoundBankManager {
             return undefined;
         }
 
-        return MIDIPatchTools.selectPatch(
+        const preset = MIDIPatchTools.selectPatch(
             this.selectablePresetList,
             patch,
-            system
+            system,
+            channel10
+        );
+        // The GS user drum sets are only found by an exact request the sound banks can't answer,
+        // Never by a fallback
+        if (
+            BankSelectHacks.isSystemXG(system) ||
+            MIDIPatchTools.matches(preset, patch)
+        ) {
+            return preset;
+        }
+        return (
+            this.userDrumSets.find((d) => MIDIPatchTools.matches(d, patch)) ??
+            preset
         );
     }
 
@@ -244,23 +259,6 @@ export class SoundBankManager {
 
         const addedPresets = new Set<string>();
 
-        const totalPresets = this.soundBankList.reduce(
-            (sum, cur) => sum + cur.soundBank.presets.length,
-            0
-        );
-
-        // If there are no presets, don't report as having GS user drums
-        if (totalPresets > 0) {
-            // Add custom drum sets first so they take priority
-            for (const drumSet of this.userDrumSets) {
-                const key = MIDIPatchTools.toMIDIString(drumSet);
-                if (!addedPresets.has(key)) {
-                    addedPresets.add(key);
-                    presetList.push(drumSet);
-                }
-            }
-        }
-
         for (const s of this.soundBankList) {
             const bank = s.soundBank;
             const bankOffset = s.bankOffset;
@@ -286,7 +284,18 @@ export class SoundBankManager {
         }
         presetList.sort(MIDIPatchTools.compare.bind(MIDIPatchTools));
         this.selectablePresetList = presetList;
-        this._presetList = presetList.map((p) => {
+        // If there are no presets, don't report as having GS user drums.
+        // A preset of a sound bank at the same place hides the user drum set
+        const reported = [...presetList];
+        if (presetList.length > 0) {
+            for (const drumSet of this.userDrumSets) {
+                if (!addedPresets.has(MIDIPatchTools.toMIDIString(drumSet))) {
+                    reported.push(drumSet);
+                }
+            }
+            reported.sort(MIDIPatchTools.compare.bind(MIDIPatchTools));
+        }
+        this._presetList = reported.map((p) => {
             return {
                 bankMSB: p.bankMSB,
                 bankLSB: p.bankLSB,

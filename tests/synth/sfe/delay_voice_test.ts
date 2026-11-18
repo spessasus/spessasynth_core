@@ -95,5 +95,45 @@ check(
     "the voice still starts, then plays the minimum note length"
 );
 
+console.info("-32768 is zero time, -12000 is a real 1 ms:");
+const impulseNote = note(0, 0.5, 60);
+const zero = await render(
+    makeBank(impulseSample, {
+        [GeneratorTypes.sampleModes]: 0,
+        [GeneratorTypes.delayVoice]: -32_768
+    }),
+    impulseNote,
+    0.3
+);
+const plainRender = await render(plain, impulseNote, 0.3);
+check(
+    maxDifference(zero.left, plainRender.left) === 0,
+    "an explicit -32768 sounds like the default"
+);
+const oneMs = await render(
+    makeBank(impulseSample, {
+        [GeneratorTypes.sampleModes]: 0,
+        [GeneratorTypes.delayVoice]: -12_000
+    }),
+    impulseNote,
+    0.3
+);
+const oneMsLate = firstSound(oneMs.left) - firstSound(plainRender.left);
+check(
+    oneMsLate > 0 && oneMsLate <= 44 + QUANTUM,
+    `-12000 delays the voice by about 1 ms, up to one block late (${oneMsLate} samples)`
+);
+
+// Like the SF2 delays, anything between -32768 and -12000 counts as -12000
+const between = await render(
+    makeBank(impulseSample, {
+        [GeneratorTypes.sampleModes]: 0,
+        [GeneratorTypes.delayVoice]: -20_000
+    }),
+    impulseNote,
+    0.3
+);
+check(maxDifference(between.left, oneMs.left) === 0, "-20000 counts as -12000");
+
 checkStorage(delayed, [GeneratorTypes.delayVoice]);
 finish("delay_voice_test");

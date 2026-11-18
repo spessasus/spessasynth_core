@@ -1414,6 +1414,11 @@ export class SpessaSynthProcessor {
         // Do not send CC changes as we call reset
         for (const ch of this.midiChannels) ch.reset(false);
 
+        // The GS delay stops at a reset, without leaving a tail for later
+        this.gsDelayActive = false;
+        this.gsDelaySend.fill(0);
+        this.gsDelayInput.fill(0);
+        this.gsDelayProcessor.clear?.();
         // Update if the effects should still be active.
         this.updateActiveGSEffects();
     }
@@ -1940,15 +1945,23 @@ export class SpessaSynthProcessor {
         this.gsInsertionActive = this.systemParameters.gsInsertionLock
             ? true
             : this.midiChannels.some((c) => c.midiParameters.efxAssign);
-        this.gsDelayActive = this.systemParameters.gsDelayLock
-            ? true
-            : this.midiParameters.system === "xg"
-              ? false
-              : this.gsChorusProcessor.sendLevelToDelay > 0 ||
-                this.gsInsertionBlock.sendLevelToDelay > 0 ||
-                this.midiChannels.some(
-                    (c) => c.midiControllers[MIDIControllers.variationDepth] > 0
-                );
+        // The delay only switches on here, and a reset switches it off.
+        // Most GS, GM and GM2 files never use it, and once one does, stopping it would freeze its tail
+        // And play the rest of it the next time something sends to it.
+        // A voice with a variation send switches it on too (render_voice.ts).
+        if (
+            this.systemParameters.gsDelayLock ||
+            (this.midiParameters.system !== "xg" &&
+                (this.gsChorusProcessor.sendLevelToDelay > 0 ||
+                    this.gsInsertionBlock.sendLevelToDelay > 0 ||
+                    this.midiChannels.some(
+                        (c) =>
+                            c.midiControllers[MIDIControllers.variationDepth] >
+                            0
+                    )))
+        ) {
+            this.gsDelayActive = true;
+        }
     }
 
     /**
@@ -2146,7 +2159,6 @@ export class SpessaSynthProcessor {
         chr.delay = 127;
         chr.sendLevelToDelay = 0;
         chr.sendLevelToReverb = 0;
-        // The send to delay changed, so the delay may no longer be needed
         this.updateActiveGSEffects();
         switch (macro) {
             /**
@@ -2603,7 +2615,8 @@ export class SpessaSynthProcessor {
             // Less velocity = less important
             voice.priority += voice.velocity / 25; // Map to 0-5
             // The newer, more important
-            voice.priority -= voice.volEnv.state;
+            // Decay 2 (SFe) and sustain count the same, so a sustaining voice ranks as it always did
+            voice.priority -= Math.min(4, voice.volEnv.state);
             voice.priority -= voice.volEnv.attenuationCb / 200;
         }
     }

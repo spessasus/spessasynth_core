@@ -3,6 +3,11 @@ import type { Voice } from "../voice/voice";
 import type { MIDIChannel } from "./midi_channel";
 import { GeneratorTypes } from "../../../soundbank/basic_soundbank/generator_types";
 import { MIDIControllers } from "../../../midi/enums";
+import {
+    MATRIX_CHANNEL_ROW,
+    MATRIX_DESTINATION_COUNT
+} from "./controller_matrix";
+import { MatrixDestinations } from "./enums";
 
 const TWO_PI = Math.PI * 2;
 
@@ -33,10 +38,14 @@ for (let pan = MIN_PAN; pan <= MAX_PAN; pan++) {
  * Computes the LFO value for the given phase.
  * All waveforms are at zero and rising at the default start phase of 0.25.
  * @param phase the LFO phase, from 0 to 1.
- * @param waveform 0 for triangle, 1 for sawtooth, 2 for sine.
+ * @param waveform 0 for triangle, 1 for sawtooth, 2 for sine, 3 for square.
  * @returns the LFO value, from -1 to 1.
  */
 function getLfoValue(phase: number, waveform: number) {
+    if (waveform === 3) {
+        // Square, high for the first half of the cycle from the default start
+        return phase >= 0.25 && phase < 0.75 ? 1 : -1;
+    }
     if (waveform === 2) {
         // Sine
         return Math.sin(TWO_PI * (phase - 0.25));
@@ -63,11 +72,8 @@ export function renderVoice(
     timeNow: number,
     sampleCount: number
 ) {
-    // Delayed voice start (SFE): nothing runs until the voice starts
-    if (timeNow < voice.startTime) {
-        voice.hasRendered = true;
-        return;
-    }
+    // Delayed voice start (SFe): nothing runs until the voice starts
+    if (timeNow < voice.startTime) return;
     // Check if release
     if (
         !voice.isInRelease && // If not in release, check if the release time is
@@ -84,7 +90,6 @@ export function renderVoice(
             voice.wavetable.isLooping = false;
         }
     }
-    voice.hasRendered = true;
 
     // Important sanity check, as we may disable the voice now
     // Testcase: mono mode with chords
@@ -141,96 +146,176 @@ export function renderVoice(
     // Low pass excursion with LFO and mod envelope
     let lowpassExcursion = 0;
     let volumeExcursionCentibels = 0;
-    let voiceGain =
-        voice.gainModifier * (1 + modulated[GeneratorTypes.amplitude] / 1000);
+    let voiceGain = voice.gainModifier;
+    // Linear tremolo terms (SFe and the GS matrix), clamped once below
+    let tremolo = 0;
 
-    // Vibrato LFO
-    if (timeNow >= voice.vibLfoStartTime) {
+    // Gain (SFe), positive is louder
+    const gainCb = modulated[GeneratorTypes.gain];
+    if (gainCb !== 0) voiceGain *= cbAttenuationToGain(-gainCb);
+
+    // Controller matrix (GS / XG)
+    const matrix = this.matrix;
+    const matrixActive = matrix.active;
+    const isXGMatrix = matrix.system === "xg";
+    const mOut = matrix.outputs;
+    let mRow = MATRIX_CHANNEL_ROW;
+    if (matrixActive) {
+        if (
+            matrix.perNoteRows ||
+            (matrix.polyPressureActive &&
+                this.polyPressures[voice.midiNote] > 0)
+        )
+            mRow = voice.midiNote * MATRIX_DESTINATION_COUNT;
+        cents += mOut[mRow + MatrixDestinations.pitch];
+        lowpassExcursion += mOut[mRow + MatrixDestinations.cutoff];
+        const amp = mOut[mRow + MatrixDestinations.amplitude];
+        if (amp !== 0) {
+            if (isXGMatrix) {
+                // XG works in decibels: -100 % is -96 dB, +100 % is +6 dB
+                volumeExcursionCentibels -= amp < 0 ? amp * 960 : amp * 60;
+            } else {
+                // GS works on the amplitude: -100 % is silence, +100 % twice the level
+                voiceGain *= Math.max(0, 1 + amp);
+            }
+        }
+    }
+
+    // Vibrato LFO (GS LFO1, XG LFO (the only one))
+    // GS and XG run the oscillator from note on. The patch's delay and fade only hold back its own depths,
+    // The controller (matrix) depths play at full strength from the start.
+    const matrixVib = matrixActive && matrix.lfo1Active;
+    const vibStarted = timeNow >= voice.vibLfoStartTime;
+    if (vibStarted || matrixVib) {
         const vibPitchDepth = modulated[GeneratorTypes.vibLfoToPitch];
         const vibVolDepth = modulated[GeneratorTypes.vibLfoToVolume];
         const vibFilterDepth = modulated[GeneratorTypes.vibLfoToFilterFc];
-        const vibAmplitudeDepth =
-            modulated[GeneratorTypes.vibLfoAmplitudeDepth];
+        const vibAmplitudeDepth = modulated[GeneratorTypes.vibLfoToAmplitude];
         if (
+            matrixVib ||
             vibPitchDepth !== 0 ||
             vibVolDepth !== 0 ||
             vibFilterDepth !== 0 ||
             vibAmplitudeDepth !== 0
         ) {
-            const vibFreqHz = Math.max(
-                0,
-                absCentsToHz(modulated[GeneratorTypes.freqVibLFO]) +
-                    modulated[GeneratorTypes.vibLfoRate] / 100
-            );
-            const rateInc = (vibFreqHz * sampleCount) / sampleRate;
-            let vibLfoValue = getLfoValue(
-                voice.vibLfoPhase,
-                modulated[GeneratorTypes.vibLfoWaveform]
-            );
-            if ((voice.vibLfoPhase += rateInc) >= 1) voice.vibLfoPhase -= 1;
-            // Fade in (SFE)
-            if (voice.vibLfoFade > 0) {
-                const fade =
-                    (timeNow - voice.vibLfoStartTime) / voice.vibLfoFade;
-                if (fade < 1) vibLfoValue *= fade;
+            let vibFreqHz = absCentsToHz(modulated[GeneratorTypes.freqVibLFO]);
+            if (matrixActive)
+                vibFreqHz += mOut[mRow + MatrixDestinations.lfo1Rate];
+            // At or below 0 Hz the LFO stands still
+            vibFreqHz = Math.max(0, vibFreqHz);
+            const waveform = modulated[GeneratorTypes.vibLfoWaveform];
+            let vibLfoValue;
+            if (vibStarted) {
+                vibLfoValue = getLfoValue(voice.vibLfoPhase, waveform);
+                if (
+                    (voice.vibLfoPhase +=
+                        (vibFreqHz * sampleCount) / sampleRate) >= 1
+                )
+                    voice.vibLfoPhase -= 1;
+            } else {
+                // Still in the patch's delay: run back from the phase the patch's LFO starts at
+                let phase =
+                    voice.vibLfoPhase -
+                    vibFreqHz * (voice.vibLfoStartTime - timeNow);
+                phase -= Math.floor(phase);
+                vibLfoValue = getLfoValue(phase, waveform);
             }
-            cents += vibLfoValue * vibPitchDepth;
-            // Low pass frequency
-            lowpassExcursion += vibLfoValue * vibFilterDepth;
-
-            // Vol env volume offset
-            // Negate the lfo value because audigy starts with increase rather than decrease
-            volumeExcursionCentibels += -vibLfoValue * vibVolDepth;
-
-            // Amplitude depth
-            // Like SCVA: double gain at peak, 0 at lowest (times depth)
-            voiceGain *= 1 + vibLfoValue * (vibAmplitudeDepth / 1000);
+            if (matrixVib) {
+                cents +=
+                    vibLfoValue * mOut[mRow + MatrixDestinations.lfo1Pitch];
+                lowpassExcursion +=
+                    vibLfoValue * mOut[mRow + MatrixDestinations.lfo1Filter];
+                const a = mOut[mRow + MatrixDestinations.lfo1Amplitude];
+                // XG: a swing in decibels from the level down (100 % reaches -96 dB), GS: linear
+                if (isXGMatrix)
+                    volumeExcursionCentibels +=
+                        (a * 960 * (1 - vibLfoValue)) / 2;
+                else tremolo += vibLfoValue * a;
+            }
+            if (vibStarted) {
+                // Fade in (SFe)
+                if (voice.vibLfoFade > 0) {
+                    const fade =
+                        (timeNow - voice.vibLfoStartTime) / voice.vibLfoFade;
+                    if (fade < 1) vibLfoValue *= fade;
+                }
+                cents += vibLfoValue * vibPitchDepth;
+                // Low pass frequency
+                lowpassExcursion += vibLfoValue * vibFilterDepth;
+                // Vol env volume offset
+                // Negate the lfo value because audigy starts with increase rather than decrease
+                volumeExcursionCentibels += -vibLfoValue * vibVolDepth;
+                // Amplitude depth (SFe)
+                tremolo += vibLfoValue * (vibAmplitudeDepth / 1000);
+            }
         }
     }
 
-    // Mod LFO
-    if (timeNow >= voice.modLfoStartTime) {
+    // Mod LFO (GS LFO2), same as above
+    const matrixMod = matrixActive && matrix.lfo2Active;
+    const modStarted = timeNow >= voice.modLfoStartTime;
+    if (modStarted || matrixMod) {
         const modPitchDepth = modulated[GeneratorTypes.modLfoToPitch];
         const modVolDepth = modulated[GeneratorTypes.modLfoToVolume];
         const modFilterDepth = modulated[GeneratorTypes.modLfoToFilterFc];
-        const modAmplitudeDepth =
-            modulated[GeneratorTypes.modLfoAmplitudeDepth];
+        const modAmplitudeDepth = modulated[GeneratorTypes.modLfoToAmplitude];
         // Don't compute mod lfo unless necessary
         if (
+            matrixMod ||
             modPitchDepth !== 0 ||
             modFilterDepth !== 0 ||
             modVolDepth !== 0 ||
             modAmplitudeDepth !== 0
         ) {
-            const modFreqHz = Math.max(
-                0,
-                absCentsToHz(modulated[GeneratorTypes.freqModLFO]) +
-                    modulated[GeneratorTypes.modLfoRate] / 100
-            );
-            const rateInc = (modFreqHz * sampleCount) / sampleRate;
-            let modLfoValue = getLfoValue(
-                voice.modLfoPhase,
-                modulated[GeneratorTypes.modLfoWaveform]
-            );
-            if ((voice.modLfoPhase += rateInc) >= 1) voice.modLfoPhase -= 1;
-            // Fade in (SFE)
-            if (voice.modLfoFade > 0) {
-                const fade =
-                    (timeNow - voice.modLfoStartTime) / voice.modLfoFade;
-                if (fade < 1) modLfoValue *= fade;
+            let modFreqHz = absCentsToHz(modulated[GeneratorTypes.freqModLFO]);
+            if (matrixActive)
+                modFreqHz += mOut[mRow + MatrixDestinations.lfo2Rate];
+            modFreqHz = Math.max(0, modFreqHz);
+            const waveform = modulated[GeneratorTypes.modLfoWaveform];
+            let modLfoValue;
+            if (modStarted) {
+                modLfoValue = getLfoValue(voice.modLfoPhase, waveform);
+                if (
+                    (voice.modLfoPhase +=
+                        (modFreqHz * sampleCount) / sampleRate) >= 1
+                )
+                    voice.modLfoPhase -= 1;
+            } else {
+                let phase =
+                    voice.modLfoPhase -
+                    modFreqHz * (voice.modLfoStartTime - timeNow);
+                phase -= Math.floor(phase);
+                modLfoValue = getLfoValue(phase, waveform);
             }
-            cents += modLfoValue * modPitchDepth;
-            // Vol env volume offset
-            // Negate the lfo value because audigy starts with increase rather than decrease
-            volumeExcursionCentibels += -modLfoValue * modVolDepth;
-            // Low pass frequency
-            lowpassExcursion += modLfoValue * modFilterDepth;
-
-            // Amplitude depth
-            // Like SCVA: double gain at peak, 0 at lowest (times depth)
-            voiceGain *= 1 + modLfoValue * (modAmplitudeDepth / 1000);
+            if (matrixMod) {
+                cents +=
+                    modLfoValue * mOut[mRow + MatrixDestinations.lfo2Pitch];
+                lowpassExcursion +=
+                    modLfoValue * mOut[mRow + MatrixDestinations.lfo2Filter];
+                tremolo +=
+                    modLfoValue * mOut[mRow + MatrixDestinations.lfo2Amplitude];
+            }
+            if (modStarted) {
+                // Fade in (SFe)
+                if (voice.modLfoFade > 0) {
+                    const fade =
+                        (timeNow - voice.modLfoStartTime) / voice.modLfoFade;
+                    if (fade < 1) modLfoValue *= fade;
+                }
+                cents += modLfoValue * modPitchDepth;
+                // Low pass frequency
+                lowpassExcursion += modLfoValue * modFilterDepth;
+                // Vol env volume offset
+                // Negate the lfo value because audigy starts with increase rather than decrease
+                volumeExcursionCentibels += -modLfoValue * modVolDepth;
+                // Amplitude depth (SFe)
+                tremolo += modLfoValue * (modAmplitudeDepth / 1000);
+            }
         }
     }
+
+    // One clamp for all linear amplitude modulation
+    if (tremolo !== 0) voiceGain *= Math.max(0, Math.min(2, 1 + tremolo));
 
     const { systemParameters } = core;
 
@@ -264,7 +349,7 @@ export function renderVoice(
         cents += modEnv * modEnvPitchDepth;
     }
 
-    // Second mod env (SFE)
+    // Second mod env (SFe)
     const modEnv2PitchDepth = modulated[GeneratorTypes.modEnv2ToPitch];
     const modEnv2FilterDepth = modulated[GeneratorTypes.modEnv2ToFilterFc];
     if (modEnv2FilterDepth !== 0 || modEnv2PitchDepth !== 0) {
@@ -272,9 +357,6 @@ export function renderVoice(
         lowpassExcursion += modEnv2 * modEnv2FilterDepth;
         cents += modEnv2 * modEnv2PitchDepth;
     }
-
-    // Default resonant modulator: it does not affect the filter gain (neither XG nor GS did that)
-    volumeExcursionCentibels -= voice.resonanceOffset;
 
     // Finally, calculate the playback rate
     const centsTotal = cents + semitones * 100;
@@ -311,6 +393,11 @@ export function renderVoice(
     let gain = voice.volEnv.outputGain;
     // Compute the new value
     const envActive = voice.volEnv.process(sampleCount, gainTarget);
+    if (voice.volEnv.startsAtPeak) {
+        // No delay and no attack: start the first block at the peak instead of ramping up from silence
+        gain = voice.volEnv.outputGain;
+        voice.volEnv.startsAtPeak = false;
+    }
 
     // Note, we do not use &&= as it short-circuits!
     // And we don't do = either as wavetable might've marked it as inactive (end of sample)
@@ -357,19 +444,22 @@ export function renderVoice(
         if (chorusSend > 0)
             chorusLevel = systemParameters.chorusGain * (chorusSend / 1000);
 
-        // XG variation send is system-only, in insertion mode CC94 does nothing.
-        // GS delay is only sent to when it's active.
+        // XG variation send is system-only, in insertion mode the send does nothing.
         const isXG = core.midiParameters.system === "xg";
-        if (isXG ? !core.xgVariationBlock.insertionMode : core.gsDelayActive) {
+        if (!isXG || !core.xgVariationBlock.insertionMode) {
             const variationSend =
-                this._midiControllers[MIDIControllers.variationDepth] *
+                modulated[GeneratorTypes.variationEffectsSend] *
                 voice.variationGain;
-            if (variationSend > 0)
+            if (variationSend > 0) {
                 variationLevel =
-                    ((variationSend >> 7) / 127) *
+                    (variationSend / 1000) *
                     (isXG
                         ? systemParameters.xgVariationGain
                         : systemParameters.gsDelayGain);
+                // The GS delay runs from its first use until a reset.
+                // A zone can send without CC 94 (variationEffectsSend), so the voice turns it on
+                if (!isXG) core.gsDelayActive = true;
+            }
         }
     }
 
@@ -423,7 +513,7 @@ export function renderVoice(
     // Calculate increase
     const gainInc = (voice.volEnv.outputGain * outputGain - gain) / sampleCount;
 
-    // Low pass filter and gain (inlined for performance, confirmed with Node.js)
+    // Voice filter and gain (inlined for performance, confirmed with Node.js)
     {
         const f = voice.filter;
         const initialFc = modulated[GeneratorTypes.initialFilterFc];
@@ -446,18 +536,25 @@ export function renderVoice(
 
         // The final cutoff for this calculation
         let targetCutoff = f.currentInitialFc + lowpassExcursion;
-        // Cutoff ceiling (SFE), 13500 means no ceiling
+        // Cutoff ceiling (SFe), 13500 means no ceiling
         const maxCutoff = modulated[GeneratorTypes.maxFilterFc];
         if (maxCutoff < 13_500 && targetCutoff > maxCutoff)
             targetCutoff = maxCutoff;
-        const modulatedResonance = modulated[GeneratorTypes.initialFilterQ];
+        // SF2 resonance plus the SFe offset, both already clamped to their own ranges
+        const modulatedResonance =
+            modulated[GeneratorTypes.initialFilterQ] +
+            modulated[GeneratorTypes.filterQOffset];
+        // SFe filter type, 0 is the SF2 lowpass
+        const filterType = modulated[GeneratorTypes.filterType];
         /* Note:
          * the check for initialFC is because of the filter optimization
          * (if cents are the maximum then the filter is open)
          * filter cannot use this optimization if it's dynamic (see #53), and
          * the filter can only be dynamic if the initial filter is not open
          */
+        // Only the lowpass is neutral when open, the other types must always run
         if (
+            filterType === 0 &&
             f.currentInitialFc > 13_499 &&
             targetCutoff > 13_499 &&
             modulatedResonance === 0
@@ -472,10 +569,12 @@ export function renderVoice(
             // Check if the frequency has changed. if so, calculate new coefficients
             if (
                 Math.abs(f.lastTargetCutoff - targetCutoff) > 1 ||
-                f.resonanceCb !== modulatedResonance
+                f.resonanceCb !== modulatedResonance ||
+                f.type !== filterType
             ) {
                 f.lastTargetCutoff = targetCutoff;
                 f.resonanceCb = modulatedResonance;
+                f.type = filterType;
                 f.calculateCoefficients(targetCutoff);
             }
 

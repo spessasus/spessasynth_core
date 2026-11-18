@@ -6,7 +6,7 @@ import {
     GeneratorTypes
 } from "../../../soundbank/basic_soundbank/generator_types";
 import { MIDIControllers } from "../../../midi/enums";
-import { Modulator } from "../../../soundbank/basic_soundbank/modulator";
+import { ALTERNATING_OFF } from "../voice/wavetable_oscillator/wavetable_oscillator";
 import { timecentsToSeconds } from "../voice/unit_converter";
 import { SpessaLog } from "../../../utils/loggin";
 import { randomGenerator } from "../../../utils/other";
@@ -178,6 +178,30 @@ export function noteOn(
 
     const noteID = emit ? this.noteOnID[midiNote]++ : this.noteOnID[midiNote];
 
+    // Apply exclusive class before adding the voices, so the voices of this note on do not end each other
+    // In mono mode all voices have been killed already
+    if (this._midiParameters.polyMode && this._voiceCount > 0) {
+        for (const cached of voices) {
+            const exclusiveClass = exclusiveOverride || cached.exclusiveClass;
+            if (exclusiveClass === 0) continue;
+            // Kill all voices with the same exclusive class
+            for (const v of this.synthCore.voices) {
+                if (
+                    v.isActive &&
+                    v.channel === this.channel &&
+                    v.exclusiveClass === exclusiveClass
+                ) {
+                    if (v.startTime > this.synthCore.currentTime) {
+                        // A delayed voice that has not started yet never sounds
+                        v.isActive = false;
+                    } else {
+                        v.exclusiveRelease(this.synthCore.currentTime);
+                    }
+                }
+            }
+        }
+    }
+
     // Add voices
     for (const cached of voices) {
         const voice = this.synthCore.assignVoice();
@@ -202,27 +226,7 @@ export function noteOn(
         voice.wavetable.sampleData = cached.sampleData;
         voice.wavetable.playbackStep = cached.playbackStep;
 
-        // Set modulators
-        if (this.dynamicModulators.active) {
-            // We have to copy them...
-            voice.modulators = [...cached.modulators];
-            // Dynamic modulators
-            for (const m of this.dynamicModulators.modulatorList) {
-                const existingModIndex = voice.modulators.findIndex(
-                    (voiceMod) => Modulator.isIdentical(voiceMod, m.mod)
-                );
-
-                // Replace or add
-                if (existingModIndex === -1) {
-                    voice.modulators.push(m.mod);
-                } else {
-                    voice.modulators[existingModIndex] = m.mod;
-                }
-            }
-        } else {
-            // Set directly
-            voice.modulators = cached.modulators;
-        }
+        voice.modulators = cached.modulators;
 
         if (voice.modulators.length > voice.modulatorValues.length) {
             SpessaLog.warn(
@@ -242,33 +246,15 @@ export function noteOn(
             }
         }
 
-        // Apply exclusive class
-        // In mono mode all voices have been killed already
-        if (voice.exclusiveClass !== 0 && this._midiParameters.polyMode) {
-            // Kill all voices with the same exclusive class
-            let vc = 0;
-            if (this._voiceCount > 0)
-                for (const v of this.synthCore.voices) {
-                    if (
-                        v.isActive &&
-                        v.channel === this.channel &&
-                        v.exclusiveClass === voice.exclusiveClass &&
-                        // Only voices created in a different quantum
-                        v.hasRendered
-                    ) {
-                        v.exclusiveRelease(this.synthCore.currentTime);
-                        if (++vc >= this._voiceCount) break; // We already checked all the voices
-                    }
-                }
-        }
         // Compute all modulators
         this.computeModulators(voice);
         const modulated = voice.modulatedGenerators;
 
-        // Delayed voice start (SFE): everything below runs from the delayed start time
-        const voiceDelay = modulated[GeneratorTypes.delayVoice];
-        if (voiceDelay > -12_000)
-            voice.startTime += timecentsToSeconds(voiceDelay);
+        // Delayed voice start (SFe): everything below runs from the delayed start time
+        // -32768 (the default) is zero time
+        voice.startTime += timecentsToSeconds(
+            modulated[GeneratorTypes.delayVoice]
+        );
         const start = voice.startTime;
 
         // Initialize the volume envelope (non-realtime)
@@ -285,11 +271,14 @@ export function noteOn(
             start + timecentsToSeconds(modulated[GeneratorTypes.delayVibLFO]);
         voice.modLfoStartTime =
             start + timecentsToSeconds(modulated[GeneratorTypes.delayModLFO]);
-        // LFO fade in and start phase (SFE)
-        const vibFade = modulated[GeneratorTypes.fadeVibLFO];
-        voice.vibLfoFade = vibFade > -12_000 ? timecentsToSeconds(vibFade) : 0;
-        const modFade = modulated[GeneratorTypes.fadeModLFO];
-        voice.modLfoFade = modFade > -12_000 ? timecentsToSeconds(modFade) : 0;
+        // LFO fade in and start phase (SFe)
+        // -32768 (the default) is zero time, so no fade
+        voice.vibLfoFade = timecentsToSeconds(
+            modulated[GeneratorTypes.fadeVibLFO]
+        );
+        voice.modLfoFade = timecentsToSeconds(
+            modulated[GeneratorTypes.fadeModLFO]
+        );
         voice.vibLfoPhase +=
             (modulated[GeneratorTypes.vibLfoStartPhase] % 360) / 360;
         if (voice.vibLfoPhase >= 1) voice.vibLfoPhase -= 1;
@@ -344,14 +333,27 @@ export function noteOn(
             voice.wavetable.loopEnd - voice.wavetable.loopStart < 1 && // Disable loop if enabled
             // Don't disable on release mode. Testcase:
             // https://github.com/spessasus/SpessaSynth/issues/174
-            (voice.loopingMode === 1 || voice.loopingMode === 3)
+            (voice.loopingMode === 1 ||
+                voice.loopingMode === 3 ||
+                voice.loopingMode === 4)
         ) {
             voice.loopingMode = 0;
         }
         voice.wavetable.loopLength =
             voice.wavetable.loopEnd - voice.wavetable.loopStart;
+        voice.wavetable.turn = ALTERNATING_OFF;
+        // An alternating loop plays as a forward loop through the turn and back, without repeating the turn points.
+        // One point long, it is the same as a forward loop.
+        if (voice.loopingMode === 4 && voice.wavetable.loopLength > 1) {
+            voice.wavetable.turn = voice.wavetable.loopEnd - 1;
+            voice.wavetable.loopLength = (voice.wavetable.loopLength - 1) * 2;
+            voice.wavetable.loopEnd =
+                voice.wavetable.loopStart + voice.wavetable.loopLength;
+        }
         voice.wavetable.isLooping =
-            voice.loopingMode === 1 || voice.loopingMode === 3;
+            voice.loopingMode === 1 ||
+            voice.loopingMode === 3 ||
+            voice.loopingMode === 4;
         voice.wavetable.hasLooped = false;
 
         // Apply portamento

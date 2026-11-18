@@ -1,7 +1,9 @@
 import { absCentsToHz, cbAttenuationToGain } from "./unit_converter";
 
 /**
- * Applies a lowpass filter to a voice.
+ * Applies the voice filter:
+ * The SF2 lowpass, or one of the SFe types (highpass, bandpass, peak, notch).
+ * All are RBJ biquads.
  * A lot of the tricks here come from FluidSynth.
  * They are the real smart guys.
  * Shoutout to them!
@@ -17,6 +19,7 @@ export const FILTER_SMOOTHING_STEP = 300;
 
 /*
  * Coefficient cache layout:
+ * one entry per resonance and filter type (resonance * 8 + type),
  * 5 coefficients for each cent of cutoff, stored in chunks of 128 cents and allocated when needed.
  *
  * A dense typed array like this is much faster
@@ -34,13 +37,13 @@ type CoefficientChunks = (Float64Array | undefined)[];
 
 /**
  * Cached filter coefficients.
- * Key is resonanceCb, then cutoff cents.
+ * Key is resonanceCb * 8 + type, then cutoff cents.
  *
  * There is one cache per sample rate, shared by all synthesizers using that rate.
  */
 export type FilterCoefficientCache = Map<number, CoefficientChunks>;
 
-export class LowpassFilter {
+export class VoiceFilter {
     /**
      * Global coefficient caches, shared between all synthesizer instances.
      */
@@ -54,6 +57,10 @@ export class LowpassFilter {
      * Resonance in centibels.
      */
     public resonanceCb = 0;
+    /**
+     * The filter type, see the SFe `filterType` generator. 0 is the SF2 lowpass.
+     */
+    public type = 0;
     /**
      * Current cutoff frequency in absolute cents.
      */
@@ -121,9 +128,9 @@ export class LowpassFilter {
      */
     private chunks: CoefficientChunks = [];
     /**
-     * The resonance that `chunks` belong to.
+     * The resonance and type key that `chunks` belong to.
      */
-    private chunksResonance = -1;
+    private chunksKey = Number.NaN;
 
     /**
      * Initializes a new instance of the filter.
@@ -133,7 +140,7 @@ export class LowpassFilter {
         this.sampleRate = sampleRate;
         this.maxCutoff = sampleRate * 0.45;
         this.smoothingStep = FILTER_SMOOTHING_STEP * (44_100 / sampleRate);
-        this.coefficientCache = LowpassFilter.initCache(sampleRate);
+        this.coefficientCache = VoiceFilter.initCache(sampleRate);
     }
 
     /**
@@ -146,7 +153,7 @@ export class LowpassFilter {
             cache = new Map<number, CoefficientChunks>();
             this.caches.set(sampleRate, cache);
             // Precompute selected cutoffs for 0q (most common)
-            const dummy = new LowpassFilter(sampleRate);
+            const dummy = new VoiceFilter(sampleRate);
             dummy.resonanceCb = 0;
             // 8000 is roughly 830 Hz and 13,500 is max
             for (let i = 8000; i < 13_500; i++) {
@@ -160,6 +167,7 @@ export class LowpassFilter {
     public init() {
         this.lastTargetCutoff = Infinity;
         this.resonanceCb = 0;
+        this.type = 0;
         this.currentInitialFc = 13_500;
         this.a0 = 0;
         this.a1 = 0;
@@ -185,18 +193,19 @@ export class LowpassFilter {
             return;
         }
 
-        // Resonance rarely changes, so the chunk list is kept until it does
-        const qCb = this.resonanceCb;
-        if (this.chunksResonance !== qCb) {
-            let chunks = this.coefficientCache.get(qCb);
+        // Resonance and type rarely change, so the chunk list is kept until they do
+        // The resonance is an integer (Int16Array), so the key is unique
+        const key = this.resonanceCb * 8 + this.type;
+        if (this.chunksKey !== key) {
+            let chunks = this.coefficientCache.get(key);
             if (chunks === undefined) {
                 chunks = new Array<Float64Array | undefined>(
                     CHUNKS_PER_RESONANCE
                 );
-                this.coefficientCache.set(qCb, chunks);
+                this.coefficientCache.set(key, chunks);
             }
             this.chunks = chunks;
-            this.chunksResonance = qCb;
+            this.chunksKey = key;
         }
 
         const chunkIndex = cutoffCents >> CHUNK_BITS;
@@ -252,9 +261,46 @@ export class LowpassFilter {
         const cosw = Math.cos(w);
         const alpha = Math.sin(w) / (2 * resonanceGain);
 
-        const b1 = (1 - cosw) * qGain;
-        const b0 = b1 / 2;
-        const b2 = b0;
+        let b0: number;
+        let b1: number;
+        let b2: number;
+        switch (this.type) {
+            default: {
+                // SF2 lowpass, w^2 / D
+                b1 = (1 - cosw) * qGain;
+                b0 = b1 / 2;
+                b2 = b0;
+                break;
+            }
+            case 1: {
+                // Highpass, s^2 / D
+                b0 = ((1 + cosw) / 2) * qGain;
+                b1 = -(1 + cosw) * qGain;
+                b2 = b0;
+                break;
+            }
+            case 2: {
+                // Bandpass with constant skirt gain, w * s / D peaks at Q
+                b0 = (Math.sin(w) / 2) * qGain;
+                b1 = 0;
+                b2 = -b0;
+                break;
+            }
+            case 3: {
+                // Peak, (w^2 - s^2) / D is the lowpass minus the highpass: 2 * Q at the cutoff, 1 at both ends
+                b0 = -cosw * qGain;
+                b1 = 2 * qGain;
+                b2 = b0;
+                break;
+            }
+            case 4: {
+                // Notch, (w^2 + s^2) / D
+                b0 = qGain;
+                b1 = -2 * cosw * qGain;
+                b2 = qGain;
+                break;
+            }
+        }
         const a0 = 1 + alpha;
         const a1 = -2 * cosw;
         const a2 = 1 - alpha;

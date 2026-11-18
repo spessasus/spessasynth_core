@@ -1,3 +1,4 @@
+import { addResonanceCompensation } from "../basic_soundbank/resonance_compensation";
 import { DLSVerifier } from "./dls_verifier";
 import { DownloadableSoundsSample } from "./sample";
 import { DownloadableSoundsInstrument } from "./instrument";
@@ -478,6 +479,8 @@ export class DownloadableSounds extends DLSVerifier {
         for (const instrument of this.instruments) {
             instrument.toSFPreset(soundBank);
         }
+        // DLS has no gain, so CC 71 gets its compensation as modulators
+        addResonanceCompensation(soundBank);
         soundBank.flush();
 
         SpessaLog.info("%cConversion complete!", ConsoleColors.recognized);

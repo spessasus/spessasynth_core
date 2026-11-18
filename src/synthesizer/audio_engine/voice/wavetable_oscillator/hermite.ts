@@ -12,13 +12,18 @@ export class HermiteOscillator extends WavetableOscillator {
     ): boolean {
         const step = tuningRatio * this.playbackStep;
         const sampleData = this.sampleData!;
-        const { loopStart, loopEnd, loopLength, end } = this;
+        const { loopStart, loopEnd, loopLength, end, turn } = this;
         let cursor = this.cursor;
 
         if (this.isLooping) {
             let hasLooped = this.hasLooped;
             // Below this cursor, the points after the cursor are inside the loop, so no wrapping is needed
-            const safeEnd = loopEnd - 2;
+            // An alternating loop reads straight only up to its turn point
+            const safeEnd = Math.min(loopEnd, turn + 1) - 2;
+            // The way back of an alternating loop: from the turn point up to this cursor all four points
+            // Are reflections, read backwards without wrapping
+            const mirrorEnd = loopEnd - 2;
+            const twoTurn = 2 * turn;
             let i = 0;
             while (i < sampleCount) {
                 // Above this cursor, the point before the cursor is valid without wrapping
@@ -47,6 +52,29 @@ export class HermiteOscillator extends WavetableOscillator {
                     if (i >= sampleCount) break;
                 }
 
+                // Mirrored fast path, the same as above with the points read from their reflections
+                if (cursor >= turn + 1) {
+                    for (; i < sampleCount && cursor < mirrorEnd; i++) {
+                        const y0 = (cursor | 0) & 0x3f_ff_ff_ff;
+                        const t = cursor - y0;
+                        const r = twoTurn - y0;
+                        const xm1 = sampleData[r + 1];
+                        const x0 = sampleData[r];
+                        const x1 = sampleData[r - 1];
+                        const x2 = sampleData[r - 2];
+
+                        const c = (x1 - xm1) * 0.5;
+                        const v = x0 - x1;
+                        const w = c + v;
+                        const a = w + v + (x2 - x0) * 0.5;
+                        const b = w + a;
+                        outputBuffer[i] = ((a * t - b) * t + c) * t + x0;
+
+                        cursor += step;
+                    }
+                    if (i >= sampleCount) break;
+                }
+
                 // Slow path, a single sample near the loop points or the sample start
                 // Check for loop first (end is exclusive so it's `<=` and not `<`)
                 // Testcase: https://github.com/spessasus/spessasynth_core/issues/90
@@ -59,7 +87,7 @@ export class HermiteOscillator extends WavetableOscillator {
                 }
 
                 // Grab the 4 points
-                const y0 = cursor | 0; // Point before the cursor.
+                let y0 = cursor | 0; // Point before the cursor.
                 let ym1 = y0 - 1; // Point before y0
                 let y1 = y0 + 1; // Point after the cursor
                 let y2 = y0 + 2; // Point after y1
@@ -85,6 +113,12 @@ export class HermiteOscillator extends WavetableOscillator {
                 // Crash Cymbal (loop length 1, shortest valid)
                 while (y1 >= loopEnd) y1 -= loopLength;
                 while (y2 >= loopEnd) y2 -= loopLength;
+
+                // The way back of an alternating loop
+                if (ym1 > turn) ym1 = 2 * turn - ym1;
+                if (y0 > turn) y0 = 2 * turn - y0;
+                if (y1 > turn) y1 = 2 * turn - y1;
+                if (y2 > turn) y2 = 2 * turn - y2;
 
                 // Grab the samples
                 const xm1 = sampleData[ym1];

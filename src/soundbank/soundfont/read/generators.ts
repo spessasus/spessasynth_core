@@ -6,6 +6,7 @@ import {
     type GeneratorType,
     GeneratorTypes
 } from "../../basic_soundbank/generator_types";
+import { fromSF2Attenuation } from "../sf2_compatibility";
 
 export class ReadGenerator extends Generator {
     /**
@@ -28,19 +29,26 @@ export class ReadGenerator extends Generator {
 /**
  * Reads the generators
  * @param generatorChunk pgen or igen
- * @param allowSFEGenerators if generators above endOper are allowed (SFE banks)
+ * @param allowSFeGenerators if generators above endOper are allowed (SFe banks).
+ * In any other file the initial attenuation is converted from the SF2 unit.
  */
 export function readGenerators(
     generatorChunk: RIFFChunk,
-    allowSFEGenerators: boolean
+    allowSFeGenerators: boolean
 ) {
     const gens = new Array<Generator>();
     while (generatorChunk.data.length > generatorChunk.data.currentIndex) {
         const gen = new ReadGenerator(generatorChunk.data);
         // SF2 2.04 section 8.1.2: unknown generators are ignored
         // They are kept in the list as invalid since the zones index into it
-        if (!allowSFEGenerators && gen.type > GeneratorTypes.endOper)
+        if (!allowSFeGenerators && gen.type > GeneratorTypes.endOper)
             gen.type = GeneratorTypes.invalid;
+        // The bank holds true centibels, an SF2 file stores the EMU8000 attenuation
+        if (
+            !allowSFeGenerators &&
+            gen.type === GeneratorTypes.initialAttenuation
+        )
+            gen.value = fromSF2Attenuation(gen.value);
         gens.push(gen);
     }
     // Remove terminal

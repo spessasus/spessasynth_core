@@ -8,7 +8,7 @@ import {
 import fs from "node:fs/promises";
 
 // Checks loading without sample data, loading with views, sample lengths and stored data
-// Usage: tsx sample_data_test.ts <bank paths...> (SF2, SF3, SFE or DLS)
+// Usage: tsx sample_data_test.ts <bank paths...> (SF2, SF3, SFe or DLS)
 
 SpessaLog.setLogLevel(false, false, false);
 await BasicSoundBank.ready;

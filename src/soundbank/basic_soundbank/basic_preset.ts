@@ -12,13 +12,18 @@ import {
     MIDIPatchTools
 } from "./midi_patch";
 import {
+    ENUMERATED_GENERATORS,
     GeneratorLimits,
     GENERATORS_AMOUNT,
     type GeneratorType,
     GeneratorTypes,
     INSTRUMENT_ONLY_GENERATORS
 } from "./generator_types";
-import type { ExtendedSF2Chunks } from "../soundfont/write/types";
+import type {
+    ExtendedSF2Chunks,
+    SoundFontWriteFormat
+} from "../soundfont/write/types";
+import { getSF2BankNumber } from "../soundfont/sf2_compatibility";
 import { SpessaLog } from "../../utils/loggin";
 import { ConsoleColors } from "../../utils/other";
 import { writeBinaryStringIndexed } from "../../utils/byte_functions/string";
@@ -34,6 +39,11 @@ const defaultGeneratorValues = new Int16Array(GENERATORS_AMOUNT);
 for (let i = 0; i < defaultGeneratorValues.length; i++) {
     if (GeneratorLimits[i as GeneratorType])
         defaultGeneratorValues[i] = GeneratorLimits[i as GeneratorType].def;
+}
+
+// Modulators that target an instrument-only generator are ignored in preset zones
+function appliesToPreset(m: Modulator) {
+    return !INSTRUMENT_ONLY_GENERATORS.has(m.destination);
 }
 
 /**
@@ -98,6 +108,7 @@ export class BasicPreset implements MIDIPatchFull {
     ) {
         this.parentSoundBank = parentSoundBank;
         this.globalZone = globalZone;
+        globalZone.setCurveUser(this);
     }
 
     // Note: a getter and not a constant value for editing purposes.
@@ -116,7 +127,10 @@ export class BasicPreset implements MIDIPatchFull {
         return number >= range.min && number <= range.max;
     }
 
-    private static addUniqueModulators(main: Modulator[], adder: Modulator[]) {
+    private static addUniqueModulators(
+        main: Modulator[],
+        adder: readonly Modulator[]
+    ) {
         for (const addedMod of adder) {
             if (!main.some((mm) => Modulator.isIdentical(addedMod, mm)))
                 main.push(addedMod);
@@ -139,16 +153,24 @@ export class BasicPreset implements MIDIPatchFull {
      * Use {@link restore} to undo it.
      */
     public delete() {
-        for (const z of this.zones) z.unlinkChild();
+        for (const z of this.zones) {
+            z.unlinkChild();
+            z.unlinkCurves();
+        }
+        this.globalZone.unlinkCurves();
     }
 
     /**
-     * Links the instruments back to this preset, the inverse of {@link delete}.
+     * Links the instruments and custom curves back to this preset, the inverse of {@link delete}.
      * Use it to restore a deleted preset, for example when undoing the deletion.
      * Add the preset back to the sound bank as well.
      */
     public restore() {
-        for (const z of this.zones) z.linkChild();
+        for (const z of this.zones) {
+            z.linkChild();
+            z.linkCurves();
+        }
+        this.globalZone.linkCurves();
     }
 
     /**
@@ -156,7 +178,9 @@ export class BasicPreset implements MIDIPatchFull {
      * @param index The zone's index to delete.
      */
     public deleteZone(index: number) {
-        this.zones[index]?.unlinkChild();
+        const zone = this.zones[index];
+        zone?.unlinkChild();
+        zone?.unlinkCurves();
         this.zones.splice(index, 1);
     }
 
@@ -213,8 +237,8 @@ export class BasicPreset implements MIDIPatchFull {
      *
      * > **Note**
      * >
-     * > The `E-mu` attenuation correction
-     * > (`initialAttenuation` generator value being multiplied by `0.4`) is already performed.
+     * > The `initialAttenuation` generator is in true centibels, the same unit as `gain`.
+     * > The `E-mu` attenuation factor of `0.4` is applied when a SoundFont2 file is read and undone when one is written.
      *
      * @param midiNote The MIDI note number.
      * @param velocity The MIDI velocity.
@@ -265,10 +289,13 @@ export class BasicPreset implements MIDIPatchFull {
             }
 
             // Preset modulators (add global to local)
-            const presetModulators = [...presetZone.modulators];
+            // The ones that target an instrument-only generator are ignored, so they supersede nothing
+            const presetModulators = presetZone.modulators.filter((m) =>
+                appliesToPreset(m)
+            );
             BasicPreset.addUniqueModulators(
                 presetModulators,
-                this.globalZone.modulators
+                this.globalZone.modulators.filter((m) => appliesToPreset(m))
             );
 
             for (const instZone of instrument.zones) {
@@ -345,11 +372,16 @@ export class BasicPreset implements MIDIPatchFull {
                     );
                 }
 
-                // EMU initial attenuation correction, multiply initial attenuation by 0.4!
-                // All EMU sound cards have this quirk, and all sf2 editors and players emulate it too
-                generators[GeneratorTypes.initialAttenuation] = Math.floor(
-                    generators[GeneratorTypes.initialAttenuation] * 0.4
-                );
+                // An unknown choice (from a later SFe version) counts as the default instead of the nearest one
+                for (const type of ENUMERATED_GENERATORS) {
+                    const limit = GeneratorLimits[type];
+                    if (
+                        generators[type] < limit.min ||
+                        generators[type] > limit.max
+                    ) {
+                        generators[type] = limit.def;
+                    }
+                }
 
                 voiceParameters.push({
                     sample: instZone.sample,
@@ -408,7 +440,10 @@ export class BasicPreset implements MIDIPatchFull {
         // Find the global zone and apply ranges, generators, and modulators
         const globalPresetZone = this.globalZone;
         globalPresetGenerators.push(...globalPresetZone.generators);
-        globalPresetModulators.push(...globalPresetZone.modulators);
+        // Modulators to instrument-only generators are ignored in preset zones
+        globalPresetModulators.push(
+            ...globalPresetZone.modulators.filter((m) => appliesToPreset(m))
+        );
         const globalPresetKeyRange = globalPresetZone.keyRange;
         const globalPresetVelRange = globalPresetZone.velRange;
         // For each non-global preset zone
@@ -430,7 +465,9 @@ export class BasicPreset implements MIDIPatchFull {
                 (g) => new Generator(g.type, g.value)
             );
             addUnique(presetGenerators, globalPresetGenerators);
-            const presetModulators = [...presetZone.modulators];
+            const presetModulators = presetZone.modulators.filter((m) =>
+                appliesToPreset(m)
+            );
             addUniqueMods(presetModulators, globalPresetModulators);
             const instrument = presetZone.instrument;
             const iZones = instrument.zones;
@@ -561,7 +598,10 @@ export class BasicPreset implements MIDIPatchFull {
                     zone.velRange.min = -1;
                 }
                 zone.addGenerators(...finalGenList);
-                zone.addModulators(...finalModList);
+                // Copies: the bank's own modulators belong to their zones
+                zone.addModulators(
+                    ...finalModList.map((m) => Modulator.copyFrom(m))
+                );
             }
         }
         return outputInstrument;
@@ -572,13 +612,13 @@ export class BasicPreset implements MIDIPatchFull {
      * Writes the SF2 header
      * @param phdrData
      * @param index
-     * @param writeLSB
+     * @param format
      * @internal
      */
     public write(
         phdrData: ExtendedSF2Chunks,
         index: number,
-        writeLSB: boolean
+        format: SoundFontWriteFormat
     ) {
         SpessaLog.info(`%cWriting ${this.name}...`, ConsoleColors.info);
         // Split up the name
@@ -586,21 +626,18 @@ export class BasicPreset implements MIDIPatchFull {
         writeBinaryStringIndexed(phdrData.xdta, this.name.slice(20), 20);
 
         writeWord(phdrData.pdta, this.program);
-        let wBank = this.bankMSB;
-        if (writeLSB) {
-            wBank = (this.bankMSB & 0x7f) | ((this.bankLSB & 0x7f) << 8);
+        let wBank;
+        if (format === "sfe") {
+            // Limited to 7 bits each
+            const msb = Math.max(0, Math.min(127, this.bankMSB));
+            const lsb = Math.max(0, Math.min(127, this.bankLSB));
+            wBank = msb | (lsb << 8);
             if (this.isGMGSDrum) {
                 // Drum flag
                 wBank |= 0x80;
             }
         } else {
-            if (this.isGMGSDrum) {
-                // Drum flag
-                wBank = 0x80;
-            } else if (this.bankMSB === 0) {
-                // If bank MSB is zero, write bank LSB (XG)
-                wBank = this.bankLSB;
-            }
+            wBank = getSF2BankNumber(this);
         }
         writeWord(phdrData.pdta, wBank);
         // Skip wBank and wProgram

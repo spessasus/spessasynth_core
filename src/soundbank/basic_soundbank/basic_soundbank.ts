@@ -1,12 +1,17 @@
 import { SpessaLog } from "../../utils/loggin";
 import { ConsoleColors } from "../../utils/other";
+import { fillWithDefaults } from "../../utils/fill_with_defaults";
 import {
     DEFAULT_SF2_WRITE_OPTIONS,
     DEFAULT_SFE_WRITE_OPTIONS,
-    writeSF2Internal,
-    writeSFEInternal
+    writeSF
 } from "../soundfont/write/write";
-import { Modulator, SPESSASYNTH_DEFAULT_MODULATORS } from "./modulator";
+import {
+    copyDefaultModulators,
+    copyWithOwnCurves,
+    Modulator
+} from "./modulator";
+import { getSF2LossesInternal } from "../soundfont/sf2_compatibility";
 import { BasicSample, EmptySample } from "./basic_sample";
 import { BasicInstrument } from "./basic_instrument";
 import { BasicPreset } from "./basic_preset";
@@ -17,7 +22,7 @@ import type {
     PresetsWithKeyCombinations,
     SetSampleFormatOptions,
     SF2VersionTag,
-    SFEWriteOptions,
+    SFeWriteOptions,
     SoundBankCloneOptions,
     SoundBankInfoData,
     SoundBankWriteOptions,
@@ -35,19 +40,18 @@ import {
 } from "../downloadable_sounds/downloadable_sounds";
 import { Generator } from "./generator";
 import { SoundBankCloner } from "./sound_bank_cloner";
+import { CustomCurve } from "./custom_curve";
 import { StbVorbis } from "stb-vorbis";
 
 /**
- * This module handles parsing and writing SoundFont2 (`.sf2`, `.sf3` and `.sfogg`) files.
- * It represents a single sound bank.
- *
- * It also contains support for `.dls` files and experimental read and write support for [64-bit SFE](https://sfe-team-was-taken.github.io/SFE/).
+ * This module represents a single sound bank as a [SpessaSynth SFe](../../../docs/extra/sfe-format.md) bank.
  *
  * **Specifications:**
  *
  * - [SoundFont2 Specification](http://www.synthfont.com/sfspec24.pdf)
  * - [SoundFont3 Description](https://www.fluidsynth.org/wiki/SoundFont3Format)
  * - [DLS Level 2 Specification](https://midi.org/dls)
+ * - [SpessaSynth SFe](../../../docs/extra/sfe-format.md)
  *
  * > **Important**
  * >
@@ -64,15 +68,11 @@ export class BasicSoundBank {
     public static ready: Promise<void> = StbVorbis.ready;
 
     /**
-     * The type of the sound bank that was loaded.
-     * Either `sf2` for SoundFont2/SoundFont3 or `dls` for DownLoadable Sounds or `sfe` for SF-Enhanced.
-     *
-     * > **Note**
-     * >
-     * > SF3 or SFOGG files are parsed as `sf2` files, but with compressed samples.
-     * > The type is still `sf2`.
+     * The custom modulator curves of the bank (SFe only), in the order they are written.
+     * Like {@link samples}, every curve a modulator of this bank uses must be in this list.
+     * A new bank holds the curves of its default modulators.
      */
-    public readonly type: "sf2" | "dls" | "sfe";
+    public customCurves: CustomCurve[] = [];
 
     /**
      * The metadata of this sound bank.
@@ -102,6 +102,45 @@ export class BasicSoundBank {
      * An array of all instruments in the bank.
      */
     public instruments: BasicInstrument[] = [];
+    /**
+     * See {@link type}. A reader sets it once it knows how the file is read.
+     */
+    protected bankType: "sf2" | "dls" | "sfe";
+    private storedDefaultModulators = new Array<Modulator>();
+
+    /**
+     * Creates an empty sound bank instance.
+     * @param type The value to initialize the {@link BasicSoundBank.type} property with.
+     * A new bank is an SFe bank unless told otherwise.
+     * @param defaultModulators If the bank starts with its own copy of {@link SPESSASYNTH_DEFAULT_MODULATORS}
+     * and their custom curves. A bank without them has no default modulators until some are assigned.
+     */
+    public constructor(
+        type: "sf2" | "sfe" | "dls" = "sfe",
+        defaultModulators = true
+    ) {
+        this.bankType = type;
+        if (defaultModulators) {
+            // The default modulators get their own copies of the curves, like any other curves of the bank
+            const defaults = copyDefaultModulators();
+            this.customCurves.push(...defaults.curves);
+            this.defaultModulators = defaults.modulators;
+        }
+    }
+
+    /**
+     * The type of the sound bank that was loaded.
+     * Either `sf2` for SoundFont2/SoundFont3 or `dls` for DownLoadable Sounds or `sfe` for SF-Enhanced.
+     *
+     * > **Note**
+     * >
+     * > SF3 or SFOGG files are parsed as `sf2` files, but with compressed samples.
+     * > The type is still `sf2`.
+     * > An SFe file from before version 4 is read as SF2, and its type is `sf2` too.
+     */
+    public get type() {
+        return this.bankType;
+    }
 
     /**
      * Sound bank's default modulators.
@@ -109,26 +148,33 @@ export class BasicSoundBank {
      * > **Tip**
      * >
      * > Consider reading [default modulators](../../../docs/extra/modulator-information.md#default-modulators).
-     */
-    public defaultModulators: Modulator[] = SPESSASYNTH_DEFAULT_MODULATORS.map(
-        Modulator.copyFrom.bind(Modulator)
-    );
-
-    /**
-     * If the sound bank has custom default modulators (DMOD).
      *
-     * > **Tip**
+     * > **Warning**
      * >
-     * > Consider reading the [default modulators proposal](https://github.com/spessasus/soundfont-proposals/blob/main/default_modulators.md).
+     * > The envelope time modulators (CC 72, 73 and 75) use custom curves, which only SFe can store.
+     * > If this list is changed and the bank is written as plain SF2, they are left out of the written list,
+     * > and added back when it is loaded unless the list has another CC 72, 73 or 75 modulator.
+     *
+     * > **Note**
+     * >
+     * > Assign a new list to change it, so the custom curves it uses stay linked.
+     * > A modulator can only be in one list or zone, assign copies to reuse them.
+     *
+     * > **Note**
+     * >
+     * > A bank loaded from SF2 or DLS has modulators here that are not in the file,
+     * > see {@link BasicZone.modulators}.
      */
-    public customDefaultModulators = false;
+    public get defaultModulators(): readonly Modulator[] {
+        return this.storedDefaultModulators;
+    }
 
-    /**
-     * Creates an empty sound bank instance.
-     * @param type The value to initialize the {@link BasicSoundBank.type} property with.
-     */
-    public constructor(type: "sf2" | "sfe" | "dls" = "sf2") {
-        this.type = type;
+    public set defaultModulators(modulators: readonly Modulator[]) {
+        // Check first, so a modulator that belongs elsewhere leaves the list as it was
+        Modulator.checkAddable(modulators, this.storedDefaultModulators);
+        for (const m of this.storedDefaultModulators) m.unlinkCurves();
+        this.storedDefaultModulators = [...modulators];
+        for (const m of this.storedDefaultModulators) m.linkCurves(this);
     }
 
     private _isXGBank = false;
@@ -172,15 +218,52 @@ export class BasicSoundBank {
             }
         }
 
-        const b = new BasicSoundBank(mainSf.type);
+        const b = new BasicSoundBank(mainSf.type, false);
+        // The first bank's curves, except the ones only its default modulators use
+        b.addCustomCurves(
+            ...mainSf.customCurves.filter(
+                (c) =>
+                    c.useCount === 0 ||
+                    c.linkedTo.some((user) => user !== mainSf)
+            )
+        );
         b.addCompletePresets(presets);
         b.soundBankInfo = { ...mainSf.soundBankInfo };
-        b.defaultModulators = mainSf.defaultModulators.map((m) =>
-            Modulator.copyFrom(m)
-        );
-        b.customDefaultModulators = mainSf.customDefaultModulators;
+        // The defaults come from the first bank, with copies of their curves:
+        // The merged bank links its own default modulators, which must not count as uses in the first bank
+        const defaults = copyWithOwnCurves(mainSf.defaultModulators);
+        b.addCustomCurves(...defaults.curves);
+        b.defaultModulators = defaults.modulators;
         b.flush();
         return b;
+    }
+
+    /**
+     * Copies a given sound bank, cloning all presets, instruments and samples.
+     * The sample data is shared with the original, not copied.
+     * Elements sharing a name are all copied, the repeats get a free name like `Piano-1`.
+     * @param bank The sound bank to copy.
+     */
+    public static copyFrom(bank: BasicSoundBank) {
+        // The defaults and their curves are copied from the bank
+        const copied = new BasicSoundBank(bank.type, false);
+        // One session, so shared instruments and samples are copied once
+        // No reuse by name, same-named elements in the source are all copied
+        const cloner = new SoundBankCloner(copied, {
+            reuseByName: false,
+            reuseChildren: "none"
+        });
+        // Curves first, so they keep their order (unused ones too)
+        for (const c of bank.customCurves) cloner.cloneCustomCurve(c);
+        for (const p of bank.presets) cloner.clonePreset(p);
+        copied.soundBankInfo = { ...bank.soundBankInfo };
+        const defaults = bank.defaultModulators.map((m) =>
+            Modulator.copyFrom(m)
+        );
+        cloner.cloneCurvesOf(defaults);
+        copied.defaultModulators = defaults;
+        copied.flush();
+        return copied;
     }
 
     /**
@@ -205,7 +288,7 @@ export class BasicSoundBank {
         const inst = new BasicInstrument();
         inst.name = "Saw Wave";
         inst.globalZone.addGenerators(
-            new Generator(GeneratorTypes.initialAttenuation, 375),
+            new Generator(GeneratorTypes.initialAttenuation, 150),
             new Generator(GeneratorTypes.releaseVolEnv, -1000),
             new Generator(GeneratorTypes.sampleModes, 1)
         );
@@ -228,27 +311,19 @@ export class BasicSoundBank {
     }
 
     /**
-     * Copies a given sound bank, cloning all presets, instruments and samples.
-     * The sample data is shared with the original, not copied.
-     * Elements sharing a name are all copied, the repeats get a free name like `Piano-1`.
-     * @param bank The sound bank to copy.
+     * Replaces the default modulators with new copies of {@link SPESSASYNTH_DEFAULT_MODULATORS}
+     * and adds the custom curves they use. The curves that only the old list used are removed.
      */
-    public static copyFrom(bank: BasicSoundBank) {
-        const copied = new BasicSoundBank(bank.type);
-        // One session, so shared instruments and samples are copied once
-        // No reuse by name, same-named elements in the source are all copied
-        const cloner = new SoundBankCloner(copied, {
-            reuseByName: false,
-            reuseChildren: "none"
-        });
-        for (const p of bank.presets) cloner.clonePreset(p);
-        copied.soundBankInfo = { ...bank.soundBankInfo };
-        copied.defaultModulators = bank.defaultModulators.map((m) =>
-            Modulator.copyFrom(m)
+    public resetDefaultModulators() {
+        const oldCurves = new Array<CustomCurve>();
+        collectCurves(this.defaultModulators, oldCurves);
+        this.defaultModulators = [];
+        this.customCurves = this.customCurves.filter(
+            (c) => !oldCurves.includes(c) || c.useCount > 0
         );
-        copied.customDefaultModulators = bank.customDefaultModulators;
-        copied.flush();
-        return copied;
+        const defaults = copyDefaultModulators();
+        this.addCustomCurves(...defaults.curves);
+        this.defaultModulators = defaults.modulators;
     }
 
     /**
@@ -280,6 +355,47 @@ export class BasicSoundBank {
             }
         }
         this.addElements(this.samples, sampleList);
+
+        const curveList = new Array<CustomCurve>();
+        for (const element of [...presets, ...instrumentList]) {
+            collectCurves(element.globalZone.modulators, curveList);
+            for (const zone of element.zones) {
+                collectCurves(zone.modulators, curveList);
+            }
+        }
+        this.addCustomCurves(...curveList);
+    }
+
+    /**
+     * Adds {@link CustomCurve}s to this sound bank. Curves already in the bank are skipped.
+     * @param curves The curves to add.
+     */
+    public addCustomCurves(...curves: CustomCurve[]) {
+        for (const curve of curves) {
+            if (!this.customCurves.includes(curve)) {
+                this.customCurves.push(curve);
+            }
+        }
+    }
+
+    /**
+     * Deletes a given custom curve from the sound bank.
+     * @param curve The curve to delete.
+     * @throws Error if a modulator still uses the curve.
+     */
+    public deleteCustomCurve(curve: CustomCurve) {
+        const index = this.customCurves.indexOf(curve);
+        if (index === -1) {
+            throw new Error(
+                `The curve "${curve.toString()}" does not belong to this sound bank.`
+            );
+        }
+        if (curve.useCount > 0) {
+            throw new Error(
+                `The curve "${curve.toString()}" is still used by ${curve.useCount} modulator sources.`
+            );
+        }
+        this.customCurves.splice(index, 1);
     }
 
     // noinspection JSUnusedGlobalSymbols
@@ -359,22 +475,7 @@ export class BasicSoundBank {
                 `Failed to compress ${failed.length} samples: ${failed.map((s) => s.name).join(", ")}`
             );
         }
-        // Change format
-        switch (format) {
-            default:
-            case "pcm": {
-                // Set version to 2.4
-                this.soundBankInfo.version.major = 2;
-                this.soundBankInfo.version.minor = 4;
-                break;
-            }
-
-            case "compressed": {
-                // Set version to 3
-                this.soundBankInfo.version.major = 3;
-                this.soundBankInfo.version.minor = 0;
-            }
-        }
+        // The version is not touched: a writer decides it from what it writes
         return changed;
     }
 
@@ -425,20 +526,56 @@ export class BasicSoundBank {
     public writeSF2(
         writeOptions: Partial<SoundFont2WriteOptions> = DEFAULT_SF2_WRITE_OPTIONS
     ) {
-        return writeSF2Internal(this, writeOptions);
+        const options = fillWithDefaults(
+            writeOptions,
+            DEFAULT_SF2_WRITE_OPTIONS
+        );
+        return writeSF(
+            this,
+            "sf2",
+            options.software,
+            options.writeDefaultModulators,
+            options.writeExtendedLimits,
+            false,
+            options.progressFunction
+        );
     }
 
     /**
-     * Writes the sound bank as an [SFE 4](https://sfe-team-was-taken.github.io/SFE/) file.
+     * Counts what the sound bank would lose if written as a plain SF2 file and read back:
+     * the SFe generators, modulators, custom curves, alternating loops and bank LSBs.
+     * What the SF2 reader recreates on its own is not counted, so an unchanged SF2 bank has no losses.
+     * The one exception is an SF2 file that already has a `sampleModes` of 4: it plays as an alternating loop,
+     * and it is counted since {@link writeSF2} leaves it out.
+     * @returns The losses. All zeros means {@link writeSF2} keeps everything.
+     */
+    public getSF2Losses() {
+        return getSF2LossesInternal(this);
+    }
+
+    /**
+     * Writes the sound bank as an [SpessaSynth SFe](../../../docs/extra/sfe-format.md) file.
      * This enables features such as bank LSB and RIFF64.
      * Note that spessasynth is currently the only software that can read these files.
      * @param writeOptions Options for writing the file.
      * @returns The binary representation of the file.
      */
-    public writeSFE(
-        writeOptions: Partial<SFEWriteOptions> = DEFAULT_SFE_WRITE_OPTIONS
+    public writeSFe(
+        writeOptions: Partial<SFeWriteOptions> = DEFAULT_SFE_WRITE_OPTIONS
     ) {
-        return writeSFEInternal(this, writeOptions);
+        const options = fillWithDefaults(
+            writeOptions,
+            DEFAULT_SFE_WRITE_OPTIONS
+        );
+        return writeSF(
+            this,
+            "sfe",
+            options.software,
+            true,
+            true,
+            options.rf64,
+            options.progressFunction
+        );
     }
 
     /**
@@ -707,7 +844,8 @@ export class BasicSoundBank {
     }
 
     /**
-     * Removes all {@link BasicSample}s and {@link BasicInstrument}s not used by any {@link BasicPreset}.
+     * Removes all {@link BasicSample}s and {@link BasicInstrument}s not used by any {@link BasicPreset},
+     * and all {@link customCurves} no modulator uses.
      */
     public removeUnusedElements() {
         this.instruments = this.instruments.filter((i) => {
@@ -725,6 +863,15 @@ export class BasicSoundBank {
             }
             return !deletable;
         });
+        // Counted from the modulators, not from the links, so a curve in use is never removed
+        const used = new Array<CustomCurve>();
+        collectCurves(this.defaultModulators, used);
+        for (const element of [...this.presets, ...this.instruments]) {
+            for (const zone of [element.globalZone, ...element.zones])
+                collectCurves(zone.modulators, used);
+        }
+        const usedSet = new Set(used);
+        this.customCurves = this.customCurves.filter((c) => usedSet.has(c));
     }
 
     /**
@@ -790,6 +937,8 @@ export class BasicSoundBank {
         this.presets.length = 0;
         this.instruments.length = 0;
         this.samples.length = 0;
+        this.defaultModulators = [];
+        this.customCurves.length = 0;
     }
 
     protected addElements<T>(list: T[], elements: readonly T[]) {
@@ -853,6 +1002,16 @@ export class BasicSoundBank {
                     ConsoleColors.info,
                     ConsoleColors.recognized
                 );
+        }
+    }
+}
+
+function collectCurves(modulators: readonly Modulator[], list: CustomCurve[]) {
+    for (const m of modulators) {
+        for (const curve of [m.primarySource.curve, m.secondarySource.curve]) {
+            if (curve instanceof CustomCurve && !list.includes(curve)) {
+                list.push(curve);
+            }
         }
     }
 }
