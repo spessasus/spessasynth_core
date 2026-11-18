@@ -1,9 +1,11 @@
 import {
     copyDefaultModulators,
+    isIllegalSource,
     Modulator,
     SPESSASYNTH_DEFAULT_MODULATORS
 } from "../basic_soundbank/modulator";
-import type { ModulatorSource } from "../basic_soundbank/modulator_source";
+import { ModulatorSource } from "../basic_soundbank/modulator_source";
+import { Generator } from "../basic_soundbank/generator";
 import {
     type GeneratorType,
     GeneratorTypes
@@ -13,7 +15,7 @@ import {
     getResonantCompensators
 } from "../basic_soundbank/resonance_compensation";
 import { CustomCurve } from "../basic_soundbank/custom_curve";
-import { ModulatorCurveTypes } from "../enums";
+import { ModulatorControllerSources, ModulatorCurveTypes } from "../enums";
 import { MIDIControllers } from "../../midi/enums";
 import type { BasicSoundBank } from "../basic_soundbank/basic_soundbank";
 import type { BasicPreset } from "../basic_soundbank/basic_preset";
@@ -30,6 +32,9 @@ import type { SF2Losses } from "../types";
 // The reverb and chorus sends of the SoundFont 2 default modulators: 200, where the bank model uses 1000
 const SF2_SEND_SCALE = 5;
 
+// The initial attenuation of an SF2 file is 2.5 times the centibels of the bank (the EMU8000 factor of 0.4)
+const SF2_ATTENUATION_SCALE = 0.4;
+
 function isEnvelopeTime(s: ModulatorSource) {
     return (
         s.isController(MIDIControllers.attackTime) ||
@@ -39,21 +44,90 @@ function isEnvelopeTime(s: ModulatorSource) {
 }
 
 /**
- * A plain CC 91 to reverb send or CC 93 to chorus send modulator (positive unipolar linear, no amount source).
- * SF2 files store a fifth of its amount.
+ * A plain CC 91 to reverb send or CC 93 to chorus send modulator (positive unipolar linear, no amount source,
+ * linear transform). SF2 files store a fifth of its amount.
  */
 function isSendModulator(m: Modulator) {
-    if (
-        m.destination !== GeneratorTypes.reverbEffectsSend &&
-        m.destination !== GeneratorTypes.chorusEffectsSend
-    ) {
+    if (m.transformType !== 0 || m.secondarySource.toSourceEnum() !== 0x0) {
         return false;
     }
     const source = m.primarySource.toSourceEnum();
     return (
-        (source === 0x00_db || source === 0x00_dd) &&
-        m.secondarySource.toSourceEnum() === 0x0
+        (source === 0x00_db &&
+            m.destination === GeneratorTypes.reverbEffectsSend) ||
+        (source === 0x00_dd &&
+            m.destination === GeneratorTypes.chorusEffectsSend)
     );
+}
+
+// The amount of 50 cents in the default modulator is 1600, SF2 has 50
+const SF2_DEPTH_SCALE = 32;
+
+function isDepthRange(s: ModulatorSource) {
+    return (
+        !s.isCC && s.index === ModulatorControllerSources.modulationDepthRange
+    );
+}
+
+// The pitch destinations of a mod wheel vibrato
+function isVibratoDestination(m: Modulator) {
+    return (
+        m.destination === GeneratorTypes.modLfoToPitch ||
+        m.destination === GeneratorTypes.vibLfoToPitch
+    );
+}
+
+/**
+ * Makes an SF2 mod wheel vibrato modulator follow RPN 5: the Modulation Depth Range becomes its amount source,
+ * and its amount is multiplied by 32. Other modulators are left alone.
+ * @param m The modulator, changed in place.
+ * @internal
+ */
+export function followModulationDepth(m: Modulator) {
+    // CC 1 as the source, no amount source and an amount that fits after scaling
+    if (
+        !m.primarySource.isController(MIDIControllers.modulationWheel) ||
+        m.secondarySource.toSourceEnum() !== 0x0 ||
+        !isVibratoDestination(m) ||
+        m.transformAmount < -1023 ||
+        m.transformAmount > 1023
+    ) {
+        return;
+    }
+    m.secondarySource.index = ModulatorControllerSources.modulationDepthRange;
+    m.transformAmount *= SF2_DEPTH_SCALE;
+}
+
+/**
+ * The modulator as a format without the Modulation Depth Range stores it (SF2 and DLS).
+ * @param m The modulator.
+ * @returns The same modulator if it does not use the range, a copy without the amount source and with a
+ * 32 times smaller amount (limited to -1023 to 1023) if it is a mod wheel vibrato with a pitch destination,
+ * and undefined if it can't be stored.
+ * @internal
+ */
+export function withoutModulationDepth(m: Modulator) {
+    if (isDepthRange(m.primarySource)) return undefined;
+    if (!isDepthRange(m.secondarySource)) return m;
+    // The amount source must be the plain range (0x0011), another form would change meaning without it
+    if (
+        !m.primarySource.isController(MIDIControllers.modulationWheel) ||
+        !isVibratoDestination(m) ||
+        m.secondarySource.toSourceEnum() !==
+            ModulatorControllerSources.modulationDepthRange
+    ) {
+        return undefined;
+    }
+    const copy = Modulator.copyFrom(m);
+    copy.secondarySource.index = ModulatorControllerSources.noController;
+    copy.secondarySource.curveType = ModulatorCurveTypes.linear;
+    copy.secondarySource.isBipolar = false;
+    copy.secondarySource.isNegative = false;
+    copy.transformAmount = Math.max(
+        -1023,
+        Math.min(1023, Math.round(m.transformAmount / SF2_DEPTH_SCALE))
+    );
+    return copy;
 }
 
 /**
@@ -70,60 +144,81 @@ export function sf2KeepsGenerator(type: GeneratorType, value: number) {
 }
 
 /**
- * If SF2 can store the modulator. Destinations above endOper and custom curves are SFe only.
+ * If SF2 can store the modulator. Destinations above endOper and custom curves are SFe only,
+ * and so is the Modulation Depth Range, except for the mod wheel vibrato that follows it.
  * @param m The modulator.
  * @internal
  */
 export function sf2KeepsModulator(m: Modulator) {
-    return m.destination <= GeneratorTypes.endOper && !m.usesCustomCurve;
+    return (
+        m.destination <= GeneratorTypes.endOper &&
+        !m.usesCustomCurve &&
+        withoutModulationDepth(m) !== undefined
+    );
 }
 
 /**
- * The old SpessaSynth sf2 effect modulator scaling
- * @param amount
+ * The amount of a send modulator of the default form, read from an SF2 file: five times the file amount,
+ * never above a full send and never below the SHORT range.
+ * @param amount The amount in the file.
  */
 function fromSF2SendAmount(amount: number) {
-    return amount <= 1000 ? Math.min(1000, amount * SF2_SEND_SCALE) : amount;
+    return Math.max(-32_768, Math.min(1000, amount * SF2_SEND_SCALE));
 }
 
-// The amount a send modulator of the bank has in an SF2 file
-function toSF2SendAmount(m: Modulator, defaults: boolean) {
-    const amount = m.transformAmount;
-    // Read from SF2 and not changed since: the amount of the file, so the same file is written
-    if (
-        m.sf2Amount !== undefined &&
-        fromSF2SendAmount(m.sf2Amount) === amount
-    ) {
-        return m.sf2Amount;
-    }
-    // Otherwise the amount that reads back as this one.
-    // A full send has two: the default list gets 200, the SoundFont 2 default it stands for.
-    // A zone keeps 1000, which is a full send in every player
-    if (defaults && amount === 1000) return 1000 / SF2_SEND_SCALE;
-    return amount < 1000 ? Math.round(amount / SF2_SEND_SCALE) : amount;
+// The amount a send modulator of the bank has in an SF2 file: a fifth of it, rounded
+function toSF2SendAmount(amount: number) {
+    return Math.round(amount / SF2_SEND_SCALE);
+}
+
+/**
+ * The initial attenuation of an SF2 file in the unit of the bank, true centibels.
+ * The EMU8000 attenuation is 0.4 of what the file says, so the factor lives here and not in the synthesizer.
+ * @param value The generator value of the file.
+ * @internal
+ */
+export function fromSF2Attenuation(value: number) {
+    return Math.round(value * SF2_ATTENUATION_SCALE);
+}
+
+/**
+ * The generator as an SF2 file stores it. The initial attenuation is the inverse of {@link fromSF2Attenuation}.
+ * @param g The generator of the bank.
+ * @returns The same generator, or a copy with the scaled value if it is the initial attenuation.
+ * @internal
+ */
+export function toSF2Generator(g: Generator) {
+    return g.type === GeneratorTypes.initialAttenuation
+        ? new Generator(
+              g.type,
+              Math.max(
+                  -32_768,
+                  Math.min(32_767, Math.round(g.value / SF2_ATTENUATION_SCALE))
+              ),
+              false
+          )
+        : g;
 }
 
 /**
  * The modulators of a zone or of the default list as an SF2 file stores them.
  * @param modulators The modulators of the bank.
- * @param defaults If this is the default list (DMOD).
  * @returns The modulators to write. Send modulators are scaled copies, the rest are the same objects.
  * @internal
  */
-export function toSF2Modulators(
-    modulators: readonly Modulator[],
-    defaults: boolean
-) {
+export function toSF2Modulators(modulators: readonly Modulator[]) {
     const written = new Array<Modulator>();
     for (const m of modulators) {
         if (!sf2KeepsModulator(m)) continue;
-        const amount = isSendModulator(m)
-            ? toSF2SendAmount(m, defaults)
-            : m.transformAmount;
-        if (amount === m.transformAmount) {
-            written.push(m);
+        // A mod wheel vibrato that follows RPN 5 is already a copy
+        const plain = withoutModulationDepth(m) ?? m;
+        const amount = isSendModulator(plain)
+            ? toSF2SendAmount(plain.transformAmount)
+            : plain.transformAmount;
+        if (amount === plain.transformAmount) {
+            written.push(plain);
         } else {
-            const scaled = Modulator.copyFrom(m);
+            const scaled = Modulator.copyFrom(plain);
             scaled.transformAmount = amount;
             written.push(scaled);
         }
@@ -138,16 +233,16 @@ export function toSF2Modulators(
  * @internal
  */
 export function sf2NeedsDefaultModulators(bank: BasicSoundBank) {
-    return (
-        bank.defaultModulators.length !==
-            SPESSASYNTH_DEFAULT_MODULATORS.length ||
-        bank.defaultModulators.some(
-            (mod) =>
-                !SPESSASYNTH_DEFAULT_MODULATORS.some((m) =>
-                    Modulator.isIdentical(m, mod, true)
-                )
-        )
-    );
+    const unmatched = [...bank.defaultModulators];
+    // One to one: every default is matched by exactly one modulator of the bank
+    for (const d of SPESSASYNTH_DEFAULT_MODULATORS) {
+        const index = unmatched.findIndex((m) =>
+            Modulator.isIdentical(d, m, true)
+        );
+        if (index === -1) return true;
+        unmatched.splice(index, 1);
+    }
+    return unmatched.length > 0;
 }
 
 /**
@@ -157,17 +252,20 @@ export function sf2NeedsDefaultModulators(bank: BasicSoundBank) {
  */
 export function getSF2BankNumber(preset: BasicPreset) {
     if (preset.isGMGSDrum) return 0x80;
-    return preset.bankMSB === 0 ? preset.bankLSB : preset.bankMSB;
+    // A bank number is 7 bits, so a larger one from the API is limited instead of turning into another preset
+    return Math.max(
+        0,
+        Math.min(127, preset.bankMSB === 0 ? preset.bankLSB : preset.bankMSB)
+    );
 }
 
 /**
- * The old times 5 effect send scaling SpessaSynth always did.
+ * The times 5 scaling of the send modulators of the default form, and the mod wheel vibrato following RPN 5.
  */
-function scaleSends(modulators: readonly Modulator[]) {
+function fromSF2Modulators(modulators: readonly Modulator[]) {
     for (const m of modulators) {
+        followModulationDepth(m);
         if (isSendModulator(m)) {
-            // Read only for everyone else, the reader is the one place that sets it on a finished modulator
-            (m as { sf2Amount?: number }).sf2Amount = m.transformAmount;
             m.transformAmount = fromSF2SendAmount(m.transformAmount);
         }
     }
@@ -175,7 +273,7 @@ function scaleSends(modulators: readonly Modulator[]) {
 
 /**
  * The default modulators the SF2 reader adds to a list read from DMOD,
- * Since SF2 can't store them.
+ * since SF2 can't store them.
  */
 function restoredDefaults(read: readonly Modulator[]) {
     // An empty list means no default modulators
@@ -219,7 +317,7 @@ export function fromSF2DefaultModulators(
     bank: BasicSoundBank,
     read: Modulator[]
 ) {
-    scaleSends(read);
+    fromSF2Modulators(read);
     const restored = restoredDefaults(read);
     bank.addCustomCurves(...restored.curves);
     return [...read, ...restored.modulators];
@@ -232,34 +330,39 @@ export function fromSF2DefaultModulators(
 function roundTripChanges(
     modulators: readonly Modulator[],
     restored: readonly Modulator[],
-    defaults: boolean,
     preset = false
 ) {
     const written = modulators.filter((m) => sf2KeepsModulator(m));
     const back = [...restored, ...getResonantCompensators(written, preset)];
     return {
-        lost: modulators.filter(
-            (m) =>
-                // A source type no reader knows is written, and ignored when read
-                hasUnknownSourceType(m) ||
-                (!sf2KeepsModulator(m) &&
-                    !back.some((r) => Modulator.isIdentical(r, m, true)))
-        ),
+        lost: modulators.filter((m) => {
+            // A source type no reader knows is written, and ignored when read
+            if (hasUnknownSourceType(m)) return true;
+            if (!sf2KeepsModulator(m)) {
+                return !back.some((r) => Modulator.isIdentical(r, m, true));
+            }
+            // A mod wheel vibrato that reads back with another amount
+            if (!isDepthRange(m.secondarySource)) return false;
+            const read = Modulator.copyFrom(withoutModulationDepth(m) ?? m);
+            followModulationDepth(read);
+            return !Modulator.isIdentical(read, m, true);
+        }),
         added: back.filter(
             (r) => !modulators.some((m) => Modulator.isIdentical(r, m, true))
         ).length,
         changedSends: written.filter(
             (m) =>
                 isSendModulator(m) &&
-                fromSF2SendAmount(toSF2SendAmount(m, defaults)) !==
+                fromSF2SendAmount(toSF2SendAmount(m.transformAmount)) !==
                     m.transformAmount
         ).length
     };
 }
 
+// A source every reader ignores: an unknown type, or an illegal or reserved controller
 function hasUnknownSourceType(m: Modulator) {
     return [m.primarySource, m.secondarySource].some(
-        (s) => s.curveType > ModulatorCurveTypes.custom
+        (s) => s.curveType > ModulatorCurveTypes.custom || isIllegalSource(s)
     );
 }
 
@@ -291,8 +394,7 @@ export function getSF2LossesInternal(bank: BasicSoundBank) {
                 defaults.filter(
                     (m) => sf2KeepsModulator(m) && !hasUnknownSourceType(m)
                 )
-            ).modulators,
-            true
+            ).modulators
         );
         losses.defaultModulators = changes.lost.length;
         losses.addedModulators += changes.added;
@@ -314,7 +416,6 @@ export function getSF2LossesInternal(bank: BasicSoundBank) {
             const changes = roundTripChanges(
                 zone.modulators,
                 [],
-                false,
                 i < presetCount
             );
             losses.modulators += changes.lost.length;
@@ -336,7 +437,7 @@ export function getSF2LossesInternal(bank: BasicSoundBank) {
     ).length;
     // An SF2 file stores one bank number, which reads back as the bank MSB
     losses.bankNumbers = bank.presets.filter((p) => {
-        const read = p.isGMGSDrum ? 0 : getSF2BankNumber(p) & 0x7f;
+        const read = p.isGMGSDrum ? 0 : getSF2BankNumber(p);
         return read !== p.bankMSB || p.bankLSB !== 0;
     }).length;
     return losses;
@@ -350,7 +451,7 @@ export function getSF2LossesInternal(bank: BasicSoundBank) {
 export function upgradeSF2Bank(bank: BasicSoundBank) {
     for (const element of [...bank.presets, ...bank.instruments]) {
         for (const zone of [element.globalZone, ...element.zones])
-            scaleSends(zone.modulators);
+            fromSF2Modulators(zone.modulators);
     }
     // Banks from before gain get the CC 71 compensation as modulators
     addResonanceCompensation(bank);

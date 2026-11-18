@@ -1,9 +1,14 @@
 import type { MIDIChannel } from "./midi_channel";
-import { GS_USER_DRUM_1, GS_USER_DRUM_2 } from "../synth_constants";
+import {
+    GS_USER_DRUM_1,
+    GS_USER_DRUM_2,
+    MIDI_DRUM_CHANNEL
+} from "../synth_constants";
 import { UserDrumSet } from "../user_drum_set";
 import { SpessaLog } from "../../../utils/loggin";
 import { DrumParameterUtils } from "../../../midi/drum_parameters";
 import { ConsoleColors } from "../../../utils/other";
+import { BankSelectHacks } from "../../../utils/midi_hacks";
 
 /**
  * Changes the program (preset) of the channel.
@@ -14,10 +19,21 @@ export function programChange(this: MIDIChannel, program: number) {
         return;
     }
 
+    // XG and GM2 choose drums by the bank alone, a set drum flag becomes the drum bank
+    if (
+        this.patch.isGMGSDrum &&
+        BankSelectHacks.isSystemXG(this.channelSystem)
+    ) {
+        this.setIsGMGSDrum(false);
+        this.setBankLSB(0);
+        this.setBankMSB(BankSelectHacks.getDrumBank(this.channelSystem));
+    }
+
     this.patch.program = program;
     let preset = this.synthCore.soundBankManager.getPreset(
         this.patch,
-        this.channelSystem
+        this.channelSystem,
+        this.channel % 16 === MIDI_DRUM_CHANNEL
     );
     if (!preset) {
         preset = this.synthCore.onMissingPreset(this.patch, this.channelSystem);

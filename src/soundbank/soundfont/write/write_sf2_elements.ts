@@ -15,7 +15,11 @@ import { PHDR_BYTE_SIZE } from "../../basic_soundbank/basic_preset";
 import { RIFFChunk } from "../../../utils/riff_chunk";
 import { writeBinaryStringIndexed } from "../../../utils/byte_functions/string";
 import { writeWord } from "../../../utils/byte_functions/little_endian";
-import { sf2KeepsGenerator, toSF2Modulators } from "../sf2_compatibility";
+import {
+    sf2KeepsGenerator,
+    toSF2Generator,
+    toSF2Modulators
+} from "../sf2_compatibility";
 
 /**
  *
@@ -65,8 +69,10 @@ export function writeSF2Elements(
         if (format === "sfe") {
             mods = mods.filter((m) => !m.isMissingCurve);
         } else {
-            gens = gens.filter((g) => sf2KeepsGenerator(g.type, g.value));
-            mods = toSF2Modulators(mods, false);
+            gens = gens
+                .filter((g) => sf2KeepsGenerator(g.type, g.value))
+                .map((g) => toSF2Generator(g));
+            mods = toSF2Modulators(mods);
         }
         currentGenIndex += gens.length;
         generators.push(...gens);
@@ -96,17 +102,21 @@ export function writeSF2Elements(
 
     const modSize = modulators.length * MOD_BYTE_SIZE;
     const modData = new IndexedByteArray(modSize);
-    for (const m of modulators) m.write(modData);
+    for (const m of modulators)
+        m.write(modData, undefined, curveIndex !== undefined);
 
-    // SFe extended modulator records (custom curves), one per modulator with a custom curve, then the terminal.
+    // SFe extended modulator records (custom curves), one per flagged modulator, then the terminal.
     // Without them, xdta's pmod and imod only hold the terminal record.
     const customModulators =
         curveIndex === undefined
             ? []
             : modulators.filter((m) => m.usesCustomCurve);
     const writeExtendedMods = customModulators.length > 0;
+    // SF2 keeps the terminal of the extended limits proposal, the size of a modulator record
     const xModData = new IndexedByteArray(
-        (customModulators.length + 1) * XMOD_BYTE_SIZE
+        curveIndex === undefined
+            ? MOD_BYTE_SIZE
+            : (customModulators.length + 1) * XMOD_BYTE_SIZE
     );
     if (curveIndex) {
         for (const m of customModulators) m.writeExtended(xModData, curveIndex);

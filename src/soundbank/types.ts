@@ -40,6 +40,11 @@ export interface SF2Channel {
          * Semitones, can be a floating point number.
          */
         pitchWheelRange: number;
+
+        /**
+         * The modulation depth range (RPN 5) in cents.
+         */
+        modulationDepth: number;
     };
 }
 
@@ -371,11 +376,13 @@ export interface SF2Losses {
      */
     alternatingLoops: number;
     /**
-     * The zone modulators with an SFe destination, a custom curve or an unknown source type.
+     * The zone modulators with an SFe destination, a custom curve or an unknown source type, the ones that use the
+     * Modulation Depth Range in a way SF2 cannot store, and the mod wheel vibratos whose amount reads back differently.
      */
     modulators: number;
     /**
-     * The default modulators with an SFe destination, a custom curve or an unknown source type.
+     * The default modulators with an SFe destination, a custom curve or an unknown source type, the ones that use the
+     * Modulation Depth Range in a way SF2 cannot store, and the mod wheel vibratos whose amount reads back differently.
      */
     defaultModulators: number;
     /**
@@ -390,7 +397,8 @@ export interface SF2Losses {
     addedModulators: number;
     /**
      * The reverb and chorus send modulators whose amount would read back differently.
-     * SF2 stores a fifth of the amount as a whole number, so 502 reads back as 500.
+     * SF2 stores a fifth of the amount as a whole number and the reader multiplies it by 5 again, stopping at 1000.
+     * So 502 reads back as 500, and 1500 reads back as 1000.
      */
     sendAmounts: number;
     /**

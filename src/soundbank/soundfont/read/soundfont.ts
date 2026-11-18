@@ -208,9 +208,9 @@ export class SoundFont2 extends BasicSoundBank {
                 ? read
                 : fromSF2DefaultModulators(this, read);
         } else if (isSFe) {
-            // SFe banks always carry their list, a missing one means no default modulators
-            SpessaLog.warn(
-                "SFe bank without default modulators (DMOD), it has none."
+            // SFe banks always carry their list
+            throw new Error(
+                "Invalid SFe file: the default modulators (DMOD) are missing."
             );
         } else {
             this.resetDefaultModulators();

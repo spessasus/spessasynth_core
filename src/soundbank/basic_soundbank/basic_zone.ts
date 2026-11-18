@@ -55,7 +55,8 @@ export class BasicZone {
      * >
      * > A bank loaded from SF2 or DLS has modulators that are not in the file:
      * > every CC 71 to resonance modulator gets a CC 71 to gain twin, and SF2 reverb and chorus send amounts
-     * > are scaled. Writing SF2 or DLS undoes both, so the written file matches the loaded one.
+     * > are scaled. Writing SF2 or DLS undoes both. The written file may differ from the loaded one by a rounded value,
+     * > see the SF2 round trip in the [SFe specification](../../../docs/extra/sfe-format.md#91-conversion-to-soundfont-2).
      */
     public get modulators(): readonly Modulator[] {
         return this.storedModulators;

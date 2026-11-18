@@ -227,13 +227,17 @@ export class MIDIPatchTools {
      * @param patches The {@link MIDIPatchFull} array to select from.
      * @param patch The {@link MIDIPatch} to select.
      * @param system The MIDI system to select for.
+     * @param channel10 If the request comes from channel 10 (of any group of 16 channels).
+     * In XG, such a request with the bank MSB 126 that has no exact match falls back to drums instead of melodic presets,
+     * as channel 10 cannot become melodic there.
      * @returns The selected patch.
      * @throws Error An error if the array is empty.
      */
     public static selectPatch<T extends MIDIPatchFull>(
         patches: T[],
         patch: MIDIPatch,
-        system: MIDISystem
+        system: MIDISystem,
+        channel10 = false
     ): T {
         if (patches.length === 0) {
             throw new Error("No presets!");
@@ -250,6 +254,9 @@ export class MIDIPatchTools {
         const { isGMGSDrum, bankLSB, bankMSB, program } = patch;
         const isXG = BankSelectHacks.isSystemXG(system);
         const xgDrums = BankSelectHacks.isXGDrum(bankMSB) && isXG;
+        // The XG SFX kits stay melodic on an exact match, but on channel 10 the fallback must keep the drums
+        const xgDrumFallback =
+            xgDrums || (channel10 && system === "xg" && bankMSB === 126);
 
         // Check for exact match
         let p = patches.find((p) => this.matches(p, patch));
@@ -302,7 +309,7 @@ export class MIDIPatchTools {
             returnReplacement(p);
             return p;
         }
-        if (xgDrums) {
+        if (xgDrumFallback) {
             // XG drums: Look for an XG drum kit with the same program
             let p = patches.find(
                 (p) => p.program === program && p.isDrum && !p.isGMGSDrum
@@ -338,8 +345,8 @@ export class MIDIPatchTools {
             returnReplacement(patches[0]);
             return patches[0];
         }
-        if (system === "gs") {
-            // In GS the LSB selects the map and a missing variation stays in its map.
+        if (!isXG) {
+            // In GS (and GM, which follows it) the LSB selects the map and a missing variation stays in its map.
             // So we prefer capital rather than lsb with same msb + program
             p = matchingPrograms.find(
                 (p) => p.bankMSB === 0 && p.bankLSB === bankLSB

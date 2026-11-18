@@ -40,6 +40,13 @@ export function yamahaSystemExclusive(
         const a3 = syx[5]; // Address 3
         // Data = syx[6]
         const data = syx[6];
+        // GM only receives the mode messages (XG system on and all parameter reset)
+        if (
+            this.midiParameters.system === "gm" &&
+            !(a1 === 0x00 && a2 === 0x00 && (a3 === 0x7e || a3 === 0x7f))
+        ) {
+            return;
+        }
         // XG system parameter
         if (a1 === 0x00 && a2 === 0x00) {
             switch (a3) {
@@ -576,23 +583,10 @@ export function yamahaSystemExclusive(
 
                 // Part mode
                 case 0x07: {
-                    const drums = data !== MELODIC_MAP;
-                    // Testcase: xg part_mode_drum
-                    // Verified with s-yxg50
-                    // SetDrums switches the bank and keeps the program,
-                    // But switching *to* drums re-initializes the kit
-                    // To program 0 instead!
-                    // But not if it's already drum
-                    // Testcase: 15. U.N. Owen was her (yoimutu).mid
-                    const drumsBefore = ch.drumChannel;
-                    ch.setDrums(drums);
-                    if (drums && !drumsBefore) {
-                        ch.programChange(0);
-                    }
-                    ch.setMIDIParameter("drumMap", data);
+                    ch.setPartMode(data);
                     SpessaLog.xgInfo(
                         `Part Mode on ${channel}`,
-                        drums ? "DRUM" : "MELODIC"
+                        data === MELODIC_MAP ? "MELODIC" : "DRUM"
                     );
                     break;
                 }
@@ -662,6 +656,12 @@ export function yamahaSystemExclusive(
                     break;
                 }
 
+                // Variation send
+                case 0x14: {
+                    ch.controllerChange(MIDIControllers.variationDepth, data);
+                    break;
+                }
+
                 // Vibrato rate
                 case 0x15: {
                     ch.controllerChange(MIDIControllers.vibratoRate, data);
@@ -717,13 +717,15 @@ export function yamahaSystemExclusive(
 
                 // MW LFO PMOD Depth (alias to modulation wheel range)
                 case 0x20: {
-                    // Scales the bank's wheel depth by data / 10, so the default 10 keeps it
-                    // Through the modulation depth, where 50 is unchanged
-                    ch.setMIDIParameter("modulationDepth", data * 5);
+                    // Sets the modulation depth range (RPN 5) to data * 5 cents, so the default 10 is 50 cents.
+                    // XG engines stop at about 200 cents (measured on S-YXG50)
+                    const depth = ch.setModulationDepthRange(
+                        Math.round(6.4 * Math.min(data, 40))
+                    );
                     SpessaLog.xgInfo(
                         `Modulation wheel depth for ${channel}`,
-                        data / 10,
-                        "times the bank's depth"
+                        depth,
+                        "cents"
                     );
                     break;
                 }

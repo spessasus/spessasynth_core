@@ -262,7 +262,7 @@ export class TrackerSampleBank {
         rootKey: number,
         attenuation: number
     ) {
-        const bank = new BasicSoundBank();
+        const bank = new BasicSoundBank("sfe");
         bank.soundBankInfo.name = title || "Tracker module";
         bank.soundBankInfo.software = "SpessaSynth";
         bank.soundBankInfo.comment = `Converted from ${formatName}`;
@@ -370,12 +370,11 @@ export class TrackerSampleBank {
                 if (channels.length > 1) {
                     // Stereo samples play both channels panned hard left and right.
                     // Trackers play each channel at the level of a centered mono sample, 3 dB lower.
-                    // The synthesizer applies 0.4 of the generator's attenuation
                     zone.addGenerators(
                         new Generator(GeneratorTypes.pan, c ? 500 : -500),
                         new Generator(
                             GeneratorTypes.initialAttenuation,
-                            attenuation + 75
+                            attenuation + 30
                         )
                     );
                 }

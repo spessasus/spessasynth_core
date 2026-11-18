@@ -39,7 +39,7 @@ const curveB = new CustomCurve(
 );
 const plain = (cc: ModulatorSourceIndex) =>
     new Modulator(
-        new ModulatorSource(cc, ModulatorCurveTypes.linear, false, false),
+        new ModulatorSource(cc, ModulatorCurveTypes.linear, true, false),
         new ModulatorSource(),
         GeneratorTypes.pan,
         100,
@@ -49,7 +49,7 @@ const plain = (cc: ModulatorSourceIndex) =>
 const modulators = [
     plain(20),
     new Modulator(
-        new ModulatorSource(21, curveA, false, false),
+        new ModulatorSource(21, curveA, true, false),
         new ModulatorSource(),
         GeneratorTypes.pan,
         200,
@@ -57,8 +57,8 @@ const modulators = [
     ),
     plain(22),
     new Modulator(
-        new ModulatorSource(23, ModulatorCurveTypes.linear, false, false),
-        new ModulatorSource(24, curveB, false, false),
+        new ModulatorSource(23, ModulatorCurveTypes.linear, true, false),
+        new ModulatorSource(24, curveB, true, false),
         GeneratorTypes.fineTune,
         30,
         0
@@ -69,7 +69,7 @@ const curveIndex = (c: unknown) => curves.indexOf(c as CustomCurve);
 
 function modChunk() {
     const data = new IndexedByteArray((modulators.length + 1) * MOD_BYTE_SIZE);
-    for (const m of modulators) m.write(data);
+    for (const m of modulators) m.write(data, undefined, true);
     data.currentIndex = 0;
     return new RIFFChunk("imod", data.length, data);
 }

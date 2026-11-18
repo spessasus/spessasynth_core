@@ -5,7 +5,7 @@ import {
     NonRegisteredParameterTypesMSB
 } from "../../../midi/enums";
 import { MIDI_DRUM_CHANNEL } from "../synth_constants";
-import { BankSelectHacks } from "../../../utils/midi_hacks";
+import { GeneratorTypes } from "../../../soundbank/basic_soundbank/generator_types";
 
 /**
  * Handles MIDI controller changes for a channel.
@@ -26,6 +26,9 @@ export function controllerChange(
 ) {
     if (controller > 127 || value < 0)
         throw new Error("Invalid MIDI Controller.");
+
+    // A CC 10 message of 0 is 1, the GS and XG pan SysEx (random pan) never come here with 0
+    if (controller === MIDIControllers.pan && value === 0) value = 1;
 
     // Lsb controller values: append them as the lower 7 bits of the 14-bit value
     // Excluding bank select as it's handled separately
@@ -57,7 +60,31 @@ export function controllerChange(
             case MIDIControllers.omniModeOff:
             case MIDIControllers.omniModeOn:
             case MIDIControllers.allNotesOff: {
-                this.stopAllNotes();
+                if (
+                    this._midiControllers[MIDIControllers.sustainPedal] >=
+                        8192 &&
+                    this._midiParameters.polyMode
+                ) {
+                    // A note off for every voice: the pedal holds them, like GS and XG devices do.
+                    // Voices that ignore note off are not held, so they get released
+                    this.noteOnID.fill(0);
+                    this.noteOffID.fill(0);
+                    this.playingNotes.fill(false);
+                    let vc = 0;
+                    if (this._voiceCount > 0)
+                        for (const v of this.synthCore.voices) {
+                            if (v.channel === this.channel && v.isActive) {
+                                if (
+                                    v.modulatedGenerators[
+                                        GeneratorTypes.ignoreNoteOff
+                                    ]
+                                )
+                                    v.releaseVoice(this.synthCore.currentTime);
+                                else if (!v.isInRelease) v.isHeld = true;
+                                if (++vc >= this._voiceCount) break; // We already checked all the voices
+                            }
+                        }
+                } else this.stopAllNotes();
                 break;
             }
 
@@ -80,23 +107,28 @@ export function controllerChange(
 
             // Special case: bank select
             case MIDIControllers.bankSelect: {
-                this.setBankMSB(value);
-                // Ensure that for XG, drum channels always are 127.
+                // GM ignores bank selects
+                if (this.channelSystem === "gm") break;
                 // This emulates the XG "DRUM PART PROTECT MODE", which is not implemented yet,
-                // So it is always on and part 10 can never be melodic!
+                // So it is always on: part 10 only receives the drum banks 126 and 127 and can never be melodic!
+                // GM2 has no such rule, its channel 10 turns melodic with bank 121.
                 // Testcase
                 // Dave-Rodgers-D-j-Vu-Anonymous-20200419154845-nonstop2k.com.mid
                 if (
                     this.channel % 16 === MIDI_DRUM_CHANNEL &&
-                    BankSelectHacks.isSystemXG(this.channelSystem)
+                    this.channelSystem === "xg" &&
+                    value !== 126 &&
+                    value !== 127
                 ) {
-                    this.setBankMSB(127);
+                    break;
                 }
-
+                this.setBankMSB(value);
                 break;
             }
 
             case MIDIControllers.bankSelectLSB: {
+                // GM ignores bank selects
+                if (this.channelSystem === "gm") break;
                 this.setBankLSB(value);
                 break;
             }

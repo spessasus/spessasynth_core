@@ -2360,7 +2360,7 @@ export class MIDIUtils {
 
                 case 0x20: {
                     // MW LFO PMOD Depth (alias to modulation wheel range)
-                    // Scales the bank's wheel depth by value / 10, 50 cents is unchanged
+                    // Sets the modulation depth range (RPN 5) to value * 5 cents
                     const cents = value * 5;
                     return [
                         {
@@ -3582,7 +3582,7 @@ export class MIDIUtils {
                         // Special case:
                         // If the source is a mod wheel, it's a strange way of setting the modulation depth
                         // Testcase: J-Cycle.mid (it affects gm.dls which uses LFO1 for modulation)
-                        // Scales the bank's wheel depth by value / 10, 50 cents is unchanged
+                        // Sets the modulation depth range (RPN 5) to value * 5 cents
                         const cents = value * 5;
                         return [
                             {

@@ -179,8 +179,9 @@ export function applySnapshot(this: MIDIChannel, snapshot: ChannelSnapshot) {
         this.setBankLSB(snapshot.patch.bankLSB);
         this.setIsGMGSDrum(snapshot.patch.isGMGSDrum);
         this.programChange(snapshot.patch.program);
-        // Fallback if no preset matched and the flag didn't sync
-        this.setDrumFlag(snapshot.drumChannel);
+        // The selected preset decides if this is a drum channel.
+        // Only without a preset the flag from the snapshot is used
+        if (!this.preset) this.setDrumFlag(snapshot.drumChannel);
     } else {
         this.setDrumFlag(snapshot.drumChannel);
     }

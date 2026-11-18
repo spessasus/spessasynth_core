@@ -168,6 +168,14 @@ export function rolandSystemExclusive(
                     return;
                 }
 
+                // GM only receives the mode messages (GS reset and GS exit)
+                if (
+                    this.midiParameters.system === "gm" &&
+                    !(a1 === 0x40 && a2 === 0x00 && a3 === 0x7f)
+                ) {
+                    return;
+                }
+
                 // Patch Parameter
                 if (a1 === 0x40 || a1 === 0x50) {
                     // 50 means BLOCK B (+16 channels)
@@ -213,7 +221,7 @@ export function rolandSystemExclusive(
                             case 0x06: {
                                 // Roland master pan
                                 // 63, it ranges from 1 to 127, NOT 0 to 127!
-                                const pan = (data - 64) / 63;
+                                const pan = Math.max(-1, (data - 64) / 63);
 
                                 SpessaLog.gsInfo("Master Pan", pan);
                                 this.setMIDIParameter("pan", pan);
@@ -814,27 +822,10 @@ export function rolandSystemExclusive(
 
                             case 0x15: {
                                 // This is the Use for Rhythm Part sysex (multiple drums)
-                                const prevMap = ch.midiParameters.drumMap;
-                                ch.setMIDIParameter("drumMap", data);
-                                const newMap = ch.midiParameters.drumMap;
-                                // Non-melodic means a drum channel
-                                const isDrums = data > MELODIC_MAP;
-                                // Testcase: gs_drum_change_test
-                                // GS resets to the default kit not only when toggling drums,
-                                // But on any map change too.
-                                if (
-                                    !ch.systemParameters.presetLock &&
-                                    (isDrums !== ch.patch.isGMGSDrum ||
-                                        newMap !== prevMap)
-                                ) {
-                                    ch.patch.bankMSB = 0;
-                                    ch.patch.bankLSB = 0;
-                                    ch.patch.isGMGSDrum = isDrums;
-                                    ch.programChange(0);
-                                }
+                                ch.setPartMode(data);
                                 SpessaLog.gsInfo(
                                     `Drums on ${channel}`,
-                                    isDrums.toString()
+                                    (data > MELODIC_MAP).toString()
                                 );
                                 return;
                             }
@@ -1096,13 +1087,16 @@ export function rolandSystemExclusive(
                         if (source === 0 && destination === 0x04) {
                             // LFO1 Pitch depth
                             // Special case:
-                            // If the source is a mod wheel, it's a strange way of setting the modulation depth
+                            // If the source is a mod wheel, it's a strange way of setting the modulation depth (RPN 5)
                             // Testcase: J-Cycle.mid (it affects gm.dls which uses LFO1 for modulation)
-                            ch.setMIDIParameter("modulationDepth", data * 5);
+                            // The data is in 5 cent steps, 6.4 is 128 / 20
+                            const cents = ch.setModulationDepthRange(
+                                Math.round(6.4 * data)
+                            );
                             SpessaLog.gsInfo(
                                 `Modulation wheel depth for ${channel}`,
-                                data / 10,
-                                "times the bank's depth"
+                                cents,
+                                "cents"
                             );
                             return;
                         }

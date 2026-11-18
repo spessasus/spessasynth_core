@@ -159,9 +159,10 @@ export class WaveSample extends DLSVerifier {
          This then gets converted into -12 coarse and -98 tune which is still correct!
         */
         waveSample.fineTune = zone.fineTuning + zone.sample.pitchCorrection;
-        // E-mu attenuation correction
-        const attenuationCb =
-            zone.getGenerator(GeneratorTypes.initialAttenuation, 0) * 0.4;
+        const attenuationCb = zone.getGenerator(
+            GeneratorTypes.initialAttenuation,
+            0
+        );
         // Gain is stored as a 32-bit value, shift here
         waveSample.gain = -attenuationCb << 16;
         const loopingMode = zone.getGenerator(GeneratorTypes.sampleModes, 0);
@@ -219,13 +220,10 @@ export class WaveSample extends DLSVerifier {
         // Convert to signed and turn into attenuation (invert)
         const wsmpGain16 = this.gain >> 16;
         const wsmpAttenuation = -wsmpGain16;
-        // Apply the E-MU attenuation correction here
-        const wsmpAttenuationCorrected = wsmpAttenuation / 0.4;
-
-        if (wsmpAttenuationCorrected !== 0) {
+        if (wsmpAttenuation !== 0) {
             zone.setGenerator(
                 GeneratorTypes.initialAttenuation,
-                wsmpAttenuationCorrected
+                wsmpAttenuation
             );
         }
 

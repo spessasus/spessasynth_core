@@ -8,6 +8,7 @@ import { ConsoleColors } from "../../../utils/other";
 import { getSDTA } from "./sdta";
 import { getSHDR } from "./shdr";
 import {
+    writeDword,
     writeLittleEndianIndexed,
     writeWord
 } from "../../../utils/byte_functions/little_endian";
@@ -128,12 +129,6 @@ export function writeSF(
     const curves = isSFe ? bank.customCurves : [];
     let curveIndex: ((curve: ModulatorCurve) => number) | undefined;
     if (isSFe) {
-        // The count and the indexes are WORDs
-        if (curves.length > 0xff_ff) {
-            throw new Error(
-                `Too many custom curves: ${curves.length}, an SFe file holds up to 65535.`
-            );
-        }
         const indexes = new Map<ModulatorCurve, number>();
         for (const [i, curve] of curves.entries()) {
             if (curve.points.length > 0xff_ff) {
@@ -157,7 +152,7 @@ export function writeSF(
     if (writeDMOD) {
         const mods = isSFe
             ? bank.defaultModulators.filter((m) => !m.isMissingCurve)
-            : toSF2Modulators(bank.defaultModulators, true);
+            : toSF2Modulators(bank.defaultModulators);
         SpessaLog.info(
             `%cWriting %c${mods.length}%c default modulators...`,
             ConsoleColors.info,
@@ -167,7 +162,7 @@ export function writeSF(
         const dmodSize = MOD_BYTE_SIZE + mods.length * MOD_BYTE_SIZE;
         const dmodData = new IndexedByteArray(dmodSize);
         for (const mod of mods) {
-            mod.write(dmodData);
+            mod.write(dmodData, undefined, isSFe);
         }
 
         // Terminal modulator, is zero
@@ -175,7 +170,7 @@ export function writeSF(
 
         infoArrays.push(...RIFFChunk.getParts("DMOD", [dmodData], rf64));
 
-        // SFe: the extended records of DMOD, one per modulator with a custom curve, then the terminal
+        // SFe: the extended records of DMOD, one per modulator with the flag (a custom curve), then the terminal
         const customMods = mods.filter((m) => m.usesCustomCurve);
         if (curveIndex && customMods.length > 0) {
             const xmodData = new IndexedByteArray(
@@ -195,9 +190,9 @@ export function writeSF(
             ConsoleColors.info
         );
         const size =
-            2 + curves.reduce((sum, c) => sum + 42 + c.points.length * 4, 0);
+            4 + curves.reduce((sum, c) => sum + 42 + c.points.length * 4, 0);
         const curvData = new IndexedByteArray(size);
-        writeWord(curvData, curves.length);
+        writeDword(curvData, curves.length);
         for (const c of curves) {
             writeBinaryStringIndexed(curvData, c.name, 40);
             writeWord(curvData, c.points.length);

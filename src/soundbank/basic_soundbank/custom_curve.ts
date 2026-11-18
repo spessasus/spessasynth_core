@@ -20,7 +20,8 @@ export type CustomCurveUser = BasicInstrument | BasicPreset | BasicSoundBank;
  */
 export interface CustomCurvePoint {
     /**
-     * The source value, 0 to 16,383 (14 bits). A 7-bit source value `v` is at `v << 7`.
+     * The source value, 0 to 16,384. A 14-bit source value is 0 to 16,383, and a 7-bit source value `v` is at `v << 7`.
+     * The value 16,384 is the end of the range, so a curve can be defined up to exactly 1.
      */
     x: number;
     /**
@@ -33,7 +34,7 @@ export interface CustomCurvePoint {
  * A modulator source curve stored in an SFe bank (curve type 4).
  * The value between two points is linearly interpolated.
  *
- * The first point should be at `x = 0` and the last at `x = 16383`. `x` never decreases, and two points at the same `x`
+ * The first point should be at `x = 0` and the last at `x = 16384`. `x` never decreases, and two points at the same `x`
  * make a vertical step.
  *
  * > **Tip**
@@ -107,7 +108,7 @@ export class CustomCurve extends ModulatorCurve {
                 !Number.isInteger(x) ||
                 !Number.isInteger(y) ||
                 x < 0 ||
-                x > 16_383 ||
+                x > 16_384 ||
                 y < 0 ||
                 y > 16_384
             ) {

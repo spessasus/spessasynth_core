@@ -55,6 +55,9 @@ export function noteOff(this: MIDIChannel, midiNote: number) {
                 if (!v.modulatedGenerators[GeneratorTypes.ignoreNoteOff]) {
                     if (sustain) v.isHeld = true;
                     else v.releaseVoice(this.synthCore.currentTime);
+                } else if (v.loopingMode === 2) {
+                    // Start on release never starts its sample here, so end the silent voice instead of leaking it
+                    v.isActive = false;
                 }
 
                 if (++vc >= this._voiceCount) break; // We already checked all the voices

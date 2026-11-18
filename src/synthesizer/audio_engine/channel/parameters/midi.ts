@@ -40,15 +40,9 @@ export interface ChannelMIDIParameter {
     pitchWheelRange: number;
 
     /**
-     * The modulation depth in cents.
-     * This is internally converted to a multiplier by dividing by 50.
-     *
-     * The MIDI specification assumes the default modulation depth is 50 cents,
-     * but it may vary for different sound banks.
-     * For example, if a MIDI requests a modulation depth of 100 cents,
-     * the multiplier will be 2,
-     * which, for a preset with a depth of 50,
-     * will create a total modulation depth of 100 cents.
+     * The modulation depth range (RPN 5) in cents.
+     * Banks read it through the Modulation Depth Range modulator source,
+     * where the default modulation wheel to vibrato modulator is 50 cents at the default.
      */
     modulationDepth: number;
 
@@ -271,6 +265,24 @@ export function setMIDIParameterInternal<P extends keyof ChannelMIDIParameter>(
             this.computeModulatorsAll(
                 0,
                 ModulatorControllerSources.channelPressure
+            );
+            break;
+        }
+
+        case "pitchWheelRange": {
+            // Sounding voices follow RPN 0 through the Pitch Wheel Sensitivity source
+            this.computeModulatorsAll(
+                0,
+                ModulatorControllerSources.pitchWheelRange
+            );
+            break;
+        }
+
+        case "modulationDepth": {
+            // Sounding voices follow RPN 5 through the Modulation Depth Range source
+            this.computeModulatorsAll(
+                0,
+                ModulatorControllerSources.modulationDepthRange
             );
             break;
         }

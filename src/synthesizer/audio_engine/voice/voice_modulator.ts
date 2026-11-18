@@ -1,28 +1,17 @@
-import {
-    type GeneratorType,
-    GeneratorTypes
-} from "../../../soundbank/basic_soundbank/generator_types";
+import type { GeneratorType } from "../../../soundbank/basic_soundbank/generator_types";
 import { Modulator } from "../../../soundbank/basic_soundbank/modulator";
 import type { ModulatorSource } from "../../../soundbank/basic_soundbank/modulator_source";
 import type { ModulatorTransformType } from "../../../soundbank/enums";
-import { MIDIControllers } from "../../../midi/enums";
 
 export class VoiceModulator extends Modulator {
-    /**
-     * If this is a modulation wheel modulator (for modulation depth range).
-     */
-    public readonly isModWheelModulator;
-
     private constructor(
         s1: ModulatorSource,
         s2: ModulatorSource,
         destination: GeneratorType,
         amount: number,
-        transformType: ModulatorTransformType,
-        isModWheelModulator: boolean
+        transformType: ModulatorTransformType
     ) {
         super(s1, s2, destination, amount, transformType);
-        this.isModWheelModulator = isModWheelModulator;
     }
 
     public static fromData(
@@ -32,20 +21,7 @@ export class VoiceModulator extends Modulator {
         amount: number,
         transformType: ModulatorTransformType
     ) {
-        const isModWheelModulator =
-            (s1.isController(MIDIControllers.modulationWheel) ||
-                s2.isController(MIDIControllers.modulationWheel)) &&
-            (destination === GeneratorTypes.modLfoToPitch ||
-                destination === GeneratorTypes.vibLfoToPitch);
-
-        return new VoiceModulator(
-            s1,
-            s2,
-            destination,
-            amount,
-            transformType,
-            isModWheelModulator
-        );
+        return new VoiceModulator(s1, s2, destination, amount, transformType);
     }
 
     public static fromModulator(mod: Modulator) {

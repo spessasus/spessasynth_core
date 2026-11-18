@@ -12,8 +12,11 @@ The limits and default values are accessible through {@link GeneratorLimits}.
 
 > **Important**
 >
-> Generator 48 (Initial Attenuation) applies a 0.04 multiplier instead of 0.1 multiplier like in the spec to get the true dB value.
-> The SFe specification requires this scaling.
+> Generator 48 (Initial Attenuation) is in true centibels, the same unit as Gain (86), so 100 is 10 dB.
+> SoundFont2 files store 2.5 times that (the EMU8000 factor of 0.4). The SF2 reader multiplies each value by 0.4 and
+> rounds, the SF2 writer divides by 0.4 and rounds, and the synthesizer does not scale it. A SoundFont2 file that is
+> read and written again may change an attenuation value by one unit once. The limit is 0 to 1440 centibels, which is
+> also the limit of the sum with its modulators.
 >
 > Some limits differ from the specification:
 >
@@ -76,7 +79,7 @@ The limits and default values are accessible through {@link GeneratorLimits}.
 | 45           | Start Loop Address Coarse Offset        | -32768        | 32768         | 0             | Sample control - Moves sample loop start point in 32768 increments                                                                                                        |
 | 46           | Key Number                              | -1            | 127           | -1            | Zone - Instrument only: Always use this MIDI number (ignore what's pressed)                                                                                               |
 | 47           | Velocity                                | -1            | 127           | -1            | Zone - Instrument only: Always use this velocity (ignore what's pressed)                                                                                                  |
-| 48           | Initial Attenuation                     | 0             | 1440          | 0             | Zone - Allows turning down the volume, 250 = -10dB                                                                                                                        |
+| 48           | Initial Attenuation                     | 0             | 1440          | 0             | Zone - Allows turning down the volume, in centibels, 100 = -10dB                                                                                                          |
 | 49           | Reserved 2                              | -             | -             | -             | Reserved                                                                                                                                                                  |
 | 50           | End Loop Address Coarse Offset          | -32768        | 32768         | 0             | Sample control - Moves sample loop end point in 32768 increments                                                                                                          |
 | 51           | Coarse Tune                             | -120          | 120           | 0             | Tune - Pitch offset in semitones                                                                                                                                          |
@@ -102,7 +105,7 @@ Every default value makes the voice play exactly as it would without the generat
 
 > **Tip**
 >
-> Consider reading [SFe Format](sfe-format.md)
+> Consider reading [the SFe specification](https://spessasus.github.io/spessasynth_sfe/spec.html)
 
 | Generator ID | Generator Name                     | Minimum Value | Maximum Value | Default Value | Description                                                                                                    |
 | ------------ | ---------------------------------- | ------------- | ------------- | ------------- | -------------------------------------------------------------------------------------------------------------- |
@@ -148,4 +151,4 @@ will be silent until note off.
 SFe adds `sampleModes` 4, an alternating (ping-pong) loop. The sample plays forward to the point before the loop end,
 then backward to the loop start, and repeats, playing each turn point once. It keeps looping in the release phase,
 like mode 1. SF2 and DLS have no such loop, so the generator is dropped when writing them.
-See [the SFe specification](sfe-format.md#71-generator-and-modulator-destination-enumerators).
+See [the SFe specification](https://spessasus.github.io/spessasynth_sfe/spec.html#71-generator-and-modulator-destination-enumerators).

@@ -178,6 +178,30 @@ export function noteOn(
 
     const noteID = emit ? this.noteOnID[midiNote]++ : this.noteOnID[midiNote];
 
+    // Apply exclusive class before adding the voices, so the voices of this note on do not end each other
+    // In mono mode all voices have been killed already
+    if (this._midiParameters.polyMode && this._voiceCount > 0) {
+        for (const cached of voices) {
+            const exclusiveClass = exclusiveOverride || cached.exclusiveClass;
+            if (exclusiveClass === 0) continue;
+            // Kill all voices with the same exclusive class
+            for (const v of this.synthCore.voices) {
+                if (
+                    v.isActive &&
+                    v.channel === this.channel &&
+                    v.exclusiveClass === exclusiveClass
+                ) {
+                    if (v.startTime > this.synthCore.currentTime) {
+                        // A delayed voice that has not started yet never sounds
+                        v.isActive = false;
+                    } else {
+                        v.exclusiveRelease(this.synthCore.currentTime);
+                    }
+                }
+            }
+        }
+    }
+
     // Add voices
     for (const cached of voices) {
         const voice = this.synthCore.assignVoice();
@@ -222,25 +246,6 @@ export function noteOn(
             }
         }
 
-        // Apply exclusive class
-        // In mono mode all voices have been killed already
-        if (voice.exclusiveClass !== 0 && this._midiParameters.polyMode) {
-            // Kill all voices with the same exclusive class
-            let vc = 0;
-            if (this._voiceCount > 0)
-                for (const v of this.synthCore.voices) {
-                    if (
-                        v.isActive &&
-                        v.channel === this.channel &&
-                        v.exclusiveClass === voice.exclusiveClass &&
-                        // Only voices created in a different quantum
-                        v.hasRendered
-                    ) {
-                        v.exclusiveRelease(this.synthCore.currentTime);
-                        if (++vc >= this._voiceCount) break; // We already checked all the voices
-                    }
-                }
-        }
         // Compute all modulators
         this.computeModulators(voice);
         const modulated = voice.modulatedGenerators;

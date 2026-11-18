@@ -111,11 +111,12 @@ export class BasicSoundBank {
     /**
      * Creates an empty sound bank instance.
      * @param type The value to initialize the {@link BasicSoundBank.type} property with.
+     * A new bank is an SFe bank unless told otherwise.
      * @param defaultModulators If the bank starts with its own copy of {@link SPESSASYNTH_DEFAULT_MODULATORS}
      * and their custom curves. A bank without them has no default modulators until some are assigned.
      */
     public constructor(
-        type: "sf2" | "sfe" | "dls" = "sf2",
+        type: "sf2" | "sfe" | "dls" = "sfe",
         defaultModulators = true
     ) {
         this.bankType = type;
@@ -287,7 +288,7 @@ export class BasicSoundBank {
         const inst = new BasicInstrument();
         inst.name = "Saw Wave";
         inst.globalZone.addGenerators(
-            new Generator(GeneratorTypes.initialAttenuation, 375),
+            new Generator(GeneratorTypes.initialAttenuation, 150),
             new Generator(GeneratorTypes.releaseVolEnv, -1000),
             new Generator(GeneratorTypes.sampleModes, 1)
         );

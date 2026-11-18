@@ -108,14 +108,19 @@ const linkCount = (bank: BasicSoundBank, c: CustomCurve) => {
     );
 }
 
-// The writer refuses more curves than a WORD can count
+// The curve count and the curve indexes are DWORDs, so more than 65535 curves are written
 {
     const bank = new BasicSoundBank();
     for (let i = 0; i < 65_534; i++)
         bank.customCurves.push(curve(1 + (i % 16_000)));
+    let back: BasicSoundBank | undefined;
     check(
-        bank.customCurves.length === 65_536 && throws(() => bank.writeSFe()),
-        "writing more than 65535 custom curves throws"
+        bank.customCurves.length === 65_536 &&
+            !throws(() => {
+                back = SoundBankLoader.fromArrayBuffer(bank.writeSFe());
+            }) &&
+            back?.customCurves.length === 65_536,
+        "more than 65535 custom curves are written and read back"
     );
 }
 
@@ -280,7 +285,7 @@ const linkCount = (bank: BasicSoundBank, c: CustomCurve) => {
         amounts(sfeRoundTrip(bank)) === "500,1000",
         "SFe round trip keeps send amounts"
     );
-    // An SF2 file with 70 and 350: both are remembered and written back unchanged
+    // A send of the default form is stored as a fifth, so 350 is 70 in the file and reads back as 350
     const sf2File = makeBank(sineSample(), {}, (zone) => {
         zone.addModulators(
             send(350),
@@ -574,7 +579,7 @@ const linkCount = (bank: BasicSoundBank, c: CustomCurve) => {
         "DLS writing leaves the bank's modulators and links alone"
     );
 
-    // The file stores 70. Patch it to 300, which also reads as 1000: only the remembered amount writes 300 back
+    // The file stores 70. Patch it to 300, which also reads as 1000: the bank forgets the file amount, so it writes 200
     const file = new Uint8Array(bank.writeSF2());
     const record = [0xdb, 0x00, 0x10, 0x00, 70, 0x00];
     let at = -1;
@@ -594,14 +599,18 @@ const linkCount = (bank: BasicSoundBank, c: CustomCurve) => {
     const rewritten = new Uint8Array(loaded.writeSF2());
     check(
         rewritten.length === file.length &&
-            rewritten.every((v, i) => v === file[i]),
-        "and is written back as 300, byte for byte"
+            rewritten[at + 4] === 200 &&
+            rewritten[at + 5] === 0 &&
+            rewritten.every(
+                (v, i) => i === at + 4 || i === at + 5 || v === file[i]
+            ),
+        "and is written back as 200, the rest is the same"
     );
     check(
         Object.values(loaded.getSF2Losses()).every((v) => v === 0),
         "the loaded bank reports no SF2 changes"
     );
-    // A changed amount no longer uses the remembered one, and 502 rounds to 500
+    // 502 rounds to 500
     sendOf(loaded).transformAmount = 502;
     check(
         loaded.getSF2Losses().sendAmounts === 1 &&

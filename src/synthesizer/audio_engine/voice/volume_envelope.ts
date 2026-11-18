@@ -163,22 +163,8 @@ export class VolumeEnvelope {
             // The envelope now enters the release phase from the current gain
             // Compute the current gain level in decibel attenuation
 
+            // The decay keeps the duration it started with, so the level here is the one that was playing
             const sustainCb = Math.max(0, Math.min(CB_SILENCE, this.sustainCb));
-            const fraction = sustainCb / CB_SILENCE;
-
-            // Decay: sf spec page 35: the time is for change from attenuation to -100dB.
-            // We use CB_SILENCE (96 dB) as the full range instead.
-            // Calculate the real time
-            // (changing from attenuation to sustain instead of to silence)
-            const keyNumAddition =
-                (60 - voice.targetKey) *
-                voice.modulatedGenerators[GeneratorTypes.keyNumToVolEnvDecay];
-
-            this.decayDuration =
-                this.rawTimecentsToSamples(
-                    voice.modulatedGenerators[GeneratorTypes.decayVolEnv] +
-                        keyNumAddition
-                ) * fraction;
 
             switch (this.state) {
                 case 0: {

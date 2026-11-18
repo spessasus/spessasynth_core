@@ -41,6 +41,9 @@ setResetValue(MIDIControllers.vibratoDelay, 64);
 setResetValue(MIDIControllers.generalPurposeController6, 64);
 setResetValue(MIDIControllers.generalPurposeController8, 64);
 
+// GM2, GS and XG all start with a reverb send of 40
+setResetValue(MIDIControllers.reverbDepth, 40);
+
 setResetValue(MIDIControllers.registeredParameterLSB, DEFAULT_RPN);
 setResetValue(MIDIControllers.registeredParameterMSB, DEFAULT_RPN);
 setResetValue(MIDIControllers.nonRegisteredParameterLSB, DEFAULT_NRPN);
@@ -208,8 +211,14 @@ export function resetRP15(this: MIDIChannel) {
 
     for (const resetCC of RP_15_RESET_CC_NUMS) {
         const resetValue = DEFAULT_MIDI_CONTROLLERS[resetCC];
-        if (resetValue !== this._midiControllers[resetCC])
+        if (
+            resetValue !== this._midiControllers[resetCC] &&
+            !this.lockedControllers[resetCC]
+        ) {
+            // Clear the LSB too, controllerChange only sets the upper 7 bits
+            this._midiControllers[resetCC] &= 0x3f_80;
             this.controllerChange(resetCC, resetValue >> 7);
+        }
     }
     // Reset polyphonic pressure for all notes to 0
     this.polyPressures.fill(0);

@@ -271,6 +271,18 @@ export class ModulatorSource {
                         16_383,
                         Math.floor(channel.midiParameters.pitchWheelRange * 128)
                     );
+                    break;
+                }
+
+                case ModulatorControllerSources.modulationDepthRange: {
+                    // The parameter is in cents, RPN 5 value is cents * 1.28 (100/128 cents per step)
+                    // The source is full at 16 semitones, so it is 8 times that value
+                    rawValue = Math.min(
+                        16_383,
+                        Math.round(
+                            channel.midiParameters.modulationDepth * 1.28
+                        ) * 8
+                    );
                 }
             }
         }

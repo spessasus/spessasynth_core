@@ -119,12 +119,6 @@ export class Voice {
     public isActive = false;
 
     /**
-     * Indicates if the voice has rendered at least one buffer.
-     * Used for exclusive class to prevent killing voices set on the same note.
-     */
-    public hasRendered = false;
-
-    /**
      * Indicates if the voice is in the release phase.
      */
     public isInRelease = false;
@@ -312,7 +306,6 @@ export class Voice {
         // Clear state
         this.isActive = true;
         this.isInRelease = false;
-        this.hasRendered = false;
         this.isHeld = false;
         this.releaseStartTime = Infinity;
         this.overrideReleaseVolEnv = 0;

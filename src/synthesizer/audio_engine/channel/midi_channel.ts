@@ -676,18 +676,16 @@ export class MIDIChannel {
         if (this._systemParameters.presetLock) return;
 
         if (BankSelectHacks.isSystemXG(this.channelSystem)) {
+            // XG and GM2 choose drums by the bank alone.
+            // A leftover flag would force drums on whatever bank comes next
+            this.setIsGMGSDrum(false);
             if (isDrum) {
                 if (BankSelectHacks.isXGDrum(this.patch.bankMSB)) return;
                 this.setBankMSB(
                     BankSelectHacks.getDrumBank(this.channelSystem)
                 );
             } else {
-                if (this.channel % 16 === MIDI_DRUM_CHANNEL) {
-                    SpessaLog.warn(
-                        `Cannot disable drums on channel ${this.channel} for XG.`
-                    );
-                    return;
-                }
+                if (this.refusesMelodicPart()) return;
                 this.setBankMSB(
                     BankSelectHacks.getDefaultBank(this.channelSystem)
                 );
@@ -697,12 +695,68 @@ export class MIDIChannel {
             this.programChange(this.patch.program);
             return;
         }
-        if (isDrum === this._drumChannel) return;
+        if (isDrum === this.patch.isGMGSDrum) return;
         // Flip the drums for GS
         this.setIsGMGSDrum(isDrum);
         this.programChange(this.patch.program);
-        // Fallback if no preset matched and the flag didn't sync
-        this.setDrumFlag(isDrum);
+        // The selected preset decides if this is a drum channel.
+        // Without any preset there is nothing to follow, so take the request
+        if (!this.preset) this.setDrumFlag(isDrum);
+    }
+
+    /**
+     * Stores the modulation depth range, the way RPN 5 does.
+     * @param value The 14-bit data entry value.
+     * @returns The stored range in cents.
+     * @internal
+     */
+    public setModulationDepthRange(value: number) {
+        // Cents, so value / 128 * 100 is value / 1.28
+        const cents = value / 1.28;
+        this.setMIDIParameter("modulationDepth", cents);
+        return cents;
+    }
+
+    /**
+     * The part mode of the channel, set by the GS USE FOR RHYTHM PART and the XG PART MODE messages alike.
+     * @param value The part mode value, 0 is melodic and anything else is a drum channel.
+     * @internal
+     */
+    public setPartMode(value: number) {
+        const isDrum = value !== MELODIC_MAP;
+        if (BankSelectHacks.isSystemXG(this.channelSystem)) {
+            if (!isDrum && this.refusesMelodicPart()) return;
+            this.setMIDIParameter("drumMap", value);
+            // Testcase: xg part_mode_drum
+            // Verified with s-yxg50
+            // SetDrums switches the bank and keeps the program,
+            // But switching *to* drums re-initializes the kit
+            // To program 0 instead!
+            // But not if it's already drum
+            // Testcase: 15. U.N. Owen was her (yoimutu).mid
+            const drumsBefore = this._drumChannel;
+            this.setDrums(isDrum);
+            if (isDrum && !drumsBefore) {
+                this.programChange(0);
+            }
+            return;
+        }
+        const previous = this._midiParameters.drumMap;
+        this.setMIDIParameter("drumMap", value);
+        // Testcase: gs_drum_change_test
+        // GS resets to the default kit not only when toggling drums,
+        // But on any map change too.
+        if (
+            !this._systemParameters.presetLock &&
+            (isDrum !== this.patch.isGMGSDrum || value !== previous)
+        ) {
+            this.patch.bankMSB = 0;
+            this.patch.bankLSB = 0;
+            this.patch.isGMGSDrum = isDrum;
+            this.programChange(0);
+            // Without any preset the drum channel state takes the request, like setDrums
+            if (!this.preset) this.setDrumFlag(isDrum);
+        }
     }
 
     /**
@@ -743,18 +797,18 @@ export class MIDIChannel {
         });
     }
 
-    /*
-    =================
-    END OF PUBLIC API
-    =================
-     */
-
     /**
      * @internal
      */
     public clearVoiceCount() {
         this._voiceCount = 0;
     }
+
+    /*
+    =================
+    END OF PUBLIC API
+    =================
+     */
 
     /**
      * Sets the octave tuning for a given channel.
@@ -1001,6 +1055,23 @@ export class MIDIChannel {
             this.polyPressures,
             this.perNotePitch ? this.pitchWheels : undefined
         );
+    }
+
+    /**
+     * Only XG protects its drum part, GM2 lets channel 10 be melodic.
+     * @returns True if this channel must stay a drum channel.
+     * @internal
+     */
+    protected refusesMelodicPart() {
+        if (
+            this.channel % 16 !== MIDI_DRUM_CHANNEL ||
+            this.channelSystem !== "xg"
+        )
+            return false;
+        SpessaLog.warn(
+            `Cannot disable drums on channel ${this.channel} for XG.`
+        );
+        return true;
     }
 
     /**

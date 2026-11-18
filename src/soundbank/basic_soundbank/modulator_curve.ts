@@ -173,8 +173,23 @@ class SwitchCurve extends ModulatorCurve {
     }
 
     protected evaluate(value: number, isBipolar: boolean) {
-        value = value > 0.5 ? 1 : 0;
+        value = value >= 0.5 ? 1 : 0;
         return isBipolar ? value * 2 - 1 : value;
+    }
+
+    protected buildTables() {
+        // SF2 switches on after half of the maximum, so the center (8192, CC value 64) is already on.
+        // The negative direction is the exact opposite, off from the center up
+        for (let transform = 0; transform < 4; transform++) {
+            const isBipolar = (transform & 0b10) !== 0;
+            const isNegative = (transform & 1) !== 0;
+            const table = new Float32Array(MODULATOR_RESOLUTION);
+            for (let v = 0; v < MODULATOR_RESOLUTION; v++) {
+                const on = v >= MODULATOR_RESOLUTION / 2 !== isNegative;
+                table[v] = this.evaluate(on ? 1 : 0, isBipolar);
+            }
+            this.tables[transform] = table;
+        }
     }
 }
 

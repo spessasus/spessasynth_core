@@ -73,10 +73,7 @@ export function renderVoice(
     sampleCount: number
 ) {
     // Delayed voice start (SFe): nothing runs until the voice starts
-    if (timeNow < voice.startTime) {
-        voice.hasRendered = true;
-        return;
-    }
+    if (timeNow < voice.startTime) return;
     // Check if release
     if (
         !voice.isInRelease && // If not in release, check if the release time is
@@ -93,7 +90,6 @@ export function renderVoice(
             voice.wavetable.isLooping = false;
         }
     }
-    voice.hasRendered = true;
 
     // Important sanity check, as we may disable the voice now
     // Testcase: mono mode with chords

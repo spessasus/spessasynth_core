@@ -11,7 +11,10 @@ import {
     type ModulatorTransformType
 } from "../enums";
 import { MIDIControllers } from "../../midi/enums";
-import { writeWord } from "../../utils/byte_functions/little_endian";
+import {
+    writeDword,
+    writeWord
+} from "../../utils/byte_functions/little_endian";
 import type { IndexedByteArray } from "../../utils/indexed_array";
 import { ModulatorSource } from "./modulator_source";
 import type { SoundFontWriteIndexes } from "../soundfont/write/types";
@@ -27,7 +30,13 @@ export const MOD_BYTE_SIZE = 10;
 /**
  * The size of an SFe extended modulator record (xdta pmod/imod and XMOD).
  */
-export const XMOD_BYTE_SIZE = 10;
+export const XMOD_BYTE_SIZE = 16;
+
+/**
+ * Bit 15 of the transform enumerator in an SFe file: the modulator has an extended record.
+ * The transform itself is the lower 15 bits.
+ */
+export const MODULATOR_EXTENDED_FLAG = 0x80_00;
 
 export function getModSourceEnum(
     curveType: ModulatorCurveType,
@@ -88,18 +97,6 @@ export class Modulator {
     public transformAmount = 0;
 
     /**
-     * The amount a reverb or chorus send modulator had in the SF2 file it was read from, before it was scaled.
-     * Several SF2 amounts give the same amount here, so the SF2 writer needs it to write the same file back.
-     * Undefined for every other modulator. It is ignored once the transform amount no longer matches it.
-     *
-     * > **Tip**
-     * >
-     * > Carry this value over when rebuilding a modulator from plain data (for example in another thread),
-     * > otherwise a SoundFont2 file may be written with different send amounts than it was read with.
-     */
-    public readonly sf2Amount?: number;
-
-    /**
      * The transform type for this modulator.
      * Usually no operation is performed.
      */
@@ -122,15 +119,13 @@ export class Modulator {
      * @param destination An optional destination can be set here.
      * @param amount An optional amount.
      * @param transformType An optional transform type.
-     * @param sf2Amount The amount a send modulator had in its SF2 file, see {@link sf2Amount}.
      */
     public constructor(
         primarySource = new ModulatorSource(),
         secondarySource = new ModulatorSource(),
         destination: GeneratorType = GeneratorTypes.invalid,
         amount = 0,
-        transformType: ModulatorTransformType = 0,
-        sf2Amount?: number
+        transformType: ModulatorTransformType = 0
     ) {
         this.primarySource = primarySource;
         this.secondarySource = secondarySource;
@@ -138,7 +133,6 @@ export class Modulator {
         this.destination = destination;
         this.transformAmount = amount;
         this.transformType = transformType;
-        this.sf2Amount = sf2Amount;
     }
 
     /**
@@ -205,8 +199,7 @@ export class Modulator {
             ModulatorSource.copyFrom(mod.secondarySource),
             mod.destination,
             mod.transformAmount,
-            mod.transformType,
-            mod.sf2Amount
+            mod.transformType
         );
     }
 
@@ -283,13 +276,23 @@ export class Modulator {
      * @internal
      * @param modData
      * @param indexes
+     * @param sfe If this is an SFe file, where a modulator that uses a custom curve has the extended flag.
      */
-    public write(modData: IndexedByteArray, indexes?: SoundFontWriteIndexes) {
+    public write(
+        modData: IndexedByteArray,
+        indexes?: SoundFontWriteIndexes,
+        sfe = false
+    ) {
         writeWord(modData, this.primarySource.toSourceEnum());
         writeWord(modData, this.destination);
         writeWord(modData, this.transformAmount);
         writeWord(modData, this.secondarySource.toSourceEnum());
-        writeWord(modData, this.transformType);
+        writeWord(
+            modData,
+            sfe && this.usesCustomCurve
+                ? this.transformType | MODULATOR_EXTENDED_FLAG
+                : this.transformType
+        );
         if (!indexes) {
             return;
         }
@@ -308,18 +311,17 @@ export class Modulator {
     ) {
         const p = this.primarySource;
         const s = this.secondarySource;
-        writeWord(
+        writeDword(
             data,
             p.curveType === ModulatorCurveTypes.custom ? curveIndex(p.curve) : 0
         );
-        writeWord(
+        writeDword(
             data,
             s.curveType === ModulatorCurveTypes.custom ? curveIndex(s.curve) : 0
         );
-        // WReserved1 to wReserved3
-        writeWord(data, 0);
-        writeWord(data, 0);
-        writeWord(data, 0);
+        // The 8 reserved bytes
+        writeDword(data, 0);
+        writeDword(data, 0);
     }
 
     /**
@@ -334,6 +336,34 @@ export class Modulator {
         return m;
     }
 }
+
+const GENERAL_SOURCES = new Set<number>([
+    ModulatorControllerSources.noController,
+    ModulatorControllerSources.noteOnVelocity,
+    ModulatorControllerSources.noteOnKeyNum,
+    ModulatorControllerSources.polyPressure,
+    ModulatorControllerSources.channelPressure,
+    ModulatorControllerSources.pitchWheel,
+    ModulatorControllerSources.pitchWheelRange,
+    ModulatorControllerSources.modulationDepthRange
+]);
+
+/**
+ * If a reader ignores a modulator with this source. SF2 8.2.1 calls these controllers illegal:
+ * bank select, data entry, the RPN and NRPN numbers and the channel mode messages.
+ * The general controllers it does not list are reserved, the link included.
+ * @param source The source to check.
+ * @internal
+ */
+export const isIllegalSource = (source: ModulatorSource) =>
+    source.isCC
+        ? source.index === 0 ||
+          source.index === 6 ||
+          source.index === 32 ||
+          source.index === 38 ||
+          (source.index >= 98 && source.index <= 101) ||
+          source.index >= 120
+        : !GENERAL_SOURCES.has(source.index);
 
 export class DecodedModulator extends Modulator {
     /**
@@ -359,8 +389,14 @@ export class DecodedModulator extends Modulator {
             transformType as ModulatorTransformType
         );
 
-        if (this.destination > MAX_GENERATOR) {
-            this.destination = GeneratorTypes.invalid; // Flag as invalid (for linked ones)
+        // Linked modulators are reserved: a link source, or a destination with bit 15 set, is ignored.
+        // So is a modulator with an illegal or reserved controller as a source
+        if (
+            this.destination > MAX_GENERATOR ||
+            isIllegalSource(this.primarySource) ||
+            isIllegalSource(this.secondarySource)
+        ) {
+            this.destination = GeneratorTypes.invalid;
         }
     }
 }
@@ -381,8 +417,15 @@ const defaultSoundFont2Modulators = [
         0
     ),
 
-    // Mod wheel to vibrato
-    new DecodedModulator(0x00_81, 0x0, GeneratorTypes.vibLfoToPitch, 50, 0),
+    // Mod wheel to vibrato, scaled by the modulation depth range (RPN 5)
+    // 1600 is 50 cents at the default range, the source is full at 16 semitones
+    new DecodedModulator(
+        0x00_81,
+        ModulatorControllerSources.modulationDepthRange,
+        GeneratorTypes.vibLfoToPitch,
+        1600,
+        0
+    ),
 
     // Vol to attenuation
     new DecodedModulator(
@@ -398,9 +441,6 @@ const defaultSoundFont2Modulators = [
         960,
         0
     ),
-
-    // Channel pressure to vibrato
-    new DecodedModulator(0x00_0d, 0x0, GeneratorTypes.vibLfoToPitch, 50, 0),
 
     // Pitch wheel to tuning
     new DecodedModulator(0x02_0e, 0x00_10, GeneratorTypes.fineTune, 12_700, 0),
@@ -534,7 +574,7 @@ const defaultSpessaSynthModulators = [
         ), // Linear forwards bipolar cc 74
         0x0, // No controller
         GeneratorTypes.initialFilterFc,
-        9600,
+        4800,
         0
     ),
 
@@ -583,7 +623,7 @@ const ALREADY_LINKED =
     "This modulator already belongs to a zone or to the default modulators. Add a copy instead.";
 
 /**
- * The default modulators of a new sound bank: the SoundFont 2 ones and the SpessaSynth ones.
+ * The default modulators of a new sound bank: the SFe default modulators (section 7.3 of the SFe specification).
  *
  * > **Warning**
  * >
@@ -641,8 +681,7 @@ export function copyWithOwnCurves(modulators: readonly Modulator[]) {
                 copySource(m.secondarySource),
                 m.destination,
                 m.transformAmount,
-                m.transformType,
-                m.sf2Amount
+                m.transformType
             )
     );
     return { modulators: copies, curves: [...curves.values()] };

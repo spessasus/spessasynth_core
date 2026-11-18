@@ -41,6 +41,11 @@ for (let i = 0; i < defaultGeneratorValues.length; i++) {
         defaultGeneratorValues[i] = GeneratorLimits[i as GeneratorType].def;
 }
 
+// Modulators that target an instrument-only generator are ignored in preset zones
+function appliesToPreset(m: Modulator) {
+    return !INSTRUMENT_ONLY_GENERATORS.has(m.destination);
+}
+
 /**
  * Represents a single preset.
  * This is what is used for MIDI playback.
@@ -232,8 +237,8 @@ export class BasicPreset implements MIDIPatchFull {
      *
      * > **Note**
      * >
-     * > The `E-mu` attenuation correction
-     * > (`initialAttenuation` generator value being multiplied by `0.4`) is already performed.
+     * > The `initialAttenuation` generator is in true centibels, the same unit as `gain`.
+     * > The `E-mu` attenuation factor of `0.4` is applied when a SoundFont2 file is read and undone when one is written.
      *
      * @param midiNote The MIDI note number.
      * @param velocity The MIDI velocity.
@@ -284,10 +289,13 @@ export class BasicPreset implements MIDIPatchFull {
             }
 
             // Preset modulators (add global to local)
-            const presetModulators = [...presetZone.modulators];
+            // The ones that target an instrument-only generator are ignored, so they supersede nothing
+            const presetModulators = presetZone.modulators.filter((m) =>
+                appliesToPreset(m)
+            );
             BasicPreset.addUniqueModulators(
                 presetModulators,
-                this.globalZone.modulators
+                this.globalZone.modulators.filter((m) => appliesToPreset(m))
             );
 
             for (const instZone of instrument.zones) {
@@ -364,12 +372,6 @@ export class BasicPreset implements MIDIPatchFull {
                     );
                 }
 
-                // EMU initial attenuation correction, multiply initial attenuation by 0.4!
-                // All EMU sound cards have this quirk, and all sf2 editors and players emulate it too
-                generators[GeneratorTypes.initialAttenuation] = Math.floor(
-                    generators[GeneratorTypes.initialAttenuation] * 0.4
-                );
-
                 // An unknown choice (from a later SFe version) counts as the default instead of the nearest one
                 for (const type of ENUMERATED_GENERATORS) {
                     const limit = GeneratorLimits[type];
@@ -438,7 +440,10 @@ export class BasicPreset implements MIDIPatchFull {
         // Find the global zone and apply ranges, generators, and modulators
         const globalPresetZone = this.globalZone;
         globalPresetGenerators.push(...globalPresetZone.generators);
-        globalPresetModulators.push(...globalPresetZone.modulators);
+        // Modulators to instrument-only generators are ignored in preset zones
+        globalPresetModulators.push(
+            ...globalPresetZone.modulators.filter((m) => appliesToPreset(m))
+        );
         const globalPresetKeyRange = globalPresetZone.keyRange;
         const globalPresetVelRange = globalPresetZone.velRange;
         // For each non-global preset zone
@@ -460,7 +465,9 @@ export class BasicPreset implements MIDIPatchFull {
                 (g) => new Generator(g.type, g.value)
             );
             addUnique(presetGenerators, globalPresetGenerators);
-            const presetModulators = [...presetZone.modulators];
+            const presetModulators = presetZone.modulators.filter((m) =>
+                appliesToPreset(m)
+            );
             addUniqueMods(presetModulators, globalPresetModulators);
             const instrument = presetZone.instrument;
             const iZones = instrument.zones;
@@ -621,7 +628,10 @@ export class BasicPreset implements MIDIPatchFull {
         writeWord(phdrData.pdta, this.program);
         let wBank;
         if (format === "sfe") {
-            wBank = (this.bankMSB & 0x7f) | ((this.bankLSB & 0x7f) << 8);
+            // Limited to 7 bits each
+            const msb = Math.max(0, Math.min(127, this.bankMSB));
+            const lsb = Math.max(0, Math.min(127, this.bankLSB));
+            wBank = msb | (lsb << 8);
             if (this.isGMGSDrum) {
                 // Drum flag
                 wBank |= 0x80;
