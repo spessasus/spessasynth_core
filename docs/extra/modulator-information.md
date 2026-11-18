@@ -41,7 +41,7 @@ Below are the defined curve types of modulators:
 [Section 7.4 of the SFe specification](https://spessasus.github.io/spessasynth_sfe/spec.html#74-ignored-modulators) lists the modulators that a reader ignores:
 a linked modulator, an unknown transform type, an unknown destination, an unknown source type, an illegal or reserved controller as a source and a custom curve that
 is missing or invalid. The SF2 and SFe readers set the destination of such a modulator to
-{@link GeneratorTypes.invalid} and keep it in its zone, so it supersedes nothing and does nothing.
+`GeneratorTypes.invalid` (-1) and keep it in its zone, so it supersedes nothing and does nothing.
 
 In an SFe file the transform enumerator of a modulator has the extended flag in bit 15, which every modulator that uses
 a custom curve must have ([section 5.5.1](https://spessasus.github.io/spessasynth_sfe/spec.html#551-the-extended-modulator-records)). The flag is not part of
