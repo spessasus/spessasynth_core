@@ -217,17 +217,19 @@ export class SoundBankManager {
             system,
             channel10
         );
-        // The GS user drum sets are only found by an exact request the sound banks can't answer,
-        // Never by a fallback
+        // The GS user drum sets exist in every map except the SC-55 map (bank LSB 1),
+        // And drum parts ignore the bank MSB (measured on the SC-88 and SC-88Pro).
+        // A kit of the sound banks at the same program hides them
         if (
             BankSelectHacks.isSystemXG(system) ||
-            MIDIPatchTools.matches(preset, patch)
+            !patch.isGMGSDrum ||
+            patch.bankLSB === 1 ||
+            (preset?.isGMGSDrum && preset.program === patch.program)
         ) {
             return preset;
         }
         return (
-            this.userDrumSets.find((d) => MIDIPatchTools.matches(d, patch)) ??
-            preset
+            this.userDrumSets.find((d) => d.program === patch.program) ?? preset
         );
     }
 

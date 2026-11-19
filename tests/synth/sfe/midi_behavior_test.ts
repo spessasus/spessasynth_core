@@ -1019,9 +1019,26 @@ console.info(
         drums.programChange(64);
         check(
             drums.preset?.name !== "User Drum Set 1",
-            `another bank LSB does not fall back to the user drum set (${drums.preset?.name})`
+            `the SC-55 map (bank LSB 1) has no user drum set (${drums.preset?.name})`
         );
+        // The SC-88 and SC-88Pro maps have them (measured on 88emu), testcase: FADED88.mid
+        for (const lsb of [2, 3]) {
+            drums.controllerChange(MIDIControllers.bankSelectLSB, lsb);
+            drums.programChange(64);
+            check(
+                drums.preset?.name === "User Drum Set 1",
+                `bank LSB ${lsb} gives the user drum set (${drums.preset?.name})`
+            );
+        }
         drums.controllerChange(MIDIControllers.bankSelectLSB, 0);
+        // Drum parts ignore the bank MSB
+        drums.controllerChange(MIDIControllers.bankSelect, 1);
+        drums.programChange(65);
+        check(
+            drums.preset?.name === "User Drum Set 2",
+            `bank MSB 1 still gives the user drum set (${drums.preset?.name})`
+        );
+        drums.controllerChange(MIDIControllers.bankSelect, 0);
         synth.systemExclusive(modes.xg, 0);
         drums.programChange(64);
         check(

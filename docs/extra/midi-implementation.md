@@ -486,9 +486,10 @@ These search for a matching drum channel with the correct `drumMap` Channel MIDI
 
 The following messages create a custom drum set, by setting which key from which drum set is bound to a specific key in the user drum set.
 Then the parameters above may also be applied to the key.
-The two sets are the presets of programs 64 and 65 (bank MSB 0, bank LSB 0). They are found only by an exact request for
-program 64 or 65 on a GM or GS drum channel, never in XG and GM2. A preset of a sound bank at the same place hides
-the user drum set, and they never take part in the fallbacks, so a request with another bank LSB does not end up there.
+The two sets are the presets of programs 64 and 65 (bank MSB 0, bank LSB 0). A request for program 64 or 65 on a GM or GS
+drum channel finds them with any bank MSB and any bank LSB except 1, like the Sound Canvas: the SC-55 map (bank LSB 1)
+has no user drum sets, the other maps do. They are never found in XG and GM2. A drum preset of a sound bank at the same
+program hides the user drum set.
 They are only listed once a sound bank with presets is loaded.
 
 | Name                   | Description                                                                                                                                                | Parameter Name     |
