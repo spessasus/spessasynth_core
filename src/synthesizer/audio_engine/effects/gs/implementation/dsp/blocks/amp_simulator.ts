@@ -2,11 +2,12 @@ import { FirstOrderFilter } from "./first_order_filter";
 import { Biquad } from "./biquad";
 import { StateVariableFilter } from "./state_variable_filter";
 import { DelayLine } from "./delay_line";
+import { HARDWARE_RATE } from "../hardware";
 
 /**
  * The cabinet echo of the 3 Stack (27 samples on the hardware).
  */
-const COMB_SECONDS = 27 / 32_000;
+const COMB_SECONDS = 27 / HARDWARE_RATE;
 
 interface AmpModel {
     /**

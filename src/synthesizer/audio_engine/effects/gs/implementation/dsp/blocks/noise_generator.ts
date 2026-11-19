@@ -1,4 +1,5 @@
 import { FirstOrderFilter } from "./first_order_filter";
+import { HARDWARE_RATE } from "../hardware";
 
 /**
  * The LPF column's low pass per step (`value >> 3`): the hardware's bytes (gain A over 128 on both taps, pole B over
@@ -28,7 +29,7 @@ export function setColumnLowPass(
     }
     const pole = CUTOFF_B[step] / 128;
     filter.setLowPass(
-        (32_000 / Math.PI) * Math.atan((1 - pole) / (1 + pole)),
+        (HARDWARE_RATE / Math.PI) * Math.atan((1 - pole) / (1 + pole)),
         (2 * CUTOFF_A[step]) / 128 / (1 - pole)
     );
 }
@@ -43,7 +44,7 @@ export function setColumnHighPass(filter: FirstOrderFilter, value: number) {
     const step = value >> 3;
     const pole = CUTOFF_B[step] / 128;
     filter.setHighPass(
-        (32_000 / Math.PI) * Math.atan((1 - pole) / (1 + pole)),
+        (HARDWARE_RATE / Math.PI) * Math.atan((1 - pole) / (1 + pole)),
         (2 * (128 - CUTOFF_A[step])) / 128 / (1 + pole)
     );
 }
@@ -154,9 +155,9 @@ export class NoiseGenerator {
         this.whiteFilter = new FirstOrderFilter(sampleRate);
         this.discFilter = new FirstOrderFilter(sampleRate);
         this.humFilter = new FirstOrderFilter(sampleRate);
-        this.scale = 32_000 / sampleRate;
+        this.scale = HARDWARE_RATE / sampleRate;
         this.whiteGain = Math.sqrt(1 / this.scale) / 32;
-        this.exactWhite = sampleRate === 32_000;
+        this.exactWhite = sampleRate === HARDWARE_RATE;
     }
 
     /**

@@ -1,9 +1,5 @@
 import { Biquad } from "./biquad";
-
-/**
- * The rate the hardware runs its filters at.
- */
-const HARDWARE_RATE = 32_000;
+import { HARDWARE_RATE } from "../hardware";
 
 /**
  * The resonant filters of the amp simulators. On the hardware they are Chamberlin state variable filters at

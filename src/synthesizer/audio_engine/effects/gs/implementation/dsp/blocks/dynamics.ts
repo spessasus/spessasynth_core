@@ -2,11 +2,7 @@ import { DC_BLOCKER_HZ, FirstOrderFilter } from "./first_order_filter";
 import { DelayLine } from "./delay_line";
 import { MonoMix } from "./mono_mix";
 import { saturate } from "../glue";
-
-/**
- * The rate the hardware's per sample laws were measured at.
- */
-const HARDWARE_RATE = 32_000;
+import { HARDWARE_RATE } from "../hardware";
 
 /**
  * The detector level above which the gain comes down, the same for both modes.

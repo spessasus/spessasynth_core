@@ -2,6 +2,7 @@ import type { DelayMemory } from "./delay_memory";
 import { Crossfade } from "./crossfade";
 import type { DelayLine } from "./delay_line";
 import { DC_BLOCKER_HZ, FirstOrderFilter } from "./first_order_filter";
+import { HARDWARE_RATE } from "../hardware";
 
 /**
  * The longest window (mode 4) in ms.
@@ -58,7 +59,7 @@ export class PitchShifter {
         memory: DelayMemory,
         voices: number
     ) {
-        this.step = sampleRate / 32_000;
+        this.step = sampleRate / HARDWARE_RATE;
         // 100 ms of pre delay plus the window, read past 256 ms too (SC-VA wraps there)
         this.line = memory.line(
             Math.ceil(

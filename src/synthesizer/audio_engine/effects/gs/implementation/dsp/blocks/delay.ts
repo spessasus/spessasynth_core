@@ -2,6 +2,7 @@ import type { DelayMemory } from "./delay_memory";
 import type { DelayLine } from "./delay_line";
 import { DC_BLOCKER_HZ, FirstOrderFilter } from "./first_order_filter";
 import { Crossfade } from "./crossfade";
+import { HARDWARE_RATE } from "../hardware";
 
 /**
  * The line of the delays: the input (with the feedback the effect adds to it) through a DC blocker into one line,
@@ -50,7 +51,7 @@ export class Delay {
         taps: number,
         maxDelay: number
     ) {
-        this.step = sampleRate / 32_000;
+        this.step = sampleRate / HARDWARE_RATE;
         this.line = memory.line(
             Math.ceil((maxDelay * sampleRate) / 1000 + 3 * this.step)
         );

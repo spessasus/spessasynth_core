@@ -1,4 +1,5 @@
 import { DelayLine } from "./delay_line";
+import { HARDWARE_RATE } from "../hardware";
 
 /**
  * One direction of the 3D model: the near ear `N = a x + b2 N[62.5 us] + b4 N[125 us]` and the far ear
@@ -45,7 +46,7 @@ export class HRTFPair {
      * @param set The starting set.
      */
     public constructor(sampleRate: number, set: HRTFSet) {
-        this.step = sampleRate / 32_000;
+        this.step = sampleRate / HARDWARE_RATE;
         // The far taps reach 29 samples back, plus the interpolator's points
         this.nearLine = new DelayLine(Math.ceil(32 * this.step) + 4);
         this.farLine = new DelayLine(Math.ceil(this.step) + 4);

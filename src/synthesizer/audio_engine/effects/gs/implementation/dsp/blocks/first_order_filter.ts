@@ -1,3 +1,5 @@
+import { HARDWARE_RATE } from "../hardware";
+
 /**
  * The corner of the DC blocking high pass that the delays, reverbs, drives and Lo-Fi types put on their input.
  * @internal
@@ -32,7 +34,7 @@ export function prewarp(frequency: number, sampleRate: number) {
  */
 export function dampCorner(pole: number) {
     const k = (1 + pole * pole) / (2 * pole);
-    return (Math.acos(2 - k) * 32_000) / (2 * Math.PI);
+    return (Math.acos(2 - k) * HARDWARE_RATE) / (2 * Math.PI);
 }
 
 /**
@@ -90,11 +92,11 @@ export class FirstOrderFilter {
      * @param gain A gain on top.
      */
     public setTone(highPass: boolean, frequency: number, gain = 1) {
-        const k = Math.tan((Math.PI * frequency) / 32_000);
+        const k = Math.tan((Math.PI * frequency) / HARDWARE_RATE);
         const c = (1 - k) / (1 + k);
         const pole = Math.round(128 * c);
         const corner =
-            (Math.atan((128 - pole) / (128 + pole)) * 32_000) / Math.PI;
+            (Math.atan((128 - pole) / (128 + pole)) * HARDWARE_RATE) / Math.PI;
         if (highPass) {
             this.setHighPass(
                 corner,
@@ -116,11 +118,19 @@ export class FirstOrderFilter {
      * @param frequency The -3 dB corner in Hz.
      */
     public setDamp(frequency: number) {
-        const k = 2 - Math.cos((2 * Math.PI * frequency) / 32_000);
-        const b = k - Math.sqrt(k * k - 1);
+        const k = 2 - Math.cos((2 * Math.PI * frequency) / HARDWARE_RATE);
+        this.setDampPole(k - Math.sqrt(k * k - 1));
+    }
+
+    /**
+     * The same low pass as `setDamp`, set by its pole. The system effects store the pole itself (the PRE-LPF is
+     * value / 8, the reverb damping one of three fixed poles), so there is no corner in Hz to convert from.
+     * @param pole B of `y = (1 - B) x + B y[n-1]` at 32 kHz.
+     */
+    public setDampPole(pole: number) {
         // Normalized to 2 x 32 kHz the prototype is (1 - B)(1 + s) / ((1 - B) + (1 + B) s)
-        const scale = 32_000 / this.sampleRate;
-        const gain = (1 - b) / (1 + b);
+        const scale = HARDWARE_RATE / this.sampleRate;
+        const gain = (1 - pole) / (1 + pole);
         this.setAnalog(gain, scale, gain * scale);
     }
 

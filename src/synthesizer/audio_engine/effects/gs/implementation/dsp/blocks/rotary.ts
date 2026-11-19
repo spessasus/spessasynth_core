@@ -3,6 +3,7 @@ import type { DelayLine } from "./delay_line";
 import { Biquad } from "./biquad";
 import { DC_BLOCKER_HZ, FirstOrderFilter } from "./first_order_filter";
 import { tremoloRest } from "./tremolo";
+import { HARDWARE_RATE } from "../hardware";
 
 /**
  * The horn crossover, the hardware's 32 kHz biquad `b0 (1 - z^-1)^2 / (1 - a1 z^-1 - a2 z^-2)`, on the analog side
@@ -15,7 +16,8 @@ const HORN_A2 = -0.926_269_531_25;
 const HORN_D2 = 1 + HORN_A1 - HORN_A2;
 const HORN_D1 = 2 + 2 * HORN_A2;
 const HORN_D0 = 1 - HORN_A1 - HORN_A2;
-const HORN_HZ = (32_000 / Math.PI) * Math.atan(Math.sqrt(HORN_D0 / HORN_D2));
+const HORN_HZ =
+    (HARDWARE_RATE / Math.PI) * Math.atan(Math.sqrt(HORN_D0 / HORN_D2));
 const HORN_Q = Math.sqrt(HORN_D0 * HORN_D2) / HORN_D1;
 const HORN_GAIN = (4 * HORN_B0) / HORN_D2;
 
@@ -24,7 +26,7 @@ const HORN_GAIN = (4 * HORN_B0) / HORN_D2;
  */
 const DRUM_POLE = 0.668_151_855_468_75;
 const DRUM_HZ =
-    (32_000 / Math.PI) * Math.atan((1 - DRUM_POLE) / (1 + DRUM_POLE));
+    (HARDWARE_RATE / Math.PI) * Math.atan((1 - DRUM_POLE) / (1 + DRUM_POLE));
 
 /**
  * The Doppler swing of the horn (a parabola over the turn) and the drum (a triangle), in 32 kHz samples.
@@ -86,7 +88,7 @@ export class Rotary {
      */
     public constructor(sampleRate: number, memory: DelayMemory) {
         this.sampleRate = sampleRate;
-        this.step = sampleRate / 32_000;
+        this.step = sampleRate / HARDWARE_RATE;
         // Two more 32 kHz samples for the right side's lag and the interpolation
         this.hornLine = memory.line(
             Math.ceil((HORN_TAP_RIGHT + 2) * this.step)
@@ -126,9 +128,9 @@ export class Rotary {
      */
     public setAcceleration(horn: number, drum: number) {
         // The ramps' step per 32 kHz sample is 1 / (32000 x the time constant)
-        const perSample = 32_000 / this.sampleRate;
-        this.hornRamp = 1 - (1 - 1 / (32_000 * horn)) ** perSample;
-        this.drumRamp = 1 - (1 - 1 / (32_000 * drum)) ** perSample;
+        const perSample = HARDWARE_RATE / this.sampleRate;
+        this.hornRamp = 1 - (1 - 1 / (HARDWARE_RATE * horn)) ** perSample;
+        this.drumRamp = 1 - (1 - 1 / (HARDWARE_RATE * drum)) ** perSample;
     }
 
     /**

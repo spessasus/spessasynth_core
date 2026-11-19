@@ -847,23 +847,36 @@ The XG effect blocks can likewise be replaced, see [XG effects](#xg-effects).
 
 #### Reverb
 
-Characters 0-5 use the Dattorro reverb model, based on [this processor](https://github.com/khoin/DattorroReverbNode).
-Each of the characters has parameters tuned to match the SC-55 effects more closely.
-The built-in pre-lowpass filter is used for the pre-LPF param.
+Modeled on the reverb of Sound Canvas VA, whose structure and coefficients were read from its engine and compared
+with the emulated SC-88Pro. Most characters agree with it within about 1 dB, but Hall 1 and Hall 2 differ between
+the two, and the code follows Sound Canvas VA there.
 
-Character 6 uses a single delay line while character 7 uses a ping-pong delay.
-A simple 1st order lowpass filter is used for the pre-LPF param.
+Characters 0-5 share one structure: a pre delay, a diffuser of four allpass filters and two independent tanks
+(allpass, delay, allpass, delay, with a damping lowpass in the feedback). Each output sums four taps spread over both
+tanks. The characters differ in the delay lengths, the taps and the damping.
+Reverb time sets the feedback of the tanks and stops growing at 108.
+
+Character 6 uses a single delay line with inverted feedback, while character 7 also takes its left output from the
+middle of the line, which makes the repeats alternate. The delay time is 0.4 to 445 ms.
+Delay feedback stops growing at 95.
 
 #### Chorus
 
-Implemented using 2 delay lines modulated by triangle LFOs.
-A simple 1st order lowpass filter is used for the pre-LPF param.
+Implemented using one delay line with two reads that a triangle LFO moves in opposite directions.
+The first read is the left output and the feedback, the second one is the right output.
+Rate is 0.122 Hz per step, delay 0.1875 ms per step and depth 0.156 ms per step.
+The reads interpolate linearly between samples.
 
 #### Delay
 
-Implemented using a single shared circular buffer with three read indexes (center, left, right),
-with the central tap having feedback and feeding into the stereo taps.
-Input is fed to all three taps.
+Implemented using a single delay line with three taps (center, left, right).
+The center tap feeds back and goes to both outputs, the left and right taps only go to their output.
+The send to reverb takes the center tap once.
+
+#### Input stage
+
+Reverb, chorus and delay all start with a DC blocker and the pre-LPF, a first order lowpass.
+The sends between them (chorus to reverb, chorus to delay, delay to reverb) are taken before the effect's level.
 
 #### Equalizer
 

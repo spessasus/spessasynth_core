@@ -1,4 +1,5 @@
 import { DelayLine } from "./delay_line";
+import { HARDWARE_RATE } from "../hardware";
 
 /**
  * The speaker gain of the network, and how long the speaker/phones switch ramps (in seconds).
@@ -40,7 +41,7 @@ export class OutputMode3D {
      * @param ramped Whether a switch ramps over 40 ms (else it is hard).
      */
     public constructor(sampleRate: number, numerator: number, ramped: boolean) {
-        this.step = sampleRate / 32_000;
+        this.step = sampleRate / HARDWARE_RATE;
         this.numerator = numerator;
         this.ramped = ramped;
         this.rampStep = SPEAKER / (RAMP * sampleRate);

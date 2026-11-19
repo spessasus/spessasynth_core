@@ -2,6 +2,7 @@ import type { DelayMemory } from "../blocks/delay_memory";
 import { BASS_DISTORTION, BASS_OVERDRIVE } from "../blocks/drive";
 import { BassAmpSimulator } from "../blocks/bass_amp_simulator";
 import { GSDriveEQMulti } from "./guitar_multis";
+import { HARDWARE_RATE } from "../hardware";
 
 /**
  * Bass Multi (`04 05`): `L+R -> compressor -> bass overdrive/distortion -> bass amp simulator -> 3-band EQ ->
@@ -31,7 +32,7 @@ export class GSBassMulti extends GSDriveEQMulti {
                 amp: new BassAmpSimulator(sampleRate)
             },
             1,
-            50 / 32_000
+            50 / HARDWARE_RATE
         );
         // The chorus/flanger takes nothing below 200 Hz (the hardware's one-pole, pole 123/128)
         this.modulation.setHighPass(202.88, 252 / 251);

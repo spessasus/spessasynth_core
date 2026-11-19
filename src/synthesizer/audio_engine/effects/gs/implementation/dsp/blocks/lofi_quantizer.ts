@@ -1,5 +1,6 @@
 import { DC_BLOCKER_HZ, FirstOrderFilter } from "./first_order_filter";
 import { DelayLine } from "./delay_line";
+import { HARDWARE_RATE } from "../hardware";
 
 /**
  * Lo-Fi 1's types (0-8) as three resolutions by three hold rates.
@@ -57,7 +58,7 @@ export class LoFiQuantizer {
     private readonly line: DelayLine;
 
     public constructor(sampleRate: number) {
-        this.step = sampleRate / 32_000;
+        this.step = sampleRate / HARDWARE_RATE;
         this.latency = Number.isInteger(this.step) ? 0 : LOOKAHEAD;
         this.line = new DelayLine(LOOKAHEAD + 2);
         this.dcBlocker = new FirstOrderFilter(sampleRate);

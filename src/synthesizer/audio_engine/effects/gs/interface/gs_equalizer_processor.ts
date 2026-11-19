@@ -88,6 +88,12 @@ export interface GSEqualizerProcessor extends GSEqualizerParameter {
     ): void;
 
     /**
+     * Clears the internal buffers and resets the processor to a default state.
+     * The synthesizer calls it on a system reset, unless the effect is locked, then sets the default parameters.
+     */
+    reset(): void;
+
+    /**
      * Gets a snapshot of this effect processor instance.
      */
     getSnapshot(): GSEqualizerParameter;

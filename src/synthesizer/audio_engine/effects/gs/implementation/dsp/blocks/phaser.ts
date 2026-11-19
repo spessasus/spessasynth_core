@@ -1,6 +1,7 @@
 import { DC_BLOCKER_HZ, FirstOrderFilter } from "./first_order_filter";
 import { LFO } from "./lfo";
 import { resonanceGain } from "../conversion";
+import { HARDWARE_RATE } from "../hardware";
 
 /**
  * The all-pass pole at 32 kHz per Manual value, over 8192 (x 0.45). The Man column of the conversion table is only a
@@ -83,8 +84,8 @@ export class Phaser {
      */
     public constructor(sampleRate: number, channels: number) {
         this.lfo = new LFO(sampleRate);
-        this.scale = 32_000 / sampleRate;
-        const delay = Math.max(1, sampleRate / 32_000);
+        this.scale = HARDWARE_RATE / sampleRate;
+        const delay = Math.max(1, sampleRate / HARDWARE_RATE);
         this.feedbackDelay = Math.floor(delay);
         this.feedbackFraction = delay - this.feedbackDelay;
         this.historyLength = this.feedbackDelay + 1;

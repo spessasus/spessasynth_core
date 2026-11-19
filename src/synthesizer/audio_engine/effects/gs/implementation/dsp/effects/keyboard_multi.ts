@@ -12,6 +12,7 @@ import { PEAKING_TABLE, peakingEntry } from "../peaking_table";
 import { PitchShifter } from "../blocks/pitch_shifter";
 import { pitchRatio, pitchWindow, ringFrequency } from "../conversion";
 import { GSMulti, MultiDelay, MultiEQ, MultiPhaser } from "./guitar_multi";
+import { HARDWARE_RATE } from "../hardware";
 
 /**
  * The input gain of each channel.
@@ -72,7 +73,7 @@ export class GSKeyboardMulti extends GSMulti {
         super(sampleRate, memory);
         this.ring = new RingModulator(sampleRate);
         // The hardware steps the carrier's phase once before its first sample (one 32 kHz step)
-        this.ring.setStartDelay(1 - sampleRate / 32_000);
+        this.ring.setStartDelay(1 - sampleRate / HARDWARE_RATE);
         this.eqL = new MultiEQ(sampleRate);
         this.eqR = new MultiEQ(sampleRate);
         this.shifter = new PitchShifter(sampleRate, memory, 1);

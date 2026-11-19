@@ -1,5 +1,6 @@
 import { detectorGain, Limiter } from "../blocks/dynamics";
 import { GSDynamicsEffect } from "./dynamics_effect";
+import { HARDWARE_RATE } from "../hardware";
 
 /**
  * Limiter (`01 31`).
@@ -30,7 +31,7 @@ export class GSLimiter extends GSDynamicsEffect {
         // The gain grows by e in 63 ms (0) to 4.1 s (127): 4.98e-4 x the release word per 32 kHz sample
         // That is 2% more than the word says (SC-VA's float seed, kept like the floor since it sets the fade-in)
         const release = 2 ** (14.975 - p[2] / 21.16) / 32_768;
-        this.dynamics.setRelease(1 / (32_000 * 4.9828e-4 * release));
+        this.dynamics.setRelease(1 / (HARDWARE_RATE * 4.9828e-4 * release));
         return p[3];
     }
 }

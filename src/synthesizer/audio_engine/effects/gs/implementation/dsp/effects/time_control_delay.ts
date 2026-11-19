@@ -5,6 +5,7 @@ import { Delay } from "../blocks/delay";
 import { MonoMix } from "../blocks/mono_mix";
 import { StereoOutput } from "../blocks/stereo_output";
 import { delay2, feedbackGain, hfDamp, slewTime } from "../conversion";
+import { HARDWARE_RATE } from "../hardware";
 
 /**
  * Time Ctrl Delay (`01 54`): a mono delay whose time slews toward the delay parameter, so changing it bends the
@@ -90,8 +91,8 @@ export class GSTimeControlDelay extends GSEffect {
         const p = this.parameters;
         this.target = ((delay2(this.controlled(0, 0)) * 127) / 128) * 32;
         // The slew per 32 kHz sample is 1 / (32000 x the time constant)
-        const step = 1 / (32_000 * slewTime(p[1]));
-        this.slew = 1 - (1 - step) ** (32_000 / this.sampleRate);
+        const step = 1 / (HARDWARE_RATE * slewTime(p[1]));
+        this.slew = 1 - (1 - step) ** (HARDWARE_RATE / this.sampleRate);
         this.feedback = feedbackGain(this.controlled(1, 2));
         this.delay.setHFDamp(hfDamp(p[3]));
         this.panL = panLeft(p[4]);

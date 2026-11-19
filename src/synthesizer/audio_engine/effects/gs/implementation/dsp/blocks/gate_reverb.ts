@@ -2,6 +2,7 @@ import type { DelayMemory } from "./delay_memory";
 import { Crossfade } from "./crossfade";
 import type { DelayLine } from "./delay_line";
 import { DC_BLOCKER_HZ, FirstOrderFilter } from "./first_order_filter";
+import { HARDWARE_RATE } from "../hardware";
 
 /**
  * The diffuser's allpasses in 32 kHz samples (the Reverb's Stage lengths, all four allpasses here).
@@ -89,7 +90,7 @@ export class GateReverb {
      * @param memory The delay memory.
      */
     public constructor(sampleRate: number, memory: DelayMemory) {
-        this.step = sampleRate / 32_000;
+        this.step = sampleRate / HARDWARE_RATE;
         this.dcBlocker = new FirstOrderFilter(sampleRate);
         this.dcBlocker.setHighPass(DC_BLOCKER_HZ);
         this.diffuser = DIFFUSER.map((n) =>

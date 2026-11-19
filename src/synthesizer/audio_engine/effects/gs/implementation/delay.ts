@@ -2,10 +2,12 @@ import type {
     GSDelayParameter,
     GSDelayProcessor
 } from "../interface/gs_delay_processor";
+import { DelayLine } from "./dsp/blocks/delay_line";
+import { GAIN_SCALE, LEVEL_UNITY, SendInput } from "./dsp/blocks/send_input";
 
 // SC-8850 manual p.236
 // How nice of Roland to provide the conversion values to ms!
-const delayTimeSegments = [
+const DELAY_TIME_SEGMENTS = [
     { start: 0x01, end: 0x14, timeStart: 0.1, resolution: 0.1 },
     { start: 0x14, end: 0x23, timeStart: 2, resolution: 0.2 },
     { start: 0x23, end: 0x2d, timeStart: 5, resolution: 0.5 },
@@ -17,53 +19,74 @@ const delayTimeSegments = [
     { start: 0x69, end: 0x74, timeStart: 500, resolution: 50 }
 ] as const;
 
-const DELAY_GAIN = 1.66;
+/**
+ * The longest DELAY TIME CENTER, 1000 ms. Higher values are held there.
+ */
+const MAX_TIME_CENTER = 0x73;
+
+/**
+ * DELAY TIME CENTER to ms, from the segments above. Index 0 is the same 0.1 ms as 1.
+ */
+const TIME_CENTER_MS = new Float64Array(MAX_TIME_CENTER + 1).fill(0.1);
+for (const segment of DELAY_TIME_SEGMENTS) {
+    for (let value = segment.start; value < segment.end; value++) {
+        TIME_CENTER_MS[value] =
+            segment.timeStart + (value - segment.start) * segment.resolution;
+    }
+}
+
+/**
+ * The longest delay of any tap, in ms. The left and right taps stop here.
+ */
+const MAX_DELAY_MS = 1000;
+
+/**
+ * DELAY FEEDBACK to the loop gain per step from the center (64), -0.97 to +0.95.
+ */
+const FEEDBACK_STEP = 124 / 8192;
+
+/**
+ * DELAY TIME RATIO LEFT and RIGHT set their tap in steps of 100/24 % of DELAY TIME CENTER.
+ */
+const RATIO_STEP = 1 / 24;
 
 /**
  * The default GS Delay implementation for {@link SpessaSynthProcessor}.
  *
+ * It is modeled on the delay of the Sound Canvas (as Sound Canvas VA runs it): a mono input through a DC blocker
+ * and the PRE-LPF into one delay line with three taps.
+ * ```
+ * input --> (+) --> delay line --+-- center --> L and R
+ *            ^                   +-- left ----> L
+ *            |                   +-- right ---> R
+ *            +---- x feedback <-- center (previous sample)
+ * ```
+ * The center always feeds back, at the center time, even with LEVEL CENTER at 0 (hardware and SC-VA agree).
+ * The left and right taps follow the center time through their ratios.
+ * The send to reverb takes the three taps (the center once) before LEVEL, so it works even at LEVEL 0.
+ *
  * @group Synthesizer.GS Effects
  */
 export class DefaultGSDelay implements GSDelayProcessor {
-    /**
-     * Cutoff frequency
-     * @private
-     */
-    private preLPFfc = 8000;
-    /**
-     * Alpha
-     * @private
-     */
-    private preLPFa = 0;
-    /**
-     * Previous value
-     * @private
-     */
-    private preLPFz = 0;
-    private readonly buffer;
     private readonly sampleRate;
-    private readonly delayPreLPF;
-    private delayLeftMultiplier = 0.04;
-    private delayRightMultiplier = 0.04;
-    private gain = 0;
+    private readonly input;
+    private readonly delayLine;
+    private gain = 1;
     private reverbGain = 0;
     private feedbackGain = 0;
-    /**
-     * Samples
-     */
-    private delayCenter;
-    /**
-     * Samples
-     */
-    private delayLeft;
-    /**
-     * Samples
-     */
-    private delayRight;
-    private gainCenter = 1;
+    private delayCenterMs = 0;
+    // The tap delays, in samples
+    private delayCenter = 1;
+    private delayLeft = 1;
+    private delayRight = 1;
+    private gainCenter = 0;
     private gainLeft = 0;
     private gainRight = 0;
-    private writeIndex = 0;
+    /**
+     * The center tap of the previous sample, which is what feeds back.
+     * @private
+     */
+    private feedbackSample = 0;
 
     /**
      * Constructs a new default GS delay processor.
@@ -73,12 +96,24 @@ export class DefaultGSDelay implements GSDelayProcessor {
      */
     public constructor(sampleRate: number, maxBufferSize: number) {
         this.sampleRate = sampleRate;
-        this.buffer = new Float32Array(sampleRate);
-        this.delayPreLPF = new Float32Array(maxBufferSize);
-        this.delayCenter = Math.floor(0.34 * sampleRate);
-        this.delayLeft = Math.floor(this.delayCenter * 0.04);
-        this.delayRight = Math.floor(this.delayCenter * 0.04);
-        this.gain = (this._level / 127) * DELAY_GAIN;
+        this.input = new SendInput(sampleRate);
+        this.delayLine = new DelayLine(
+            Math.ceil((MAX_DELAY_MS * sampleRate) / 1000)
+        );
+        this.reset();
+        // For consistency across effects
+        void maxBufferSize;
+    }
+
+    private _level = LEVEL_UNITY;
+
+    public get level(): number {
+        return this._level;
+    }
+
+    public set level(value: number) {
+        this._level = value;
+        this.gain = value / LEVEL_UNITY;
     }
 
     private _sendLevelToReverb = 0;
@@ -89,7 +124,18 @@ export class DefaultGSDelay implements GSDelayProcessor {
 
     public set sendLevelToReverb(value: number) {
         this._sendLevelToReverb = value;
-        this.reverbGain = value / 127;
+        this.reverbGain = value / GAIN_SCALE;
+    }
+
+    private _levelCenter = 0;
+
+    public get levelCenter(): number {
+        return this._levelCenter;
+    }
+
+    public set levelCenter(value: number) {
+        this._levelCenter = value;
+        this.gainCenter = value / GAIN_SCALE;
     }
 
     private _preLowpass = 0;
@@ -100,13 +146,19 @@ export class DefaultGSDelay implements GSDelayProcessor {
 
     public set preLowpass(value: number) {
         this._preLowpass = value;
-        // GS sure loves weird mappings, huh?
-        // Maps to around 8000-300 Hz
-        this.preLPFfc = 8000 * 0.63 ** this._preLowpass;
-        const decay = Math.exp(
-            (-2 * Math.PI * this.preLPFfc) / this.sampleRate
-        );
-        this.preLPFa = 1 - decay;
+        this.input.setPreLowPass(value);
+    }
+
+    private _feedback = 64;
+
+    public get feedback(): number {
+        return this._feedback;
+    }
+
+    public set feedback(value: number) {
+        // 64 is no feedback, below it the phase is inverted
+        this.feedbackGain = (value - 64) * FEEDBACK_STEP;
+        this._feedback = value;
     }
 
     private _levelRight = 0;
@@ -117,29 +169,24 @@ export class DefaultGSDelay implements GSDelayProcessor {
 
     public set levelRight(value: number) {
         this._levelRight = value;
-        this.updateGain();
+        this.gainRight = value / GAIN_SCALE;
     }
 
-    private _level = 64;
+    private _timeCenter = 0;
 
-    public get level(): number {
-        return this._level;
+    public get timeCenter(): number {
+        return this._timeCenter;
     }
 
-    public set level(value: number) {
-        this._level = value;
-        this.gain = (value / 127) * DELAY_GAIN;
-    }
-
-    private _levelCenter = 127;
-
-    public get levelCenter(): number {
-        return this._levelCenter;
-    }
-
-    public set levelCenter(value: number) {
-        this._levelCenter = value;
-        this.updateGain();
+    public set timeCenter(value: number) {
+        // The line holds repeats at the old time
+        if (value !== this._timeCenter) this.clear();
+        this._timeCenter = value;
+        this.delayCenterMs =
+            TIME_CENTER_MS[
+                Math.max(0, Math.min(Math.round(value), MAX_TIME_CENTER))
+            ];
+        this.updateDelayTimes();
     }
 
     private _levelLeft = 0;
@@ -150,20 +197,7 @@ export class DefaultGSDelay implements GSDelayProcessor {
 
     public set levelLeft(value: number) {
         this._levelLeft = value;
-        this.updateGain();
-    }
-
-    private _feedback = 16;
-
-    public get feedback(): number {
-        return this._feedback;
-    }
-
-    public set feedback(value: number) {
-        // -64 means max at inverted phase
-        // Use 66 for it to not be infinite (-1)
-        this.feedbackGain = (value - 64) / 66;
-        this._feedback = value;
+        this.gainLeft = value / GAIN_SCALE;
     }
 
     private _timeRatioRight = 0;
@@ -174,10 +208,6 @@ export class DefaultGSDelay implements GSDelayProcessor {
 
     public set timeRatioRight(value: number) {
         this._timeRatioRight = value;
-        // DELAY TIME RATIO LEFT and DELAY TIME RATIO RIGHT specify the ratio in relation to DELAY TIME CENTER.
-        // The resolution is 100/24(%).
-        // Turn that into multiplier
-        this.delayRightMultiplier = value * (100 / 2400);
         this.updateDelayTimes();
     }
 
@@ -189,44 +219,7 @@ export class DefaultGSDelay implements GSDelayProcessor {
 
     public set timeRatioLeft(value: number) {
         this._timeRatioLeft = value;
-        // DELAY TIME RATIO LEFT and DELAY TIME RATIO RIGHT specify the ratio in relation to DELAY TIME CENTER.
-        // The resolution is 100/24(%).
-        // Turn that into multiplier
-        this.delayLeftMultiplier = value * (100 / 2400);
         this.updateDelayTimes();
-    }
-
-    private _timeCenter = 12;
-
-    public get timeCenter(): number {
-        return this._timeCenter;
-    }
-
-    public set timeCenter(value: number) {
-        this._timeCenter = value;
-
-        let delayMs = 0.1;
-        for (const segment of delayTimeSegments) {
-            if (value >= segment.start && value < segment.end) {
-                delayMs =
-                    segment.timeStart +
-                    (value - segment.start) * segment.resolution;
-                break;
-            }
-        }
-        this.delayCenter = Math.floor(
-            Math.min(
-                this.buffer.length - 1,
-                Math.max(2, this.sampleRate * (delayMs / 1000))
-            )
-        );
-        this.updateDelayTimes();
-        this.buffer.fill(0);
-    }
-
-    public clear() {
-        this.buffer.fill(0);
-        this.preLPFz = 0;
     }
 
     /**
@@ -245,90 +238,50 @@ export class DefaultGSDelay implements GSDelayProcessor {
         outputReverb: Float32Array,
         startIndex: number,
         sampleCount: number
-    ): void {
-        // Process pre-lowpass
-        let delayIn: Float32Array;
-        if (this._preLowpass > 0) {
-            const preLPF = this.delayPreLPF;
-            let z = this.preLPFz;
-            const a = this.preLPFa;
-            for (let i = 0; i < sampleCount; i++) {
-                const x = input[i];
-                z += a * (x - z);
-                preLPF[i] = z;
-            }
-            this.preLPFz = z;
-            delayIn = preLPF;
-        } else {
-            delayIn = input;
-        }
-
-        /*
-        Connections are:
-        Input connects to all delays,
-        center connects to both output and stereo delays,
-        stereo delays only connect to the output.
-        Also level is separate from reverb send level,
-        i.e. level = 0 and reverb send level = 127 will still send sound to reverb.
-
-        Center always sends to stereo, regardless of level center in hardware and latest SCVA, older revisions incorrectly don't send it,
-        So level center = 0, level left = 127 will still have feedback.
-        Also feedback time is always time center, even if only left delay is playing.
-         */
+    ) {
         const {
+            delayLine,
             gain,
             reverbGain,
             delayCenter,
             delayLeft,
             delayRight,
-            buffer,
-            feedbackGain
+            feedbackGain,
+            gainCenter,
+            gainLeft,
+            gainRight
         } = this;
-        let writeIndex = this.writeIndex;
-        const bufferLength = buffer.length;
-        const centerGain = this.gainCenter * gain;
-        const leftGain = this.gainLeft * gain;
-        const rightGain = this.gainRight * gain;
+        let feedbackSample = this.feedbackSample;
 
         for (let i = 0; i < sampleCount; i++) {
-            // Read center
-            let centerReadIndex = writeIndex - delayCenter;
-            if (centerReadIndex < 0) centerReadIndex += bufferLength;
+            delayLine.write(
+                this.input.process(input[i]) + feedbackSample * feedbackGain
+            );
+            feedbackSample = delayLine.read(delayCenter);
+            const center = feedbackSample * gainCenter;
+            const left = delayLine.read(delayLeft) * gainLeft;
+            const right = delayLine.read(delayRight) * gainRight;
 
-            // Read left
-            let leftReadIndex = (writeIndex - delayLeft) % bufferLength;
-            if (leftReadIndex < 0) leftReadIndex += bufferLength;
-
-            // Read right
-            let rightReadIndex = (writeIndex - delayRight) % bufferLength;
-            if (rightReadIndex < 0) rightReadIndex += bufferLength;
-
-            // Write center
             const o = startIndex + i;
-            const delayed = buffer[centerReadIndex];
-            const c = delayed * centerGain;
-            outputLeft[o] += c;
-            outputRight[o] += c;
-            outputReverb[i] += c * reverbGain;
-
-            // Center feedback, do it first so left and right delay of 0 work fine
-            // Testcase: gs_effect_send_level_test
-            buffer[writeIndex] = delayIn[i] + delayed * feedbackGain;
-
-            // Write left
-            const l = buffer[leftReadIndex] * leftGain;
-            outputLeft[o] += l;
-            outputReverb[i] += l * reverbGain;
-
-            // Write right
-            const r = buffer[rightReadIndex] * rightGain;
-            outputRight[o] += r;
-            outputReverb[i] += r * reverbGain;
-
-            // Advance and wrap
-            if (++writeIndex >= bufferLength) writeIndex = 0;
+            outputLeft[o] += (left + center) * gain;
+            outputRight[o] += (right + center) * gain;
+            outputReverb[i] += (left + right + center) * reverbGain;
         }
-        this.writeIndex = writeIndex;
+        this.feedbackSample = feedbackSample;
+    }
+
+    public reset() {
+        this.input.clear();
+        this.clear();
+        // Delay 1
+        this.level = LEVEL_UNITY;
+        this.preLowpass = 0;
+        this.timeCenter = 97;
+        this.timeRatioLeft = this.timeRatioRight = 1;
+        this.levelCenter = 127;
+        this.levelLeft = this.levelRight = 0;
+        this.feedback = 80;
+        this.sendLevelToReverb = 0;
     }
 
     public getSnapshot(): GSDelayParameter {
@@ -359,23 +312,25 @@ export class DefaultGSDelay implements GSDelayProcessor {
         this.sendLevelToReverb = snapshot.sendLevelToReverb;
     }
 
-    private updateDelayTimes() {
-        // Recompute times
-        const maxDelay = this.buffer.length - 1;
-        this.delayLeft = Math.min(
-            maxDelay,
-            Math.floor(this.delayCenter * this.delayLeftMultiplier)
-        );
-        this.delayRight = Math.min(
-            maxDelay,
-            Math.floor(this.delayCenter * this.delayRightMultiplier)
-        );
+    private clear() {
+        this.delayLine.clear();
+        this.feedbackSample = 0;
     }
 
-    private updateGain() {
-        // Center gain is applied in post
-        this.gainCenter = this._levelCenter / 127;
-        this.gainLeft = this._levelLeft / 127;
-        this.gainRight = this._levelRight / 127;
+    private updateDelayTimes() {
+        // The left and right taps follow the center time and stop at the end of the line
+        const toSamples = this.sampleRate / 1000;
+        const center = this.delayCenterMs;
+        const left = Math.min(
+            MAX_DELAY_MS,
+            center * (this._timeRatioLeft * RATIO_STEP)
+        );
+        const right = Math.min(
+            MAX_DELAY_MS,
+            center * (this._timeRatioRight * RATIO_STEP)
+        );
+        this.delayCenter = Math.max(1, Math.round(center * toSamples));
+        this.delayLeft = Math.max(1, Math.round(left * toSamples));
+        this.delayRight = Math.max(1, Math.round(right * toSamples));
     }
 }

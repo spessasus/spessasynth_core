@@ -1273,6 +1273,11 @@ export class SpessaSynthProcessor {
         this.tunings.fill(-1); // Set all to no change
         this.portSelectChannelOffset = 0;
         this.customChannelNumbers = false;
+        // Clear the GS effects, then set their defaults
+        const locks = this.systemParameters;
+        if (!locks.gsReverbLock) this.gsReverbProcessor.reset();
+        if (!locks.gsChorusLock) this.gsChorusProcessor.reset();
+        if (!locks.gsDelayLock) this.gsDelayProcessor.reset();
         // Hall2 default
         this.setReverbMacro(4);
         // Chorus3 default
@@ -1281,6 +1286,7 @@ export class SpessaSynthProcessor {
         this.setDelayMacro(0);
         if (!this.systemParameters.gsEqualizerLock) {
             const eq = this.gsEqualizerProcessor;
+            eq.reset();
             for (const parameter of GS_EQUALIZER_PARAMETERS) {
                 eq[parameter] = DEFAULT_GS_EQUALIZER[parameter];
                 this.callEvent("effectChange", {
@@ -1414,11 +1420,10 @@ export class SpessaSynthProcessor {
         // Do not send CC changes as we call reset
         for (const ch of this.midiChannels) ch.reset(false);
 
-        // The GS delay stops at a reset, without leaving a tail for later
+        // The GS delay stops at a reset (its reset above leaves no tail for later)
         this.gsDelayActive = false;
         this.gsDelaySend.fill(0);
         this.gsDelayInput.fill(0);
-        this.gsDelayProcessor.clear?.();
         // Update if the effects should still be active.
         this.updateActiveGSEffects();
     }

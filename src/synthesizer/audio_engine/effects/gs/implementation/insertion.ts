@@ -197,11 +197,11 @@ export class DefaultGSInsertion implements GSInsertionBlock {
         );
 
         const toReverb =
-            (this.sendLevelToReverb / 127) * EFX_SENDS_GAIN_CORRECTION;
+            (this.sendLevelToReverb / 128) * EFX_SENDS_GAIN_CORRECTION;
         const toChorus =
-            (this.sendLevelToChorus / 127) * EFX_SENDS_GAIN_CORRECTION;
+            (this.sendLevelToChorus / 128) * EFX_SENDS_GAIN_CORRECTION;
         const toDelay =
-            (this.sendLevelToDelay / 127) * EFX_SENDS_GAIN_CORRECTION;
+            (this.sendLevelToDelay / 128) * EFX_SENDS_GAIN_CORRECTION;
         for (let i = 0; i < sampleCount; i++) {
             const l = processedLeft[i];
             const r = processedRight[i];

@@ -1,6 +1,7 @@
 import { DC_BLOCKER_HZ, FirstOrderFilter } from "./first_order_filter";
 import { Biquad } from "./biquad";
 import { Oversampler } from "./oversampler";
+import { HARDWARE_RATE } from "../hardware";
 
 /**
  * A drive variant: the fixed filters around the clipper, the gain in front of it and the level compensation.
@@ -210,7 +211,8 @@ export class Drive {
         this.peak = new Biquad(sampleRate);
         this.bassPre = new Biquad(sampleRate);
         this.bassPost = new Biquad(sampleRate);
-        this.oversampler = sampleRate < 32_000 ? new Oversampler() : null;
+        this.oversampler =
+            sampleRate < HARDWARE_RATE ? new Oversampler() : null;
     }
 
     /**

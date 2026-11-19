@@ -1,4 +1,5 @@
 import { HRTFPair, type HRTFSet } from "./hrtf_pair";
+import { HARDWARE_RATE } from "../hardware";
 
 /**
  * A set whose far ear hears what the near ear hears (straight ahead and straight behind).
@@ -38,7 +39,7 @@ const BREAKPOINTS: HRTFSet[] = [
 /**
  * A Manual azimuth change crossfades over 46 32 kHz samples (1.44 ms).
  */
-const MANUAL_FADE = 46 / 32_000;
+const MANUAL_FADE = 46 / HARDWARE_RATE;
 
 /**
  * The 3D positioner of 3D Auto and 3D Manual: a mono source at an azimuth, heard through the near and far ear of the

@@ -1,12 +1,13 @@
 import { Biquad } from "./biquad";
 import { FirstOrderFilter } from "./first_order_filter";
 import { LFO } from "./lfo";
+import { HARDWARE_RATE } from "../hardware";
 
 /**
  * The side chain high passes: the hardware's 32 kHz one-poles (pole 53/128, gain 91/128), a corner of 4 kHz.
  */
 const SIDE_CHAIN_HZ =
-    (32_000 / Math.PI) * Math.atan((1 - 53 / 128) / (1 + 53 / 128));
+    (HARDWARE_RATE / Math.PI) * Math.atan((1 - 53 / 128) / (1 + 53 / 128));
 const SIDE_CHAIN_GAIN = (2 * 91) / 128 / (1 + 53 / 128);
 
 /**
@@ -73,7 +74,7 @@ export class Wah {
         this.sideChain1.setHighPass(SIDE_CHAIN_HZ, SIDE_CHAIN_GAIN);
         this.sideChain2 = new FirstOrderFilter(sampleRate);
         this.sideChain2.setHighPass(SIDE_CHAIN_HZ, SIDE_CHAIN_GAIN);
-        this.scale = 32_000 / sampleRate;
+        this.scale = HARDWARE_RATE / sampleRate;
         // The per sample factors of the 32 kHz hardware, moved to the host rate
         this.attack = ATTACK ** this.scale;
         this.attackSeed = (ATTACK_SEED * (this.attack - 1)) / (ATTACK - 1);
@@ -225,9 +226,11 @@ export class Wah {
             let low = Math.sqrt(w32 * w32 + 0.25 * width * width) - 0.5 * width;
             let high = low + width;
             if (this.scale !== 1) {
-                low = this.filter.prewarp((32_000 / Math.PI) * Math.atan(low));
+                low = this.filter.prewarp(
+                    (HARDWARE_RATE / Math.PI) * Math.atan(low)
+                );
                 high = this.filter.prewarp(
-                    (32_000 / Math.PI) * Math.atan(high)
+                    (HARDWARE_RATE / Math.PI) * Math.atan(high)
                 );
             }
             const band = high - low;
@@ -239,7 +242,9 @@ export class Wah {
                 this.scale === 1
                     ? 1
                     : w32 /
-                      this.filter.prewarp((32_000 / Math.PI) * Math.atan(w32));
+                      this.filter.prewarp(
+                          (HARDWARE_RATE / Math.PI) * Math.atan(w32)
+                      );
             const n = (127 / 128) * 0.5 * f * f;
             this.filter.setAnalog(0, n * l, n, s2 * l * l, 2 * fd * l, f * f);
         }

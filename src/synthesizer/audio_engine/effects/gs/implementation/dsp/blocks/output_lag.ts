@@ -1,5 +1,6 @@
 import { DelayLine } from "./delay_line";
 import { FLUSH } from "./first_order_filter";
+import { HARDWARE_RATE } from "../hardware";
 
 /**
  * A fixed delay of whole 32 kHz samples. The shared stage writes the right output one 32 kHz sample late, so every
@@ -25,7 +26,7 @@ export class OutputLag {
      * @param samples The delay in 32 kHz samples, 1 if missing.
      */
     public constructor(sampleRate: number, samples = 1) {
-        const delay = (samples * sampleRate) / 32_000;
+        const delay = (samples * sampleRate) / HARDWARE_RATE;
         this.whole = Math.round(delay);
         if (Math.abs(delay - this.whole) < 1e-9) {
             this.line = new DelayLine(this.whole);

@@ -1,5 +1,6 @@
 import { Biquad } from "./biquad";
 import { FirstOrderFilter } from "./first_order_filter";
+import { HARDWARE_RATE } from "../hardware";
 
 /**
  * One vowel: two formants, each a 32 kHz Chamberlin state variable filter given by its frequency coefficient
@@ -63,7 +64,7 @@ class FormantBank {
         this.formant2 = new Biquad(sampleRate);
         this.average = new FirstOrderFilter(sampleRate);
         this.average.setLowPass(8000);
-        this.scale = 32_000 / sampleRate;
+        this.scale = HARDWARE_RATE / sampleRate;
     }
 
     /**
@@ -126,7 +127,9 @@ class FormantBank {
             this.scale === 1
                 ? 1
                 : w32 /
-                  this.formant1.prewarp((32_000 / Math.PI) * Math.atan(w32));
+                  this.formant1.prewarp(
+                      (HARDWARE_RATE / Math.PI) * Math.atan(w32)
+                  );
         return { f, s2, l };
     }
 }
@@ -174,7 +177,9 @@ export class FormantFilter {
      */
     public setAccel(seconds: number) {
         this.rate =
-            1 - (1 - 1 / (32_000 * seconds)) ** (32_000 / this.sampleRate);
+            1 -
+            (1 - 1 / (HARDWARE_RATE * seconds)) **
+                (HARDWARE_RATE / this.sampleRate);
     }
 
     public process(x: number) {

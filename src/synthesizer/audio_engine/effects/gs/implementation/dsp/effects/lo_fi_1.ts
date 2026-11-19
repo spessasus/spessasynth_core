@@ -19,6 +19,7 @@ import { Biquad } from "../blocks/biquad";
 import { DelayLine } from "../blocks/delay_line";
 import { ShelfCorners, ShelfEQ } from "../blocks/shelf_eq";
 import { MonoPan } from "../blocks/mono_pan";
+import { HARDWARE_RATE } from "../hardware";
 
 /**
  * The gain after the compressor per pre-ilter (1 bypasses the compressor).
@@ -29,7 +30,8 @@ const PRE_GAINS = [1, 2, 2, 4, 4, (2 * 127) / 32];
  * The pre-filters' low pass: the hardware's bytes (b = 37/128, pole 53/128), 4.0 kHz with -0.11 dB at DC.
  */
 const PRE_POLE = 53 / 128;
-const PRE_HZ = (32_000 / Math.PI) * Math.atan((1 - PRE_POLE) / (1 + PRE_POLE));
+const PRE_HZ =
+    (HARDWARE_RATE / Math.PI) * Math.atan((1 - PRE_POLE) / (1 + PRE_POLE));
 const PRE_GAIN = (2 * 37) / 128 / (1 - PRE_POLE);
 
 /**
@@ -158,7 +160,7 @@ export class GSLoFi1 extends GSEffect {
         if (post) {
             const pole = post.pole / 128;
             this.highPass.setHighPass(
-                (32_000 / Math.PI) * Math.atan((1 - pole) / (1 + pole)),
+                (HARDWARE_RATE / Math.PI) * Math.atan((1 - pole) / (1 + pole)),
                 (2 * post.b0) / 128 / (1 + pole)
             );
             this.dip.setPoleZero(post.hz, post.poleQ, post.hz, post.zeroQ);

@@ -6,6 +6,7 @@ import {
     DC_BLOCKER_HZ,
     FirstOrderFilter
 } from "./first_order_filter";
+import { HARDWARE_RATE } from "../hardware";
 
 /**
  * The lines of the reverb. Each holds what one stage writes: the pre delay, the diffuser's three allpasses, then per
@@ -190,7 +191,7 @@ export class Reverb {
      * @param memory The delay memory.
      */
     public constructor(sampleRate: number, memory: DelayMemory) {
-        this.step = sampleRate / 32_000;
+        this.step = sampleRate / HARDWARE_RATE;
         this.lines = LINE_LENGTHS.map((length) =>
             memory.line(Math.ceil(length * this.step) + LOOKAHEAD)
         );

@@ -68,6 +68,14 @@ export const SPESSA_BUFSIZE = 128;
 export const EFX_SENDS_GAIN_CORRECTION = 2;
 
 /**
+ * The gain of a part's sends into the GS system effects (reverb, chorus, delay), on top of the send level.
+ * Measured on Sound Canvas VA: a part at full send reaches the effects 1.2 times louder than spessasynth's mono
+ * voice signal.
+ * @internal
+ */
+export const GS_SENDS_GAIN = 1.2;
+
+/**
  * The amount of MIDI controllers (128)
  * @internal
  */

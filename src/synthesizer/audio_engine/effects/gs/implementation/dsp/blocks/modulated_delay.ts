@@ -2,6 +2,7 @@ import type { DelayMemory } from "./delay_memory";
 import { Crossfade } from "./crossfade";
 import type { DelayLine } from "./delay_line";
 import { DC_BLOCKER_HZ, FirstOrderFilter } from "./first_order_filter";
+import { HARDWARE_RATE } from "../hardware";
 
 /**
  * The step flanger's smoother after the held LFO: a one-pole of 3.2 ms (its pole per 32 kHz sample).
@@ -74,7 +75,7 @@ export class ModulatedDelay {
         reads: number,
         maxDelay: number
     ) {
-        this.step = sampleRate / 32_000;
+        this.step = sampleRate / HARDWARE_RATE;
         this.stepSmoothing = 1 - STEP_POLE ** (1 / this.step);
         // Two more 32 kHz samples for the feedback's points
         this.line = memory.line(

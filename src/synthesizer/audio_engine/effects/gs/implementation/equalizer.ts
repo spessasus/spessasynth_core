@@ -120,6 +120,14 @@ export class DefaultGSEqualizer implements GSEqualizerProcessor {
         this.highZR = highZR;
     }
 
+    public reset() {
+        this.lowZL = this.lowZR = this.highZL = this.highZR = 0;
+        this.lowFrequency = 0;
+        this.lowGain = 64;
+        this.highFrequency = 0;
+        this.highGain = 64;
+    }
+
     public getSnapshot(): GSEqualizerParameter {
         return {
             lowFrequency: this._lowFrequency,

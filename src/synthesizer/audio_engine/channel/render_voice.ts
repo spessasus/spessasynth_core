@@ -8,6 +8,7 @@ import {
     MATRIX_DESTINATION_COUNT
 } from "./controller_matrix";
 import { MatrixDestinations } from "./enums";
+import { GS_SENDS_GAIN } from "../synth_constants";
 
 const TWO_PI = Math.PI * 2;
 
@@ -719,11 +720,26 @@ export function mixVoiceSendBuffer(
     } else {
         // GS effects are mono
         if (reverb > 0)
-            sendToMono(input, core.gsReverbSend, reverb, sampleCount);
+            sendToMono(
+                input,
+                core.gsReverbSend,
+                reverb * GS_SENDS_GAIN,
+                sampleCount
+            );
         if (chorus > 0)
-            sendToMono(input, core.gsChorusSend, chorus, sampleCount);
+            sendToMono(
+                input,
+                core.gsChorusSend,
+                chorus * GS_SENDS_GAIN,
+                sampleCount
+            );
         if (variation > 0)
-            sendToMono(input, core.gsDelaySend, variation, sampleCount);
+            sendToMono(
+                input,
+                core.gsDelaySend,
+                variation * GS_SENDS_GAIN,
+                sampleCount
+            );
     }
     input.fill(0, 0, sampleCount);
 }

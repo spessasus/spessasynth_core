@@ -20,6 +20,7 @@ import {
 } from "../blocks/noise_generator";
 import { ShelfCorners, ShelfEQ } from "../blocks/shelf_eq";
 import { MonoPan } from "../blocks/mono_pan";
+import { HARDWARE_RATE } from "../hardware";
 
 /**
  * The chains run on the doubled input with the shared stage's 127/128 twice (this type uses the alternate routing)
@@ -46,7 +47,7 @@ const SHAPES = [
 /**
  * The radio's modulator (the SC-88Pro's, from detune 125): one sine at 32000 / 17 Hz.
  */
-const RADIO_HZ = 32_000 / 17;
+const RADIO_HZ = HARDWARE_RATE / 17;
 
 /**
  * The modulator's amplitude.
@@ -163,7 +164,7 @@ export class GSLoFi2 extends GSEffect {
         this.pan = new MonoPan(sampleRate);
         this.radioStep = RADIO_HZ / sampleRate;
         // RMS 0.49 from a uniform draw of -1 to 1, whose RMS is 1/sqrt(3)
-        this.radioSpread = 0.49 * Math.sqrt(3 * (sampleRate / 32_000));
+        this.radioSpread = 0.49 * Math.sqrt(3 * (sampleRate / HARDWARE_RATE));
         this.reset();
     }
 
