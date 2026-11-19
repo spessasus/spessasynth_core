@@ -5,10 +5,7 @@
  */
 export interface SynthesizerEffect<Snapshot> {
     /**
-     * Clears the internal buffers and resets the effect to a default state, including its type and send levels
-     * where it has them.
-     * The synthesizer calls it on a system reset (unless the effect is locked) and then applies its own defaults,
-     * such as the GS macros.
+     * Clears the internal buffers and resets the effect to a default state.
      */
     reset(): void;
 

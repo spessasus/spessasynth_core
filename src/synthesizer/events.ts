@@ -202,7 +202,10 @@ export type GlobalMIDIParameterChangeEvent = {
  * @group Synthesizer.Events
  */
 export type FXType<K> =
-    | Exclude<keyof K, "process" | "getSnapshot" | "applySnapshot" | "clear">
+    | Exclude<
+          keyof K,
+          "process" | "getSnapshot" | "applySnapshot" | "clear" | "reset"
+      >
     | "macro";
 
 /**
