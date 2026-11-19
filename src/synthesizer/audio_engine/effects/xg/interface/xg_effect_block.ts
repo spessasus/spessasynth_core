@@ -1,3 +1,5 @@
+import type { SynthesizerEffect } from "../../synthesizer_effect";
+
 /**
  * A snapshot of a {@link XGEffectBlock}.
  *
@@ -32,7 +34,9 @@ export interface XGEffectBlockSnapshot {
  *
  * @group Synthesizer.XG Effects
  */
-export interface XGEffectBlock {
+export interface XGEffectBlock<
+    Snapshot extends XGEffectBlockSnapshot = XGEffectBlockSnapshot
+> extends SynthesizerEffect<Snapshot> {
     /**
      * Sets the type of the processor.
      * Per XG spec, BASIC EFFECT (LSB = 0) should be used if the exact match is missing.
@@ -51,25 +55,9 @@ export interface XGEffectBlock {
     getType(): number;
 
     /**
-     * Resets this block to default values, including the processor type.
-     */
-    reset(): void;
-
-    /**
      * Sets the given effect parameter to the given value.
      * @param param The parameter number (0-based).
      * @param value The value: 14-bit for two-byte params, 7-bit for single-byte params.
      */
     setParameter(param: number, value: number): void;
-
-    /**
-     * Gets a snapshot of this XG effect block.
-     */
-    getSnapshot(): XGEffectBlockSnapshot;
-
-    /**
-     * Restores this XG effect block from a snapshot.
-     * @param snapshot The snapshot to restore.
-     */
-    applySnapshot(snapshot: XGEffectBlockSnapshot): void;
 }

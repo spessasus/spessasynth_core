@@ -46,7 +46,8 @@ export interface XGChorusBlockSnapshot
  *
  * @group Synthesizer.XG Effects
  */
-export interface XGChorusBlock extends XGSystemEffectBlock, XGChorusParameter {
+export interface XGChorusBlock
+    extends XGSystemEffectBlock<XGChorusBlockSnapshot>, XGChorusParameter {
     /**
      * Process the effect and **adds** it to the output.
      * @param inputLeft The input buffer to process. It always starts at index 0.
@@ -68,15 +69,4 @@ export interface XGChorusBlock extends XGSystemEffectBlock, XGChorusParameter {
         startIndex: number,
         sampleCount: number
     ): void;
-
-    /**
-     * Gets a snapshot of this XG effect block.
-     */
-    getSnapshot(): XGChorusBlockSnapshot;
-
-    /**
-     * Restores this XG effect block from a snapshot.
-     * @param snapshot The snapshot to restore.
-     */
-    applySnapshot(snapshot: XGChorusBlockSnapshot): void;
 }

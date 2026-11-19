@@ -1,3 +1,4 @@
+import type { SynthesizerEffect } from "../../synthesizer_effect";
 import type { GSSystemEffectParameter } from "./gs_system_effect_parameter";
 
 /**
@@ -100,7 +101,8 @@ export interface GSDelayParameter extends GSSystemEffectParameter {
  *
  * @group Synthesizer.GS Effects
  */
-export interface GSDelayProcessor extends GSDelayParameter {
+export interface GSDelayProcessor
+    extends GSDelayParameter, SynthesizerEffect<GSDelayParameter> {
     /**
      * Process the effect and **adds** it to the output.
      * @param input The input buffer to process. It always starts at index 0.
@@ -118,21 +120,4 @@ export interface GSDelayProcessor extends GSDelayParameter {
         startIndex: number,
         sampleCount: number
     ): void;
-
-    /**
-     * Clears the internal buffers and resets the processor to a default state.
-     * The synthesizer calls it on a system reset, unless the effect is locked, then sets the default macro.
-     */
-    reset(): void;
-
-    /**
-     * Gets a snapshot of this effect processor instance.
-     */
-    getSnapshot(): GSDelayParameter;
-
-    /**
-     * Restores this effect processor instance from a snapshot.
-     * @param snapshot The snapshot to restore.
-     */
-    applySnapshot(snapshot: GSDelayParameter): void;
 }

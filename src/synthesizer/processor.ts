@@ -1420,7 +1420,8 @@ export class SpessaSynthProcessor {
         // Do not send CC changes as we call reset
         for (const ch of this.midiChannels) ch.reset(false);
 
-        // The GS delay stops at a reset (its reset above leaves no tail for later)
+        // The GS delay stops at a reset, and its reset above leaves no tail for later.
+        // A locked delay keeps its line and runs on, since the lock switches it back on below.
         this.gsDelayActive = false;
         this.gsDelaySend.fill(0);
         this.gsDelayInput.fill(0);

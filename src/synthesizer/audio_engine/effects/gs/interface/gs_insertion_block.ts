@@ -1,3 +1,5 @@
+import type { SynthesizerEffect } from "../../synthesizer_effect";
+
 /**
  * GS-compatible insertion effect (EFX) parameters.
  *
@@ -115,6 +117,7 @@ export interface GSInsertionBlockSnapshot extends GSInsertionParameter {
  *
  * {@link SpessaSynthProcessor} allows you to supply a custom insertion block.
  * A custom insertion block must implement this interface.
+ * A {@link GSInsertionBlock.reset | reset} also resets the EFX control sources and depths, which a type change keeps.
  *
  * ### Editing the parameters
  *
@@ -126,7 +129,8 @@ export interface GSInsertionBlockSnapshot extends GSInsertionParameter {
  *
  * @group Synthesizer.GS Effects
  */
-export interface GSInsertionBlock extends GSInsertionParameter {
+export interface GSInsertionBlock
+    extends GSInsertionParameter, SynthesizerEffect<GSInsertionBlockSnapshot> {
     /**
      * Sets the EFX type of the block.
      *
@@ -143,11 +147,6 @@ export interface GSInsertionBlock extends GSInsertionParameter {
      * @returns The 16-bit (`MSB << 8 | LSB`) type requested by the last {@link setType} call.
      */
     getType(): number;
-
-    /**
-     * Resets this block to default values, including the EFX type, the send levels and the EFX control.
-     */
-    reset(): void;
 
     /**
      * Sets the given EFX parameter to the given value.
@@ -188,15 +187,4 @@ export interface GSInsertionBlock extends GSInsertionParameter {
         startIndex: number,
         sampleCount: number
     ): void;
-
-    /**
-     * Gets a snapshot of this insertion block.
-     */
-    getSnapshot(): GSInsertionBlockSnapshot;
-
-    /**
-     * Restores this insertion block from a snapshot.
-     * @param snapshot The snapshot to restore.
-     */
-    applySnapshot(snapshot: GSInsertionBlockSnapshot): void;
 }

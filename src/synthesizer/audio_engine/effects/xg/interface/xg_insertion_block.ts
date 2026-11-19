@@ -47,7 +47,10 @@ export interface XGInsertionBlockSnapshot
  *
  * @group Synthesizer.XG Effects
  */
-export interface XGInsertionBlock extends XGInsertionParameter, XGEffectBlock {
+export interface XGInsertionBlock<
+    Snapshot extends XGInsertionBlockSnapshot = XGInsertionBlockSnapshot
+>
+    extends XGInsertionParameter, XGEffectBlock<Snapshot> {
     /**
      * Process the effect in insertion mode and **overwrites** it to the input.
      * The DSP honors Dry/Wet in this case.
@@ -61,15 +64,4 @@ export interface XGInsertionBlock extends XGInsertionParameter, XGEffectBlock {
         inputRight: Float32Array,
         sampleCount: number
     ): void;
-
-    /**
-     * Gets a snapshot of this XG effect block.
-     */
-    getSnapshot(): XGInsertionBlockSnapshot;
-
-    /**
-     * Restores this XG effect block from a snapshot.
-     * @param snapshot The snapshot to restore.
-     */
-    applySnapshot(snapshot: XGInsertionBlockSnapshot): void;
 }

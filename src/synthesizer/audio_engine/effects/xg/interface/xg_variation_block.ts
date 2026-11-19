@@ -87,7 +87,10 @@ export interface XGVariationBlockSnapshot
  * @group Synthesizer.XG Effects
  */
 export interface XGVariationBlock
-    extends XGVariationParameter, XGSystemEffectBlock, XGInsertionBlock {
+    extends
+        XGVariationParameter,
+        XGSystemEffectBlock<XGVariationBlockSnapshot>,
+        XGInsertionBlock<XGVariationBlockSnapshot> {
     /**
      * Process the effect in _system_ mode and **adds** it to the output.
      * Feeds the chorus and reverb buffers according to the send amounts.
@@ -116,15 +119,4 @@ export interface XGVariationBlock
         startIndex: number,
         sampleCount: number
     ): void;
-
-    /**
-     * Gets a snapshot of this XG effect block.
-     */
-    getSnapshot(): XGVariationBlockSnapshot;
-
-    /**
-     * Restores this XG effect block from a snapshot.
-     * @param snapshot The snapshot to restore.
-     */
-    applySnapshot(snapshot: XGVariationBlockSnapshot): void;
 }

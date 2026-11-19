@@ -1,3 +1,5 @@
+import type { SynthesizerEffect } from "../../synthesizer_effect";
+
 /**
  * GS-compatible equalizer parameters.
  *
@@ -68,7 +70,8 @@ export interface GSEqualizerParameter {
  *
  * @group Synthesizer.GS Effects
  */
-export interface GSEqualizerProcessor extends GSEqualizerParameter {
+export interface GSEqualizerProcessor
+    extends GSEqualizerParameter, SynthesizerEffect<GSEqualizerParameter> {
     /**
      * Process the effect and **adds** it to the output.
      * @param inputLeft The left input buffer to process. It always starts at index 0.
@@ -86,21 +89,4 @@ export interface GSEqualizerProcessor extends GSEqualizerParameter {
         startIndex: number,
         sampleCount: number
     ): void;
-
-    /**
-     * Clears the internal buffers and resets the processor to a default state.
-     * The synthesizer calls it on a system reset, unless the effect is locked, then sets the default parameters.
-     */
-    reset(): void;
-
-    /**
-     * Gets a snapshot of this effect processor instance.
-     */
-    getSnapshot(): GSEqualizerParameter;
-
-    /**
-     * Restores this effect processor instance from a snapshot.
-     * @param snapshot The snapshot to restore.
-     */
-    applySnapshot(snapshot: GSEqualizerParameter): void;
 }

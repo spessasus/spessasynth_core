@@ -38,16 +38,7 @@ export interface XGSystemEffectBlockSnapshot
  *
  * @group Synthesizer.XG Effects
  */
-export interface XGSystemEffectBlock
-    extends XGEffectBlock, XGSystemEffectParameter {
-    /**
-     * Gets a snapshot of this XG effect block.
-     */
-    getSnapshot(): XGSystemEffectBlockSnapshot;
-
-    /**
-     * Restores this XG effect block from a snapshot.
-     * @param snapshot The snapshot to restore.
-     */
-    applySnapshot(snapshot: XGSystemEffectBlockSnapshot): void;
-}
+export interface XGSystemEffectBlock<
+    Snapshot extends XGSystemEffectBlockSnapshot = XGSystemEffectBlockSnapshot
+>
+    extends XGEffectBlock<Snapshot>, XGSystemEffectParameter {}
