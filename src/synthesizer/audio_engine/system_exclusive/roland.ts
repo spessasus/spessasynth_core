@@ -1158,8 +1158,13 @@ export function rolandSystemExclusive(
                                 break;
                             }
 
-                            case 0x00:
                             case 0x01: {
+                                // TONE MAP-0 NUMBER is not handled
+                                // But known
+                                break;
+                            }
+
+                            case 0x00: {
                                 // Tone map number (cc#32)
                                 ch.controllerChange(
                                     MIDIControllers.bankSelectLSB,

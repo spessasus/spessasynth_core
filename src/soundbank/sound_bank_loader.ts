@@ -59,6 +59,10 @@ export class SoundBankLoader {
             new IndexedByteArray(check),
             4
         ).toLowerCase();
+        // 64-bit chunk sizes are only defined for SFe (SFe 4.0, section 3.1)
+        if (rf64 && id !== "sfen") {
+            throw new Error(`Expected 'sfen' in a 'RIFS' file, got '${id}'`);
+        }
         if (id === "dls ") {
             // The magic happens here!
             const bank = DownloadableSounds.read(buffer).toSF();

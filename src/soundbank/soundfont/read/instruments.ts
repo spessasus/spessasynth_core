@@ -1,3 +1,4 @@
+import { SpessaLog } from "../../../utils/loggin";
 import { RIFFChunk } from "../../../utils/riff_chunk";
 import { readLittleEndianIndexed } from "../../../utils/byte_functions/little_endian";
 import { readBinaryStringIndexed } from "../../../utils/byte_functions/string";
@@ -6,6 +7,7 @@ import type { BasicSample } from "../../basic_soundbank/basic_sample";
 import type { Modulator } from "../../basic_soundbank/modulator";
 import type { Generator } from "../../basic_soundbank/generator";
 import { BasicInstrumentZone } from "../../basic_soundbank/basic_instrument_zone";
+import { knownGenerators, readZoneIndex } from "./generators";
 import { GeneratorTypes } from "../../basic_soundbank/generator_types";
 
 /**
@@ -35,19 +37,30 @@ export class SoundFontInstrument extends BasicInstrument {
         const sampleID = generators.find(
             (g) => g.type === GeneratorTypes.sampleID
         );
-        let sample;
-        if (sampleID) {
-            sample = samples[sampleID.value];
-        } else {
+        if (!sampleID) {
             throw new Error("No sample ID found in instrument zone.");
         }
+        // Unsigned, with sampleIDMSB as the top 16 bits (SFe 4.0, section 7.1.1)
+        const index = readZoneIndex(
+            generators,
+            sampleID,
+            GeneratorTypes.sampleIDMSB
+        );
+        const sample = samples[index];
+        // A zone whose index refers past the samples is ignored (SFe 4.0, section 7.1.1)
         if (!sample) {
-            throw new Error(
-                `Invalid sample ID: ${sampleID.value}, available samples: ${samples.length}`
+            SpessaLog.warn(
+                `Invalid sample ID: ${index}, available samples: ${samples.length}. Ignoring the zone.`
             );
+            return;
         }
         const z = new BasicInstrumentZone(this, sample);
-        z.addGenerators(...generators);
+        // Unknown generators are ignored, and so is everything after the index, as in SF2 (SFe 4.0, section 7.1.1)
+        z.addGenerators(
+            ...knownGenerators(
+                generators.slice(0, generators.indexOf(sampleID) + 1)
+            )
+        );
         z.addModulators(...modulators);
         this.zones.push(z);
         return z;

@@ -6,6 +6,7 @@ import {
     MatrixSources
 } from "./enums";
 import { MIDIControllers } from "../../../midi/enums";
+import { SOURCE_VALUE_14_BIT } from "../../../soundbank/basic_soundbank/modulator_curve";
 
 const SOURCE_COUNT = 6;
 export const MATRIX_DESTINATION_COUNT = 11;
@@ -207,7 +208,9 @@ export class ControllerMatrix implements ControllerMatrixSnapshot {
         if (!this.active) return;
         const v = this.values;
         v[MatrixSources.modulationWheel] = (controllers[1] >> 7) / 127;
-        v[MatrixSources.pitchWheel] = (params.pitchWheel - 8192) / 8192;
+        // The pitch wheel maps like an SFe source (center-max), so 16383 is exactly +1
+        v[MatrixSources.pitchWheel] =
+            (SOURCE_VALUE_14_BIT[params.pitchWheel] - 8192) / 8192;
         v[MatrixSources.channelPressure] = params.pressure / 127;
         v[MatrixSources.polyPressure] = 0;
         v[MatrixSources.cc1] = (controllers[params.cc1] >> 7) / 127;
@@ -224,7 +227,8 @@ export class ControllerMatrix implements ControllerMatrixSnapshot {
         for (let key = 0; key < 128; key++) {
             const p = polyPressures[key];
             if (perNote)
-                v[MatrixSources.pitchWheel] = (pitchWheels[key] - 8192) / 8192;
+                v[MatrixSources.pitchWheel] =
+                    (SOURCE_VALUE_14_BIT[pitchWheels[key]] - 8192) / 8192;
             else if (p === 0) continue;
             v[MatrixSources.polyPressure] = p / 127;
             this.computeRow(key * MATRIX_DESTINATION_COUNT);

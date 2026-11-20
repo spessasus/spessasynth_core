@@ -1,6 +1,3 @@
-// The SFe 4.0 pre-freeze changes (items 1 to 7 of SFE4_PREFREEZE.md)
-// 1 and 2: the attenuation unit and the SF2 round trips, 3: the extended flag, 4: the 16 byte record,
-// 5: CURV with a DWORD count and x up to 16384, 6: linked modulators, 7: unknown transforms and destinations
 import { readFileSync } from "node:fs";
 import {
     BasicSoundBank,
@@ -10,6 +7,7 @@ import {
     IndexedByteArray,
     MIDIControllers,
     Modulator,
+    ModulatorCurve,
     ModulatorCurveTypes,
     ModulatorSource,
     type ModulatorSourceIndex,
@@ -20,7 +18,6 @@ import {
 import { readModulators } from "../../../src/soundbank/soundfont/read/modulators";
 import { readCurves } from "../../../src/soundbank/soundfont/read/curves";
 import { RIFFChunk } from "../../../src/utils/riff_chunk";
-import { ModulatorCurve } from "../../../src/soundbank/basic_soundbank/modulator_curve";
 import {
     MOD_BYTE_SIZE,
     XMOD_BYTE_SIZE
@@ -900,9 +897,14 @@ console.info("Item 5: CURV with a DWORD count and x up to 16384");
     const file = new Uint8Array(bank.writeSFe());
     const curv = chunksOf(file, "CURV")[0];
     const count = curv[0] | (curv[1] << 8) | (curv[2] << 16) | (curv[3] << 24);
+    // A DWORD count, then per curve a 40 byte name, a WORD point count and 4 bytes per point
+    const expectedLength = bank.customCurves.reduce(
+        (length, c) => length + 42 + c.points.length * 4,
+        4
+    );
     check(
-        count === 3 && curv.length === 4 + 3 * 0 + curv.length - 4,
-        `the written CURV count is a DWORD (${count} curves with the two default ones)`
+        count === 3 && curv.length === expectedLength,
+        `the written CURV count is a DWORD (${count} curves with the two default ones, ${curv.length} of ${expectedLength} bytes)`
     );
     const back = sfeRoundTrip(bank);
     const mod = back.instruments[0].zones[0].modulators[0];
@@ -985,7 +987,7 @@ console.info("Item 7: unknown transforms and destinations");
             raw(0x80 | 5, 0),
             // An unused SoundFont 2 destination, one above the known ones and one at the SoundFont 2 end marker
             raw(0x80 | 5, 0, 14),
-            raw(0x80 | 5, 0, 90),
+            raw(0x80 | 5, 0, 92),
             raw(0x80 | 5, 0, 0x7f_ff)
         ]),
         true
@@ -999,7 +1001,7 @@ console.info("Item 7: unknown transforms and destinations");
     );
     check(
         !valid(unknown[4]) && !valid(unknown[5]) && !valid(unknown[6]),
-        "the destinations 14, 90 and 32767 are unknown"
+        "the destinations 14, 92 and 32767 are unknown"
     );
     // A flagged modulator with an unknown transform still takes its record
     const flaggedUnknown = readModulators(
@@ -1021,8 +1023,8 @@ console.info("Item 7: unknown transforms and destinations");
         "an unknown transform with the flag is ignored and still takes its record"
     );
     // Through the writer: an ignored modulator supersedes nothing
-    const attenuationMod = (transform: number, destination: number) => {
-        const m = new Modulator(
+    const attenuationMod = (transform: number, destination: number) =>
+        new Modulator(
             new ModulatorSource(
                 MIDIControllers.mainVolume,
                 ModulatorCurveTypes.concave,
@@ -1035,8 +1037,6 @@ console.info("Item 7: unknown transforms and destinations");
             0,
             transform as 0
         );
-        return m;
-    };
     for (const [name, mod] of [
         [
             "an unknown transform",
@@ -1062,13 +1062,13 @@ console.info("Item 7: unknown transforms and destinations");
             );
         }
     }
-    // Destination 90 through the SFe writer and reader
+    // Destination 92 (unknown) through the SFe writer and reader
     const bank = makeBank(sineSample(), {}, (zone) =>
         zone.addModulators(
             new Modulator(
                 new ModulatorSource(20, ModulatorCurveTypes.linear, true),
                 new ModulatorSource(),
-                90 as typeof GeneratorTypes.pan,
+                92 as typeof GeneratorTypes.pan,
                 100
             ),
             plain(21)
@@ -1077,7 +1077,7 @@ console.info("Item 7: unknown transforms and destinations");
     const mods = sfeRoundTrip(bank).instruments[0].zones[0].modulators;
     check(
         mods.filter((m) => valid(m)).length === 1,
-        "a modulator to destination 90 is ignored by an SFe 4.0 reader and the other stays"
+        "a modulator to destination 92 is ignored by an SFe 4.0 reader and the other stays"
     );
 }
 

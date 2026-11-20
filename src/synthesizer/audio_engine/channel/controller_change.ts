@@ -27,29 +27,23 @@ export function controllerChange(
     if (controller > 127 || value < 0)
         throw new Error("Invalid MIDI Controller.");
 
-    // A CC 10 message of 0 is 1, the GS and XG pan SysEx (random pan) never come here with 0
-    if (controller === MIDIControllers.pan && value === 0) value = 1;
-
-    // Lsb controller values: append them as the lower 7 bits of the 14-bit value
-    // Excluding bank select as it's handled separately
-    if (
-        controller >= MIDIControllers.modulationWheelLSB &&
-        controller <= MIDIControllers.undefinedCC31LSB
-    ) {
-        const actualCCNum = controller - 32;
-        if (this.lockedControllers[actualCCNum]) return;
-
-        // Append the lower 7 bits to the main controller
-        this._midiControllers[actualCCNum] =
-            (this._midiControllers[actualCCNum] & 0x3f_80) | (value & 0x7f);
-
-        this.computeModulatorsAll(1, actualCCNum);
+    // The data entry LSB is the lower 7 bits of the data entry (CC 6).
+    // The other LSB controllers (CC 33 to 63) are independent 7-bit controllers (SFe 4.0, section 11.3),
+    // Bank select (CC 0 and 32) is handled separately
+    if (controller === MIDIControllers.dataEntryLSB) {
+        // A lock on either controller of the pair keeps the 14-bit value
+        if (
+            this.lockedControllers[MIDIControllers.dataEntryMSB] ||
+            this.lockedControllers[controller]
+        )
+            return;
+        this._midiControllers[MIDIControllers.dataEntryMSB] =
+            (this._midiControllers[MIDIControllers.dataEntryMSB] & 0x3f_80) |
+            (value & 0x7f);
     }
     if (this.lockedControllers[controller]) return;
 
-    // Apply the cc to the table (top 7 bits only, to not override LSB)
-    // For consistency we also technically apply this to the LSB controllers directly,
-    // But they are unused (except Parameter Numbers)
+    // Apply the cc to the table as the top 7 bits. Only the data entry has lower bits, which it keeps
     this._midiControllers[controller] =
         (value << 7) | (this._midiControllers[controller] & 0x7f);
 
@@ -57,13 +51,16 @@ export function controllerChange(
     {
         switch (controller) {
             // Channel mode messages
+            // Mono and Poly On act as All Notes Off too, as MIDI 1.0 asks (SFe 4.0, section 11.5)
             case MIDIControllers.omniModeOff:
             case MIDIControllers.omniModeOn:
+            case MIDIControllers.monoModeOn:
+            case MIDIControllers.polyModeOn:
             case MIDIControllers.allNotesOff: {
                 if (
                     this._midiControllers[MIDIControllers.sustainPedal] >=
                         8192 &&
-                    this._midiParameters.polyMode
+                    (this._midiParameters.polyMode || this._drumChannel)
                 ) {
                     // A note off for every voice: the pedal holds them, like GS and XG devices do.
                     // Voices that ignore note off are not held, so they get released
@@ -85,6 +82,12 @@ export function controllerChange(
                             }
                         }
                 } else this.stopAllNotes();
+                // The mode changes after the notes off, so they follow the previous mode
+                if (controller === MIDIControllers.polyModeOn) {
+                    this.setMIDIParameter("polyMode", true);
+                } else if (controller === MIDIControllers.monoModeOn) {
+                    this.setMIDIParameter("polyMode", false);
+                }
                 break;
             }
 
@@ -93,30 +96,20 @@ export function controllerChange(
                 break;
             }
 
-            case MIDIControllers.polyModeOn: {
-                this.stopAllNotes(true);
-                this.setMIDIParameter("polyMode", true);
-                break;
-            }
-
-            case MIDIControllers.monoModeOn: {
-                this.stopAllNotes(true);
-                this.setMIDIParameter("polyMode", false);
-                break;
-            }
-
             // Special case: bank select
             case MIDIControllers.bankSelect: {
                 // GM ignores bank selects
                 if (this.channelSystem === "gm") break;
                 // This emulates the XG "DRUM PART PROTECT MODE", which is not implemented yet,
-                // So it is always on: part 10 only receives the drum banks 126 and 127 and can never be melodic!
+                // So it is always on: part 10 only receives the drum banks 120, 126 and 127 and can never be melodic!
+                // 120 is the GM2 drum bank, SFe 4.0, section 11.2.2 accepts it too
                 // GM2 has no such rule, its channel 10 turns melodic with bank 121.
                 // Testcase
                 // Dave-Rodgers-D-j-Vu-Anonymous-20200419154845-nonstop2k.com.mid
                 if (
                     this.channel % 16 === MIDI_DRUM_CHANNEL &&
                     this.channelSystem === "xg" &&
+                    value !== 120 &&
                     value !== 126 &&
                     value !== 127
                 ) {
@@ -242,6 +235,8 @@ export function controllerChange(
                             }
                         }
                 }
+                // The pedal is still a modulator source (SFe 4.0, section 7.4)
+                this.computeModulatorsAll(1, controller);
                 break;
             }
 
@@ -250,6 +245,7 @@ export function controllerChange(
                 // Even if portamento on/off (cc#65) is off
                 this.lastPortamentoNote = value;
                 this.portamentoForce = true;
+                this.computeModulatorsAll(1, controller);
                 break;
             }
 

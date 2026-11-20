@@ -28,22 +28,24 @@ check(
     "an offset of 0 changes nothing"
 );
 
-// 100 + -100 sums to 0, so the open filter is still skipped
+// 100 + -100 sums to 0, so the response has no peak, but initialFilterQ still lowers the level by 100 / 20 = 5 dB
+// (SFe 4.0, section 7.1.1, filterQOffset does not change the gain)
 const summed = await play({
     [GeneratorTypes.initialFilterQ]: 100,
     [GeneratorTypes.filterQOffset]: -100
 });
+const summedDrop = level(summed) - level(plain);
 check(
-    maxDifference(summed, plain) === 0,
-    "initialFilterQ 100 and an offset of -100 sound like no resonance"
+    Math.abs(summedDrop + 5) < 0.2,
+    `initialFilterQ 100 and an offset of -100 have no peak and are 5 dB quieter (${summedDrop.toFixed(2)} dB)`
 );
 
-// -30 cB is Q 0.5: the SF2 gain rule boosts a 440 Hz sine by 1.5 dB under an open filter
+// -30 cB is Q 0.5. A negative resonance no longer boosts the level, the gain comes from initialFilterQ alone
 const boost =
     level(await play({ [GeneratorTypes.filterQOffset]: -30 })) - level(plain);
 check(
-    Math.abs(boost - 1.5) < 0.2,
-    `an offset of -30 raises the passband by 1.5 dB (${boost.toFixed(2)} dB)`
+    Math.abs(boost) < 0.2,
+    `an offset of -30 does not raise the passband (${boost.toFixed(2)} dB)`
 );
 
 // A low Q rounds off the knee, so noise through a 5000 cent lowpass gets quieter

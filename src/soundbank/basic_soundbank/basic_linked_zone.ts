@@ -57,6 +57,11 @@ export abstract class BasicLinkedZone<
     protected abstract readonly childGenerator: GeneratorType;
 
     /**
+     * The generator that stores the top 16 bits of the child's index, when it is above 65535 (SFe 4.0, section 7.1.1).
+     */
+    protected abstract readonly childMSBGenerator: GeneratorType;
+
+    /**
      * If this zone counts as a use of its child.
      * Zones created without linking never change the child's links.
      */
@@ -105,7 +110,13 @@ export abstract class BasicLinkedZone<
                 `${this.child.name} does not exist in ${bank.soundBankInfo.name}! Cannot write the zone.`
             );
         }
-        gens.push(new Generator(this.childGenerator, childID, false));
+        // An index above 65535 gets its top 16 bits from the MSB generator, written just before (SFe 4.0, section 7.1.1).
+        // SF2 can't store it, its writer refuses such a zone
+        if (childID > 0xff_ff)
+            gens.push(
+                new Generator(this.childMSBGenerator, childID >>> 16, false)
+            );
+        gens.push(new Generator(this.childGenerator, childID & 0xff_ff, false));
         return gens;
     }
 

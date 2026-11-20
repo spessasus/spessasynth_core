@@ -264,9 +264,10 @@ const changedBack = sf2RoundTrip(changed);
 const vib2 = changedBack.defaultModulators.find((m) =>
     m.primarySource.isController(MIDIControllers.modulationWheel)
 );
+// The pan modulator removed, and CC 71 to filterQOffset is SFe only (SF2 drops it, the reader does not add it back)
 check(
     changedBack.defaultModulators.length ===
-        SPESSASYNTH_DEFAULT_MODULATORS.length - 1 &&
+        SPESSASYNTH_DEFAULT_MODULATORS.length - 2 &&
         vib2?.transformAmount === 1600,
     "a changed default list keeps the mod wheel vibrato at 1600"
 );
@@ -327,7 +328,7 @@ const panValue = async (value: number) => {
     synth.controllerChange(0, MIDIControllers.pan, value);
     return synth.midiChannels[0].midiControllers[MIDIControllers.pan] >> 7;
 };
-check((await panValue(0)) === 1, "CC 10 of 0 is stored as 1");
+check((await panValue(0)) === 0, "CC 10 of 0 is stored as 0 (no 0 as 1 rule)");
 check((await panValue(1)) === 1, "CC 10 of 1 is 1");
 check((await panValue(100)) === 100, "CC 10 of 100 is 100");
 {
@@ -432,8 +433,8 @@ console.info("Default controller values and modulators:");
     synth.controllerChange(0, MIDIControllers.brightness, 127);
     synth.process(left, right, 0, QUANTUM);
     check(
-        Math.abs(generator(GeneratorTypes.initialFilterFc) - 10_725) <= 2,
-        `CC 74 of 127 raises the cutoff by 4725 cents (4800 at full 14-bit) (${generator(GeneratorTypes.initialFilterFc)})`
+        Math.abs(generator(GeneratorTypes.initialFilterFc) - 10_800) <= 2,
+        `CC 74 of 127 raises the cutoff by the full 4800 cents, 127 is the end (${generator(GeneratorTypes.initialFilterFc)})`
     );
     synth.controllerChange(0, MIDIControllers.brightness, 0);
     synth.process(left, right, 0, QUANTUM);
@@ -1053,6 +1054,120 @@ console.info(
         );
     }
 
+    // SFe revision: 14-bit controllers, Mono/Poly On, XG channel 10 bank 120 and the drum fallback below 49
+    {
+        const bank = bankWith(true);
+        for (const [name, program, bankMSB] of [
+            ["XGD40", 40, 127],
+            ["XGD56", 56, 127],
+            ["GM2D58", 58, 120]
+        ] as const) {
+            const preset = new BasicPreset(bank);
+            preset.name = name;
+            preset.program = program;
+            preset.bankMSB = bankMSB;
+            preset.isGMGSDrum = false;
+            preset.createZone(bank.instruments[0]);
+            bank.addPresets(preset);
+        }
+        bank.flush();
+        const synth = await create(bank);
+        synth.systemExclusive(modes.gs, 0);
+        const ch = synth.midiChannels[0];
+
+        // CC 1 to 31 and CC 33 to 63 are independent controllers (11.3)
+        ch.controllerChange(MIDIControllers.modulationWheelLSB, 5);
+        ch.controllerChange(MIDIControllers.modulationWheel, 10);
+        check(
+            ch.midiControllers[MIDIControllers.modulationWheel] === 10 << 7 &&
+                ch.midiControllers[MIDIControllers.modulationWheelLSB] ===
+                    5 << 7,
+            `CC 1 leaves CC 33 alone (${ch.midiControllers[MIDIControllers.modulationWheel]}, ${ch.midiControllers[MIDIControllers.modulationWheelLSB]})`
+        );
+        ch.controllerChange(MIDIControllers.modulationWheelLSB, 7);
+        check(
+            ch.midiControllers[MIDIControllers.modulationWheel] === 10 << 7,
+            `CC 33 does not change CC 1 (${ch.midiControllers[MIDIControllers.modulationWheel]})`
+        );
+
+        // Mono and Poly On act as All Notes Off, so the sustain pedal holds the notes (11.5)
+        ch.programChange(0);
+        ch.controllerChange(MIDIControllers.sustainPedal, 127);
+        ch.noteOn(60, 100);
+        synth.process(new Float32Array(128), new Float32Array(128));
+        ch.controllerChange(MIDIControllers.polyModeOn, 0);
+        synth.process(new Float32Array(128), new Float32Array(128));
+        check(
+            ch.voiceCount > 0 && ch.midiParameters.polyMode,
+            `Poly On releases like All Notes Off, the pedal holds the voice (${ch.voiceCount} voices)`
+        );
+        ch.controllerChange(MIDIControllers.monoModeOn, 0);
+        check(
+            !ch.midiParameters.polyMode,
+            "Mono On switches the channel to mono after the notes off"
+        );
+        ch.controllerChange(MIDIControllers.polyModeOn, 0);
+        ch.controllerChange(MIDIControllers.sustainPedal, 0);
+
+        // Drum fallback 3.1.3: a drum preset with the same program only below 49 (11.2.3)
+        const ten = synth.midiChannels[9];
+        ten.programChange(40);
+        check(
+            ten.preset?.name === "XGD40",
+            `a GS drum request for program 40 falls back to the XG kit at 40 (${ten.preset?.name})`
+        );
+        ten.programChange(56);
+        check(
+            ten.preset?.name === "GMD0",
+            `a GS drum request for program 56 skips the XG kit at 56 (${ten.preset?.name})`
+        );
+        // A kit at bank MSB 120 (GM2) numbers its kits like GS, so it counts at any program
+        ten.programChange(58);
+        check(
+            ten.preset?.name === "GM2D58",
+            `a GS drum request for program 58 takes the MSB 120 kit at 58 (${ten.preset?.name})`
+        );
+
+        // XG channel 10 accepts the bank MSB 120, 126 and 127 only (11.2.2)
+        synth.systemExclusive(modes.xg, 0);
+        ten.controllerChange(MIDIControllers.bankSelect, 120);
+        check(
+            ten.patch.bankMSB === 120,
+            `XG channel 10 accepts the bank MSB 120 (${ten.patch.bankMSB})`
+        );
+        ten.controllerChange(MIDIControllers.bankSelect, 1);
+        check(
+            ten.patch.bankMSB === 120,
+            `XG channel 10 ignores the bank MSB 1 (${ten.patch.bankMSB})`
+        );
+    }
+
+    // Rule 3.2.2: a drum preset with the same program above 48 only counts in GM2, which numbers its kits like GS
+    {
+        const bank = bankWith(true);
+        const preset = new BasicPreset(bank);
+        preset.name = "GMD56";
+        preset.program = 56;
+        preset.isGMGSDrum = true;
+        preset.createZone(bank.instruments[0]);
+        bank.addPresets(preset);
+        bank.flush();
+        const synth = await create(bank);
+        const ten = synth.midiChannels[9];
+        synth.systemExclusive(modes.gm2, 0);
+        ten.programChange(56);
+        check(
+            ten.preset?.name === "GMD56",
+            `GM2 drum program 56 falls back to the GS kit at 56 (${ten.preset?.name})`
+        );
+        synth.systemExclusive(modes.xg, 0);
+        ten.programChange(56);
+        check(
+            ten.preset?.name !== "GMD56",
+            `XG drum program 56 does not take the GS kit at 56 (${ten.preset?.name})`
+        );
+    }
+
     // A bank with no drum preset
     {
         const synth = await create(bankWith(false));
@@ -1110,6 +1225,107 @@ console.info(
             `XG channel 10 with the bank MSB 126 and no match is a drum channel (${ten.preset?.name})`
         );
     }
+}
+
+// A reset does not replay the channel mode messages, so a mono channel goes back to poly without a flip through the mode messages
+{
+    const synth = new SpessaSynthProcessor(SAMPLE_RATE, {
+        effectsEnabled: false,
+        eventsEnabled: false
+    });
+    await synth.ready;
+    const channel = synth.midiChannels[0];
+    channel.controllerChange(MIDIControllers.monoModeOn, 1);
+    const calls = new Array<string>();
+    const original = channel.setMIDIParameter;
+    (channel as { setMIDIParameter: typeof original }).setMIDIParameter = (
+        ...args: Parameters<typeof original>
+    ) => {
+        calls.push(`${String(args[0])}=${String(args[1])}`);
+        original.apply(channel, args);
+    };
+    synth.reset("gs");
+    const modeCalls = calls.filter((c) => c.startsWith("polyMode"));
+    check(
+        !modeCalls.includes("polyMode=false") &&
+            channel.midiParameters.polyMode,
+        `a reset brings back poly mode without replaying CC 126 (${modeCalls.join(", ")})`
+    );
+}
+
+// A program change that finds no preset still sends programChange, with an empty name
+{
+    const synth = new SpessaSynthProcessor(SAMPLE_RATE, {
+        effectsEnabled: false
+    });
+    await synth.ready;
+    // No sound bank, so nothing is found for any selection
+    synth.onMissingPreset = () => undefined;
+    const events = new Array<{ name: string; program: number }>();
+    synth.onEventCall = (e) => {
+        if (e.type === "programChange") events.push(e.data);
+    };
+    const channel = synth.midiChannels[0];
+    channel.controllerChange(MIDIControllers.bankSelect, 5);
+    channel.programChange(42);
+    check(
+        events.length === 1 &&
+            events[0].name === "" &&
+            events[0].program === 42 &&
+            channel.preset === undefined,
+        `a program change with no preset sends an empty name (${JSON.stringify(events)})`
+    );
+}
+
+// A drum channel ignores mono mode, like the Sound Canvas: a new drum note does not cut the previous one
+{
+    const bank = makeBank(sineSample(), {
+        [GeneratorTypes.releaseVolEnv]: 1200
+    });
+    bank.presets[0].isGMGSDrum = true;
+    bank.flush();
+    const synth = new SpessaSynthProcessor(SAMPLE_RATE, {
+        effectsEnabled: false,
+        eventsEnabled: false
+    });
+    synth.soundBankManager.addSoundBank(bank, "main");
+    await synth.ready;
+    const drums = synth.midiChannels[9];
+    drums.controllerChange(MIDIControllers.monoModeOn, 1);
+    drums.noteOn(49, 100);
+    drums.noteOff(49);
+    drums.noteOn(42, 100);
+    // A killed voice fades within about 15 ms, the release here is 2 s
+    const left = new Float32Array(128);
+    const right = new Float32Array(128);
+    for (let q = 0; q < 35; q++) synth.process(left, right);
+    const crash = synth.voices.find(
+        (v) => v.isActive && v.channel === 9 && v.midiNote === 49
+    );
+    check(
+        crash !== undefined && !drums.midiParameters.polyMode,
+        "in mono mode a drum note keeps ringing after the next drum note"
+    );
+}
+
+// The pitch wheel is kept a whole 0 to 16383, it indexes the 14-bit source table
+{
+    const synth = new SpessaSynthProcessor(SAMPLE_RATE, {
+        effectsEnabled: false,
+        eventsEnabled: false
+    });
+    await synth.ready;
+    const channel = synth.midiChannels[0];
+    channel.pitchWheel(16_384);
+    const high = channel.midiParameters.pitchWheel;
+    channel.pitchWheel(8192.6);
+    const fraction = channel.midiParameters.pitchWheel;
+    channel.pitchWheel(-5);
+    const low = channel.midiParameters.pitchWheel;
+    check(
+        high === 16_383 && fraction === 8193 && low === 0,
+        `pitch wheel values outside 0 to 16383 or fractional are clamped and rounded (${high}, ${fraction}, ${low})`
+    );
 }
 
 finish("midi_behavior_test");

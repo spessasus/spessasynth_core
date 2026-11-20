@@ -58,13 +58,15 @@ const output = sfont.writeSFe();
 > [section 9.2 of the SFe specification](https://spessasus.github.io/spessasynth_sfe/spec.html#92-conversion-from-soundfont-2)) and converted back when it is
 > written as SF2 ([section 9.1](https://spessasus.github.io/spessasynth_sfe/spec.html#91-conversion-to-soundfont-2)). An SF2 file that is loaded and written
 > again changes once, and nothing after that. An attenuation value (SF2 stores 2.5 times the centibels) may change by
-> one unit. A send of the default form with a file amount above 200 comes back as 200.
+> one unit. A send of the default form with a file amount above 200 comes back as 200. A `sampleModes` of 4 comes back
+> as 1, and any other value outside 0 to 3 as 0.
 >
 > A bank that is written as SF2 and loaded again changes too. The amount of a send of the default form becomes a
 > multiple of 5 and at most 1000, so 503 becomes 505. The amount of a mod wheel vibrato that follows the Modulation
 > Depth Range becomes a multiple of 32, limited to -32736 to 32736. A mod wheel vibrato without the range and with an
 > amount from -1023 to 1023 comes back with the range and 32 times the amount. What section 9.1 drops is gone, unless
-> the bank was written without `DMOD`, because loading then gives the whole list of section 7.3 back. Use
+> the bank was written without `DMOD`, because loading then gives the whole list of section 7.3 back. An alternating
+> loop (`sampleModes` 4) comes back as a forward loop. Use
 > {@link BasicSoundBank.getSF2Losses} to see what a bank loses when written as SF2.
 
 ## DLS To SF2
@@ -127,7 +129,8 @@ const output = mid.writeRMIDI(sfontBinary, {
 
 ## Tracker module (MOD/XM/S3M/IT) To RMI
 
-Tracker modules are loaded as MIDI files with an embedded sound bank.
+Tracker modules are loaded as MIDI files with an embedded sound bank. The bank is written as SFe, since SF2 can't store
+the gain modulators that keep the level of resonant filters.
 
 ```ts
 const mid = BasicMIDI.fromArrayBuffer(input);

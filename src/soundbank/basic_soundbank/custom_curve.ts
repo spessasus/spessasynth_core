@@ -1,9 +1,20 @@
-import { ModulatorCurve } from "./modulator_curve";
+import { ModulatorCurve, SOURCE_VALUE_7_BIT } from "./modulator_curve";
 import { ModulatorCurveTypes } from "../enums";
 import type { BasicInstrument } from "./basic_instrument";
 import type { BasicPreset } from "./basic_preset";
 import type { BasicSoundBank } from "./basic_soundbank";
 import { SpessaLog } from "../../utils/loggin";
+
+// The source values a 7-bit value reaches, in either direction (x and 16384 - x).
+// GRID_SLOT maps such a value to its slot in the grids of a curve, -1 for any other value
+const GRID_POSITIONS = [
+    ...new Set([
+        ...SOURCE_VALUE_7_BIT,
+        ...Array.from(SOURCE_VALUE_7_BIT, (x) => 16_384 - x)
+    ])
+];
+const GRID_SLOT = new Int16Array(16_385).fill(-1);
+for (const [slot, x] of GRID_POSITIONS.entries()) GRID_SLOT[x] = slot;
 
 /**
  * An element whose modulators can use a {@link CustomCurve}: an instrument, a preset,
@@ -20,8 +31,9 @@ export type CustomCurveUser = BasicInstrument | BasicPreset | BasicSoundBank;
  */
 export interface CustomCurvePoint {
     /**
-     * The source value, 0 to 16,384. A 14-bit source value is 0 to 16,383, and a 7-bit source value `v` is at `v << 7`.
-     * The value 16,384 is the end of the range, so a curve can be defined up to exactly 1.
+     * The source value, 0 to 16,384, after the center-max mapping of SFe 4.0, section 7.2.
+     * A 7-bit value `v` up to 64 is at `v * 128`, above it at `round(8192 + 8192 * (v - 64) / 63)`, so 127 is 16,384.
+     * A 14-bit value `w` up to 8192 is at `w`, above it at `round(8192 + 8192 * (w - 8192) / 8191)`.
      */
     x: number;
     /**
@@ -66,9 +78,9 @@ export class CustomCurve extends ModulatorCurve {
     private py = new Float64Array(0);
     // For each x >> 7 (0 to 128): the last point with x <= (x >> 7) * 128, -1 if there is none
     private readonly start = new Int32Array(129);
-    // The unipolar and bipolar outputs at every multiple of 128, so 7-bit sources are a single read
-    private readonly gridUnipolar = new Float32Array(129);
-    private readonly gridBipolar = new Float32Array(129);
+    // The unipolar and bipolar outputs at every value a 7-bit source reaches, so they are a single read
+    private readonly gridUnipolar = new Float32Array(GRID_POSITIONS.length);
+    private readonly gridBipolar = new Float32Array(GRID_POSITIONS.length);
 
     /**
      * Creates a new custom curve.
@@ -196,7 +208,7 @@ export class CustomCurve extends ModulatorCurve {
 
     /**
      * Gets the output of a source using this curve.
-     * @param raw The 14-bit source value, 0 to 16,383.
+     * @param raw The source value, 0 to 16,384.
      * @param isBipolar If the source is bipolar.
      * @param isNegative If the source direction is negative.
      * @returns The output, 0 to 1, or -1 to 1 when bipolar.
@@ -206,10 +218,9 @@ export class CustomCurve extends ModulatorCurve {
         // The reversed value is 16384 - x like the SF2 curves, so 64 stays the center
         const x = isNegative ? 16_384 - raw : raw;
         // 7-bit sources always land on the grid
-        if ((x & 127) === 0) {
-            return isBipolar
-                ? this.gridBipolar[x >> 7]
-                : this.gridUnipolar[x >> 7];
+        const slot = GRID_SLOT[x];
+        if (slot >= 0) {
+            return isBipolar ? this.gridBipolar[slot] : this.gridUnipolar[slot];
         }
         const y = this.getY(x);
         // Rounded to a float like the built-in curve tables
@@ -234,9 +245,11 @@ export class CustomCurve extends ModulatorCurve {
             const x = c * 128;
             while (i < points.length - 1 && points[i + 1].x <= x) i++;
             this.start[c] = i;
+        }
+        for (const [slot, x] of GRID_POSITIONS.entries()) {
             const y = this.getY(x);
-            this.gridUnipolar[c] = y / 16_384;
-            this.gridBipolar[c] = (y - 8192) / 8192;
+            this.gridUnipolar[slot] = y / 16_384;
+            this.gridBipolar[slot] = (y - 8192) / 8192;
         }
     }
 }

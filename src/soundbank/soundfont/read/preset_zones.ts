@@ -3,6 +3,7 @@ import { Modulator } from "../../basic_soundbank/modulator";
 import type { BasicInstrument } from "../../basic_soundbank/basic_instrument";
 import type { SoundFontPreset } from "./presets";
 import { GeneratorTypes } from "../../basic_soundbank/generator_types";
+import { knownGenerators } from "./generators";
 
 /**
  * Preset_zones.ts
@@ -28,14 +29,16 @@ export function applyPresetZones(
         for (let i = 0; i < preset.zonesCount; i++) {
             const gensStart = genStartIndexes[genIndex++];
             const gensEnd = genStartIndexes[genIndex];
-            const gens = presetGens.slice(gensStart, gensEnd);
+            const readGens = presetGens.slice(gensStart, gensEnd);
+            // Unknown generators are ignored
+            const gens = knownGenerators(readGens);
             const modsStart = modStartIndexes[modIndex++];
             const modsEnd = modStartIndexes[modIndex];
             const mods = presetMods.slice(modsStart, modsEnd);
             // Check for global zone
             if (gens.some((g) => g.type === GeneratorTypes.instrument)) {
                 // Regular zone
-                preset.createSoundFontZone(mods, gens, instruments);
+                preset.createSoundFontZone(mods, readGens, instruments);
             } else if (i === 0) {
                 // Global zone, only the first zone may be global
                 preset.globalZone.addGenerators(...gens);

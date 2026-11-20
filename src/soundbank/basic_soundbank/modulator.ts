@@ -19,7 +19,7 @@ import type { IndexedByteArray } from "../../utils/indexed_array";
 import { ModulatorSource } from "./modulator_source";
 import type { SoundFontWriteIndexes } from "../soundfont/write/types";
 import { CustomCurve, type CustomCurveUser } from "./custom_curve";
-import type { ModulatorCurve } from "./modulator_curve";
+import { type ModulatorCurve, SOURCE_VALUE_7_BIT } from "./modulator_curve";
 
 /**
  * Modulators.ts
@@ -63,16 +63,16 @@ export const DEFAULT_RESONANT_MOD_SOURCE = getModSourceEnum(
 ); // Linear forwards bipolar cc 71
 
 /**
- * The amount source of the CC 71 resonance compensator: CC 71 as a switch, so only the upper half counts.
+ * The amount source of the default CC 71 modulator, a switch on CC 71, so only values above 64 raise the resonance.
  * @internal
  */
-export const RESONANT_COMPENSATOR_AMOUNT_SOURCE = getModSourceEnum(
+export const DEFAULT_RESONANT_MOD_AMOUNT_SOURCE = getModSourceEnum(
     ModulatorCurveTypes.switch,
     false,
     false,
     true,
     MIDIControllers.filterResonance
-);
+); // Switch unipolar positive cc 71
 
 /**
  * This class represents a single modulator (map from a source to a given synthesis parameter).
@@ -185,6 +185,22 @@ export class Modulator {
             mod1.destination === mod2.destination &&
             mod1.transformType === mod2.transformType &&
             (!checkAmount || mod1.transformAmount === mod2.transformAmount)
+        );
+    }
+
+    /**
+     * Of identical modulators in one list, only the last one applies and the earlier ones are ignored
+     * (SF2 section 7.4, SFe 4.0, sections 7.3 and 7.4). Identity is the one of {@link isIdentical}.
+     * @param list The modulators of one zone or of the default list.
+     * @returns The list without the superseded modulators, in their original order.
+     * @internal
+     */
+    public static getLatestOnly(list: readonly Modulator[]) {
+        return list.filter(
+            (m, i) =>
+                !list.some(
+                    (later, j) => j > i && Modulator.isIdentical(m, later)
+                )
         );
     }
 
@@ -483,9 +499,10 @@ const defaultSoundFont2Modulators = [
     )
 ];
 
+// The points are (CC value, y), each CC value at its source value (SFe 4.0, section 7.3)
 const getCurve = (name: string, points: [number, number][]) =>
     new CustomCurve(
-        points.map(([cc, y]) => ({ x: cc << 7, y })),
+        points.map(([cc, y]) => ({ x: SOURCE_VALUE_7_BIT[cc], y })),
         name
     );
 
@@ -578,21 +595,14 @@ const defaultSpessaSynthModulators = [
         0
     ),
 
-    // Cc 71 (filter Q) to filter Q (default resonant modulator)
+    // Cc 71 (filter Q) to the resonance offset (default resonant modulator).
+    // FilterQOffset changes the Q without the gain reduction, so the part keeps its level, as on GS and XG.
+    // The switch keeps values below 64 from lowering the resonance (SFe 4.0, section 7.3)
     new DecodedModulator(
         DEFAULT_RESONANT_MOD_SOURCE,
-        0x0, // No controller
-        GeneratorTypes.initialFilterQ,
+        DEFAULT_RESONANT_MOD_AMOUNT_SOURCE,
+        GeneratorTypes.filterQOffset,
         250,
-        0
-    ),
-    // Cc 71 to gain: cancels the filter's gain reduction for the resonance cc 71 adds, as GS and XG don't get quieter
-    // Half of the amount above, only above 64 (where the resonance goes up)
-    new DecodedModulator(
-        DEFAULT_RESONANT_MOD_SOURCE,
-        RESONANT_COMPENSATOR_AMOUNT_SOURCE,
-        GeneratorTypes.gain,
-        125,
         0
     ),
     // Cc 67 (soft pedal) to filter fc

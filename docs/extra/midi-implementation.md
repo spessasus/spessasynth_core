@@ -82,7 +82,7 @@ Legend for the "Type" column:
 | 10                   | Pan                                 | SF2      | Controls the channel's stereo pan.                                                                                                                                                                                 |
 | 11                   | Expression                          | SF2      | Changes the channel's volume, similarly to Main Volume, but independent of it.                                                                                                                                     |
 | 32                   | Bank Select LSB                     | Engine   | Changes the bank number that is used in Program Change. More info: {@link MIDIPatch}                                                                                                                               |
-| 33 - 63 excluding 38 | Controller LSB values               | Engine   | Extends the precision of the corresponding controllers from 7-bit to 14-bit.                                                                                                                                       |
+| 33 - 63 excluding 38 | Controller LSB values               | Engine   | Independent 7-bit controllers. They do not change CC 1 - 31 and CC 1 - 31 do not change them. Modulators can use them as sources.                                                                                  |
 | 38                   | Data Entry LSB                      | Engine   | Sets the selected RPN or NRPN to the given value. Lower 7 bits. [More info](#parameter-numbers)                                                                                                                    |
 | 64                   | Sustain Pedal                       | Engine   | Holds the Note Off messages until the pedal is off, then stops them all at once.                                                                                                                                   |
 | 65                   | Portamento On/Off                   | Engine   | Controls if the portamento is enabled or not. [More info](#portamento-implementation)                                                                                                                              |
@@ -104,7 +104,7 @@ Legend for the "Type" column:
 | 121                  | Reset All Controllers               | Engine   | Resets controllers to their default values according to the [RP-15 recommended practice.](https://amei.or.jp/midistandardcommittee/Recommended_Practice/e/rp15.pdf)                                                |
 | 123                  | All Notes Off                       | Engine   | Stops all notes, respecting their release time.                                                                                                                                                                    |
 | 124 or 125           | Omni mode On/Off                    | Engine   | Stops all notes, respecting their release time.                                                                                                                                                                    |
-| 126 or 127           | Poly/Mono Mode On/Off               | Engine   | Setting the corresponding controller to any value switches the Poly mode on or off, immediately terminating all active voices on the channel. [More info](#polymono-implementation)                                |
+| 126 or 127           | Poly/Mono Mode On/Off               | Engine   | Setting the corresponding controller to any value acts as All Notes Off, then switches the Poly mode on or off. [More info](#polymono-implementation)                                                              |
 
 [^1]: In XG mode it controls the variation send level instead (only when variation connection is set to "system").
 
@@ -284,7 +284,7 @@ Yamaha XG.
 Bank LSB and MSB are processed.
 Bank MSB 120 or 127 turns a channel into a drum channel
 (126 SFX drums only match by direct preset match, except on channel 10 which cannot become melodic:
-there a bank MSB of 126 without a direct match falls back to drums, and any bank MSB other than 126 and 127 is ignored).
+there a bank MSB of 126 without a direct match falls back to drums, and any bank MSB other than 120, 126 and 127 is ignored).
 Drums will be selected according to the [XG Validity Test](#xg-validity-test)
 
 #### XG Validity Test
@@ -444,7 +444,6 @@ Part (channel) parameters set a specific parameter for a specific channel.
 | SCALE TUNING                      | Treated like MTS octave tuning, tunes an octave in cents. Tuning is repeated for all octaves.                                                         |
 | \* CONTROL                        | See [Patch Part Parameters (Controllers)](#patch-part-parameters-controllers) for more details.                                                       |
 | TONE MAP NUMBER                   | Aliased to MIDI CC#32 (Bank Select LSB).                                                                                                              |
-| TONE MAP-0 NUMBER                 | Aliased to MIDI CC#32 (Bank Select LSB).                                                                                                              |
 | EQ ON/OFF                         | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.eqEnabled `eqEnabled`}.                                                                   |
 | PART EFX ASSIGN                   | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.efxAssign `efxAssign`}.                                                                   |
 
@@ -798,6 +797,8 @@ also when that note is already in its release, like the Sound Canvas.
 Releasing a note while another one is held will retrigger the highest currently held note,
 with the velocity of the last Note On.
 The tracked note is forgotten on a switch between poly and mono mode, a forced stop and a reset.
+A drum channel ignores Mono Mode and always plays as in Poly Mode, as the SC-88Pro and SC-8850 manuals describe.
+The `polyMode` parameter still reports the mode that was set.
 
 ### Portamento Implementation
 

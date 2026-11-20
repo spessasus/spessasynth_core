@@ -336,7 +336,9 @@ export interface SoundBankWriteOptions {
  */
 export interface SoundFont2WriteOptions extends SoundBankWriteOptions {
     /**
-     * If the DMOD chunk should be written. Recommended.
+     * If the DMOD chunk should be written. SFe 4.0, section 9.1 requires it when the list differs from the defaults,
+     * so turning it off writes a file that does not follow SFe 4.0, section 9.1 and loses the bank's default modulators.
+     *
      * > **Note**
      * >
      * > The chunk will only be written if the modulators differ from the SpessaSynth defaults.
@@ -356,6 +358,7 @@ export interface SoundFont2WriteOptions extends SoundBankWriteOptions {
      * > **Note**
      * >
      * > The chunk will only be written if needed.
+     * > Without it, names are cut to 20 characters, and a bank whose indices don't fit 16 bits can't be written.
      */
     writeExtendedLimits: boolean;
 }
@@ -368,11 +371,11 @@ export interface SoundFont2WriteOptions extends SoundBankWriteOptions {
  */
 export interface SF2Losses {
     /**
-     * The generators above 60 (SFe only) in the zones.
+     * The generators above 60 (SFe only, dropped) and the `sampleModes` values outside 0 to 4 (written as 0) in the zones.
      */
     generators: number;
     /**
-     * The zones with an alternating loop (`sampleModes` 4). They fall back to the global zone's loop mode or to no loop.
+     * The zones with an alternating loop (`sampleModes` 4). They are written as a forward loop (1).
      */
     alternatingLoops: number;
     /**
@@ -392,7 +395,7 @@ export interface SF2Losses {
     customCurves: number;
     /**
      * The modulators the SF2 reader would add that the bank does not have:
-     * removed envelope time, variation send or resonance compensation modulators come back on load.
+     * removed envelope time or variation send modulators come back on load.
      */
     addedModulators: number;
     /**

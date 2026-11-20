@@ -1,6 +1,7 @@
 import { portamentoTimeToSeconds } from "./portamento_time";
 import { GENERATOR_OVERRIDE_NO_CHANGE_VALUE } from "../synth_constants";
 import type { MIDIChannel } from "./midi_channel";
+import type { SampleLoopingMode } from "../voice/voice";
 import {
     GENERATORS_AMOUNT,
     GeneratorTypes
@@ -118,8 +119,8 @@ export function noteOn(
 
     this.playingNotes[midiNote] = true;
 
-    // Mono mode
-    if (!this._midiParameters.polyMode) {
+    // Mono mode. A drum part ignores it, like on the Sound Canvas (SC-88Pro and SC-8850 manuals)
+    if (!this._midiParameters.polyMode && !this._drumChannel) {
         if (this.lastMonoNote >= 0 && this.lastMonoNote !== midiNote)
             this.killNote(this.lastMonoNote);
         this.lastMonoNote = midiNote;
@@ -178,9 +179,9 @@ export function noteOn(
 
     const noteID = emit ? this.noteOnID[midiNote]++ : this.noteOnID[midiNote];
 
-    // Apply exclusive class before adding the voices, so the voices of this note on do not end each other
-    // In mono mode all voices have been killed already
-    if (this._midiParameters.polyMode && this._voiceCount > 0) {
+    // Apply exclusive class before adding the voices, so the voices of this note on do not end each other.
+    // Mono mode chokes too, voices held by the pedal can survive a switch to mono
+    if (this._voiceCount > 0) {
         for (const cached of voices) {
             const exclusiveClass = exclusiveOverride || cached.exclusiveClass;
             if (exclusiveClass === 0) continue;
@@ -222,7 +223,6 @@ export function noteOn(
         voice.generators.set(cached.generators);
         voice.exclusiveClass = exclusiveOverride || cached.exclusiveClass;
         voice.rootKey = cached.rootKey;
-        voice.loopingMode = cached.loopingMode;
         voice.wavetable.sampleData = cached.sampleData;
         voice.wavetable.playbackStep = cached.playbackStep;
 
@@ -232,7 +232,7 @@ export function noteOn(
             SpessaLog.warn(
                 `${voice.modulators.length} modulators! Increasing modulatorValues table.`
             );
-            voice.modulatorValues = new Int16Array(voice.modulators.length);
+            voice.modulatorValues = new Float64Array(voice.modulators.length);
         }
 
         // Apply generator override
@@ -248,6 +248,10 @@ export function noteOn(
 
         // Compute all modulators
         this.computeModulators(voice);
+        // SampleModes is read once, here. Its modulators are ignored (SFe 4.0, section 7.1), the generator overrides apply
+        voice.loopingMode = voice.modulatedGenerators[
+            GeneratorTypes.sampleModes
+        ] as SampleLoopingMode;
         const modulated = voice.modulatedGenerators;
 
         // Delayed voice start (SFe): everything below runs from the delayed start time
@@ -286,26 +290,22 @@ export function noteOn(
             (modulated[GeneratorTypes.modLfoStartPhase] % 360) / 360;
         if (voice.modLfoPhase >= 1) voice.modLfoPhase -= 1;
 
-        // Modulate sample offsets (these are not real time)
+        // Modulate sample offsets (these are not real time).
+        // The modulated values are truncated toward zero (SFe 4.0, section 7.1)
+        const g = voice.modulatedGenerators;
         const cursorStartOffset =
-            voice.modulatedGenerators[GeneratorTypes.startAddrsOffset] +
-            voice.modulatedGenerators[GeneratorTypes.startAddrsCoarseOffset] *
-                32_768;
+            Math.trunc(g[GeneratorTypes.startAddrsOffset]) +
+            Math.trunc(g[GeneratorTypes.startAddrsCoarseOffset]) * 32_768;
         // This will be negative
         const endOffset =
-            voice.modulatedGenerators[GeneratorTypes.endAddrOffset] +
-            voice.modulatedGenerators[GeneratorTypes.endAddrsCoarseOffset] *
-                32_768;
+            Math.trunc(g[GeneratorTypes.endAddrOffset]) +
+            Math.trunc(g[GeneratorTypes.endAddrsCoarseOffset]) * 32_768;
         const loopStartOffset =
-            voice.modulatedGenerators[GeneratorTypes.startloopAddrsOffset] +
-            voice.modulatedGenerators[
-                GeneratorTypes.startloopAddrsCoarseOffset
-            ] *
-                32_768;
+            Math.trunc(g[GeneratorTypes.startloopAddrsOffset]) +
+            Math.trunc(g[GeneratorTypes.startloopAddrsCoarseOffset]) * 32_768;
         const loopEndOffset =
-            voice.modulatedGenerators[GeneratorTypes.endloopAddrsOffset] +
-            voice.modulatedGenerators[GeneratorTypes.endloopAddrsCoarseOffset] *
-                32_768;
+            Math.trunc(g[GeneratorTypes.endloopAddrsOffset]) +
+            Math.trunc(g[GeneratorTypes.endloopAddrsCoarseOffset]) * 32_768;
 
         // Clamp the sample offsets
         // End is exclusive, not inclusive.

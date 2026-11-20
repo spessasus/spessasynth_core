@@ -114,10 +114,13 @@ for (const [loopStart, loopEnd] of [
 }
 
 const { alternating } = banks(700, 1900);
-// Mode 4 is SFe only: SFe keeps it, SF2 drops the generator
+// Mode 4 is SFe only: SFe keeps it, SF2 writes it as a forward loop (SFe 4.0, section 9.1)
 const zoneMode = (b: BasicSoundBank) =>
     b.instruments[0].zones[0].getGenerator(GeneratorTypes.sampleModes, 0);
 check(zoneMode(sfeRoundTrip(alternating)) === 4, "SFe keeps sampleModes 4");
-check(zoneMode(sf2RoundTrip(alternating)) === 0, "SF2 drops sampleModes 4");
+check(
+    zoneMode(sf2RoundTrip(alternating)) === 1,
+    "SF2 writes sampleModes 4 as a forward loop"
+);
 
 finish("alternating_loop_test");

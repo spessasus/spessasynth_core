@@ -51,6 +51,21 @@ interface ChannelStatus {
 }
 
 /**
+ * Stores a controller value in the saved 14-bit table, like playback does.
+ * The LSB controllers are independent, so every controller is stored alone (SFe 4.0, section 11.3).
+ * @param controllers The saved controller table.
+ * @param controller The controller number.
+ * @param value The 7-bit value.
+ */
+function storeController(
+    controllers: Int16Array,
+    controller: MIDIController,
+    value: number
+) {
+    controllers[controller] = value << 7;
+}
+
+/**
  * Plays the MIDI file to a specific time or ticks.
  * @param time in seconds.
  * @param ticks optional MIDI ticks, when given is used instead of time.
@@ -101,8 +116,13 @@ export function setTimeToInternal(
         // Reset pitch wheel
         ch.pitchWheel = 8192;
         ch.param.resetAllControllers();
+        // Like playback, the LSB controllers in the list (CC 33 and 43) are reset on their own
         for (const resetCC of RP_15_RESET_CC_NUMS)
-            ch.controllers[resetCC] = DEFAULT_MIDI_CONTROLLERS[resetCC];
+            storeController(
+                ch.controllers,
+                resetCC,
+                DEFAULT_MIDI_CONTROLLERS[resetCC] >> 7
+            );
         // Forward it, so the synth's parameter selection matches the following data entries
         this.sendMIDICC(chan, MIDIControllers.resetAllControllers, 0);
     };
@@ -204,8 +224,11 @@ export function setTimeToInternal(
                             if (nonSkippableCCs.has(controller))
                                 this.sendMIDICC(channel, controller, value);
                             else
-                                channels[channel].controllers[controller] =
-                                    value << 7;
+                                storeController(
+                                    channels[channel].controllers,
+                                    controller,
+                                    value
+                                );
                         }
                     }
                 if (shouldProcess) this.processEvent(event, trackIndex);
@@ -230,7 +253,7 @@ export function setTimeToInternal(
                         }
                         if (nonSkippableCCs.has(controller))
                             this.sendMIDICC(channel, controller, value);
-                        else ch.controllers[controller] = value << 7;
+                        else storeController(ch.controllers, controller, value);
                         break;
                     }
 
@@ -271,8 +294,11 @@ export function setTimeToInternal(
                                         analyzed.value
                                     );
                                 else
-                                    ch.controllers[analyzed.controller] =
-                                        analyzed.value << 7;
+                                    storeController(
+                                        ch.controllers,
+                                        analyzed.controller,
+                                        analyzed.value
+                                    );
                             }
                         }
                         break;

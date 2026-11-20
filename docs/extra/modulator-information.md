@@ -16,7 +16,7 @@ If it is set, the index is the MIDI controller number.
 
 | Index | Name                   | Description                                                                                                                                                                                                                                                                                                                              |
 | ----- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0     | No controller = 1      | Always returns 1.                                                                                                                                                                                                                                                                                                                        |
+| 0     | No controller          | The end of the range (x = 16384): 1 in the positive direction, 0 (unipolar) or -1 (bipolar) in the negative one. A custom curve gives its value at 16384, or at 0 in the negative direction.                                                                                                                                             |
 | 2     | Note on velocity       | The MIDI velocity the note was pressed with.                                                                                                                                                                                                                                                                                             |
 | 3     | Note on key number     | The MIDI key number received.                                                                                                                                                                                                                                                                                                            |
 | 10    | Poly pressure          | The MIDI poly pressure message received for this note number.                                                                                                                                                                                                                                                                            |
@@ -58,8 +58,7 @@ curve, and the SF2 writer never does.
 - SF2 and SF3 files are converted when they are loaded, as
   [section 9.2](https://spessasus.github.io/spessasynth_sfe/spec.html#92-conversion-from-soundfont-2) describes: the initial attenuation generators are
   multiplied by 0.4 and rounded, the reverb and chorus send amounts are multiplied by 5, the default modulators SF2
-  can't store are added, every CC 71 to resonance modulator gets its
-  CC 71 to gain compensator, and a CC 1 to `modLfoToPitch` or `vibLfoToPitch` modulator with no amount source (amount
+  can't store are added, and a CC 1 to `modLfoToPitch` or `vibLfoToPitch` modulator with no amount source (amount
   from -1023 to 1023) gets the Modulation Depth Range as its amount source and 32 times its amount.
 - The mod wheel vibrato follows RPN 5 (and the GS MOD LFO1 PITCH DEPTH and XG MW LFO PMOD DEPTH messages, which set it)
   only through the Modulation Depth Range source. The engine does not scale any other modulator by it.
@@ -87,7 +86,17 @@ as SF2 and loading it again can change values too, as the end of the list says.
   of its amount, rounded. This applies to zones and to the default modulators (`DMOD`), so a full send of `1000` is
   `200` in both. A file amount above `200` reads as a full send, and so it is written back as `200`. Other SF2
   synthesizers then play the default send where the file asked for more.
-- The CC 71 to gain compensators and the added default modulators are left out, and added again on the next load.
+- Modulators that are ignored (SFe section 7.4) are left out, in the zones and in `DMOD`. They never applied, so
+  the loss report does not count them.
+- The added default modulators are left out, and added again on the next load. The default CC 71 to
+  `filterQOffset` modulator is left out too and does not come back, as SF2 can't store `filterQOffset`.
+- A zone's CC 71 to `initialFilterQ` modulator stays as it is, so it lowers the level with the resonance like in other
+  SF2 synthesizers. In a file without `DMOD`, an instrument zone (global zone
+  included) with such a modulator also gets a copy of the default CC 71 to `filterQOffset` modulator with the amount 0. It replaces the
+  default one in that zone, so the resonance is not doubled. The SF2 writer leaves it out and the next load adds it
+  again. A preset zone gets nothing, so its CC 71 to `initialFilterQ` adds to the default one.
+- `sampleModes` 4 (alternating loop) is written as 1 (forward loop), and any other value outside 0 to 3 as 0, so it
+  comes back changed. The loss report counts these.
 - A modulator with the Modulation Depth Range as its source is dropped. The mod wheel vibrato that has it as its amount
   source and a destination of `modLfoToPitch` or `vibLfoToPitch` (the default one has the amount `1600`) is written
   without the amount source and with its amount divided by 32, rounded to the nearest whole number and limited to -1023
@@ -113,7 +122,6 @@ An SF2 file can't store custom curves, which has two consequences:
 
 ### DLS files
 
-- DLS files get the CC 71 to gain compensators when they are loaded, like SF2 files. The DLS writer leaves them out.
 - The send amounts of DLS files are not converted, since their default is already `1000`.
 - An SF2 bank written as DLS stores the converted amounts. A file amount of `350` is a full send here, which is the
   DLS default, so it is written as a full send and no longer as `350`.

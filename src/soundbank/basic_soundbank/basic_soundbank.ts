@@ -107,6 +107,10 @@ export class BasicSoundBank {
      */
     protected bankType: "sf2" | "dls" | "sfe";
     private storedDefaultModulators = new Array<Modulator>();
+    /**
+     * The default modulators without the superseded identical ones, computed on first use.
+     */
+    private latestDefaultModulators?: readonly Modulator[];
 
     /**
      * Creates an empty sound bank instance.
@@ -175,6 +179,19 @@ export class BasicSoundBank {
         for (const m of this.storedDefaultModulators) m.unlinkCurves();
         this.storedDefaultModulators = [...modulators];
         for (const m of this.storedDefaultModulators) m.linkCurves(this);
+        this.latestDefaultModulators = undefined;
+    }
+
+    /**
+     * The default modulators that apply: of identical ones, only the last (SFe 4.0, sections 7.3 and 7.4).
+     * Cached, as every voice lookup needs it. The cache is cleared when the list is replaced or the bank is flushed.
+     * @internal
+     */
+    public get effectiveDefaultModulators() {
+        this.latestDefaultModulators ??= Modulator.getLatestOnly(
+            this.storedDefaultModulators
+        );
+        return this.latestDefaultModulators;
     }
 
     private _isXGBank = false;
@@ -308,6 +325,14 @@ export class BasicSoundBank {
         font.soundBankInfo.name = "SpessaSynth Sample Sound Bank";
         font.flush();
         return font.writeSF2();
+    }
+
+    /**
+     * Clears the cached {@link effectiveDefaultModulators}, after a default modulator was edited in place.
+     * @internal
+     */
+    public clearDefaultModulatorCache() {
+        this.latestDefaultModulators = undefined;
     }
 
     /**
@@ -545,8 +570,8 @@ export class BasicSoundBank {
      * Counts what the sound bank would lose if written as a plain SF2 file and read back:
      * the SFe generators, modulators, custom curves, alternating loops and bank LSBs.
      * What the SF2 reader recreates on its own is not counted, so an unchanged SF2 bank has no losses.
-     * The one exception is an SF2 file that already has a `sampleModes` of 4: it plays as an alternating loop,
-     * and it is counted since {@link writeSF2} leaves it out.
+     * The one exception is an SF2 file that already has a `sampleModes` outside 0 to 3: 4 plays as an alternating loop
+     * and is written as a forward loop, any other value is written as 0, and both are counted.
      * @returns The losses. All zeros means {@link writeSF2} keeps everything.
      */
     public getSF2Losses() {
@@ -669,6 +694,8 @@ export class BasicSoundBank {
      * only the internal values (like {@link isXGBank}) are then recomputed.
      */
     public flush(sort = true) {
+        // A modulator of the list may have been edited in place
+        this.latestDefaultModulators = undefined;
         if (sort) {
             this.presets.sort(MIDIPatchTools.compare.bind(MIDIPatchTools));
         }

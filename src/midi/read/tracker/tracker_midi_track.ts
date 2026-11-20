@@ -12,36 +12,55 @@ import {
     MIDIMessageTypes
 } from "../../enums";
 
+/*
+ * Controller values above 64 do not map linearly to the modulator sources (SFe 4.0, section 7.2, center-max).
+ * So a value that must be exact is sent on two controllers, each 64 at most, with the same modulators.
+ * Their sum is the value. The second controller of each pair is the _EXTRA_ one.
+ */
 /**
- * The controller that sets the sample offset in units of 256 sample points (low 7 bits).
+ * The controller pair that sets the sample offset in units of 256 sample points (low 7 bits).
  */
 export const OFFSET_FINE_CC: MIDIController = MIDIControllers.undefinedCC21;
+export const OFFSET_FINE_EXTRA_CC: MIDIController =
+    MIDIControllers.undefinedCC24;
 /**
- * The controller that sets the sample offset in units of 32,768 sample points (high 7 bits).
+ * The controller pair that sets the sample offset in units of 32,768 sample points (high 7 bits).
  */
 export const OFFSET_COARSE_CC: MIDIController = MIDIControllers.undefinedCC20;
+export const OFFSET_COARSE_EXTRA_CC: MIDIController =
+    MIDIControllers.undefinedCC25;
 /**
- * The LSB of {@link OFFSET_FINE_CC}, sets the sample offset in units of 2 sample points.
+ * The controller pair that sets the sample offset in units of 2 sample points.
  */
 export const OFFSET_FINEST_CC: MIDIController =
     MIDIControllers.undefinedCC21LSB;
+export const OFFSET_FINEST_EXTRA_CC: MIDIController =
+    MIDIControllers.undefinedCC26;
 /**
- * The 14-bit controller (with its LSB) that lowers the filter cutoff from fully open, see {@link FILTER_CUTOFF_RANGE}.
+ * The 14-bit controller pair that lowers the filter cutoff from fully open, see {@link FILTER_CUTOFF_RANGE}.
+ * The LSB is the controller 32 above {@link FILTER_CUTOFF_CC}, it is sent alone.
  */
 export const FILTER_CUTOFF_CC: MIDIController = MIDIControllers.undefinedCC22;
+export const FILTER_CUTOFF_EXTRA_CC: MIDIController =
+    MIDIControllers.undefinedCC27;
 /**
- * The 14-bit controller (with its LSB) that sets the filter resonance, see {@link FILTER_RESONANCE_RANGE}.
+ * The 14-bit controller pair that sets the filter resonance, see {@link FILTER_RESONANCE_RANGE}.
+ * The LSB is the controller 32 above {@link FILTER_RESONANCE_CC}, it is sent alone.
  */
 export const FILTER_RESONANCE_CC: MIDIController =
     MIDIControllers.undefinedCC23;
+export const FILTER_RESONANCE_EXTRA_CC: MIDIController =
+    MIDIControllers.undefinedCC28;
 /**
- * The full scale of {@link FILTER_CUTOFF_CC} in cents, from 13,500 (open) down to 4,500.
+ * The full scale of {@link FILTER_CUTOFF_CC} in cents, from 13,500 (open) down to 4,540.
+ * A multiple of 128, so the LSB modulator gets a whole amount. The lowest IT cutoff (120 Hz) is about 4,650.
  */
-export const FILTER_CUTOFF_RANGE = 9000;
+export const FILTER_CUTOFF_RANGE = 8960;
 /**
  * The full scale of {@link FILTER_RESONANCE_CC} in centibels.
+ * A multiple of 256, so the LSB modulators of the resonance and of its half (the level compensation) are whole.
  */
-export const FILTER_RESONANCE_RANGE = 320;
+export const FILTER_RESONANCE_RANGE = 512;
 
 /**
  * Pitch changes smaller than this (in semitones) are floating point noise and are not written.
@@ -145,19 +164,48 @@ export class TrackerMIDITrack {
     }
 
     /**
-     * Changes a 14-bit controller (0-31) and its LSB if the value differs from the last one.
+     * Changes a controller pair (see {@link OFFSET_FINE_EXTRA_CC}): the first gets up to 64 and the second the rest.
      * @param ticks The MIDI tick time.
-     * @param controller The controller number.
+     * @param controller The first controller.
+     * @param extra The second controller.
+     * @param value The new value (0-127).
+     * @param skipDefault If a zero value is not written while the controller is still at its reset value.
+     */
+    public controllerChangePair(
+        ticks: number,
+        controller: MIDIController,
+        extra: MIDIController,
+        value: number,
+        skipDefault = false
+    ) {
+        const first = Math.min(64, value);
+        this.controllerChange(ticks, controller, first, skipDefault);
+        this.controllerChange(ticks, extra, value - first, skipDefault);
+    }
+
+    /**
+     * Changes a 14-bit controller pair (0-31) and its LSB if the value differs from the last one.
+     * The 7 high bits go to the pair, the LSB goes alone to the controller 32 above.
+     * @param ticks The MIDI tick time.
+     * @param controller The first controller of the pair (0-31).
+     * @param extra The second controller of the pair.
      * @param value The new value (0-16,383).
      * @param skipDefault If a zero value is not written while the controller is still at its reset value.
      */
     public controllerChange14(
         ticks: number,
         controller: MIDIController,
+        extra: MIDIController,
         value: number,
         skipDefault = false
     ) {
-        this.controllerChange(ticks, controller, value >> 7, skipDefault);
+        this.controllerChangePair(
+            ticks,
+            controller,
+            extra,
+            value >> 7,
+            skipDefault
+        );
         this.controllerChange(
             ticks,
             (controller + 32) as MIDIController,
@@ -200,11 +248,13 @@ export class TrackerMIDITrack {
         // Use the smallest range that fits every pitch offset for the best resolution
         const range = Math.min(127, Math.max(1, Math.ceil(this.maxPitch)));
         for (let i = 0; i < this.pitchEvents.length; i++) {
+            // Above the center 8191 steps reach the end (SFe 4.0, section 7.2, center-max), below it 8192 do
+            const offset = this.pitchValues[i] / range;
             const value = Math.min(
                 16_383,
                 Math.max(
                     0,
-                    Math.round(8192 + (this.pitchValues[i] / range) * 8192)
+                    Math.round(8192 + offset * (offset > 0 ? 8191 : 8192))
                 )
             );
             this.pitchEvents[i].data[0] = value & 0x7f;

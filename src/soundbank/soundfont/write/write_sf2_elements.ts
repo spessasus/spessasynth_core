@@ -1,6 +1,7 @@
 import type { BasicSoundBank } from "../../basic_soundbank/basic_soundbank";
 import { IndexedByteArray } from "../../../utils/indexed_array";
 import { GEN_BYTE_SIZE, Generator } from "../../basic_soundbank/generator";
+import { GeneratorTypes } from "../../basic_soundbank/generator_types";
 import {
     DecodedModulator,
     MOD_BYTE_SIZE,
@@ -41,6 +42,7 @@ export function writeSF2Elements(
     bag: ExtendedSF2Chunks;
     hdr: ExtendedSF2Chunks;
     writeXdta: boolean;
+    indexOverflow: boolean;
 } {
     // Note:
     // https://github.com/spessasus/soundfont-proposals/blob/main/extended_limits.md
@@ -69,10 +71,22 @@ export function writeSF2Elements(
         if (format === "sfe") {
             mods = mods.filter((m) => !m.isMissingCurve);
         } else {
+            // SF2 has no MSB generators, a zone can't refer beyond the first 65536 (SFe 4.0, section 5.5)
+            if (
+                gens.some(
+                    (g) =>
+                        g.type === GeneratorTypes.instrumentMSB ||
+                        g.type === GeneratorTypes.sampleIDMSB
+                )
+            ) {
+                throw new Error(
+                    "A zone refers to an instrument or a sample above index 65535, which SF2 can't store. Write the bank as SFe."
+                );
+            }
             gens = gens
-                .filter((g) => sf2KeepsGenerator(g.type, g.value))
+                .filter((g) => sf2KeepsGenerator(g.type))
                 .map((g) => toSF2Generator(g));
-            mods = toSF2Modulators(mods);
+            mods = toSF2Modulators(mods, isPreset);
         }
         currentGenIndex += gens.length;
         generators.push(...gens);
@@ -166,10 +180,12 @@ export function writeSF2Elements(
         writeWord(hdrData.xdta, zoneIndex >> 16);
     }
 
+    // An index above 16 bits needs xdta for its high bits
+    const indexOverflow =
+        Math.max(currentGenIndex, currentModIndex, zoneIndex) > 0xff_ff;
     return {
-        writeXdta:
-            writeExtendedMods ||
-            Math.max(currentGenIndex, currentModIndex, zoneIndex) > 0xff_ff,
+        writeXdta: writeExtendedMods || indexOverflow,
+        indexOverflow,
         gen: {
             pdta: RIFFChunk.write(genHeader, genData, rf64),
             // Same as pmod, this chunk includes only the terminal generator record to allow reuse of the pdta parser.

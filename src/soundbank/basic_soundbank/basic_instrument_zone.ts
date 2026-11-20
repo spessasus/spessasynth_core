@@ -20,6 +20,7 @@ export class BasicInstrumentZone extends BasicLinkedZone<
     public useCount: number;
 
     protected readonly childGenerator = GeneratorTypes.sampleID;
+    protected readonly childMSBGenerator = GeneratorTypes.sampleIDMSB;
 
     /**
      * Creates a new instrument zone.

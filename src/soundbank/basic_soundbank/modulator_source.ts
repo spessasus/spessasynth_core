@@ -8,7 +8,11 @@ import {
     bitMaskToBool,
     toNumericBool
 } from "../../utils/byte_functions/bit_mask";
-import { ModulatorCurve } from "./modulator_curve";
+import {
+    ModulatorCurve,
+    SOURCE_VALUE_14_BIT,
+    SOURCE_VALUE_7_BIT
+} from "./modulator_curve";
 import { CustomCurve, type CustomCurveUser } from "./custom_curve";
 import type { Voice } from "../../synthesizer/audio_engine/voice/voice";
 import { type MIDIController, MIDIControllers } from "../../midi/enums";
@@ -223,77 +227,89 @@ export class ModulatorSource {
      * @internal
      */
     public getValue(channel: SF2Channel, pitchWheel: number, voice: Voice) {
-        // The raw 14-bit value (0 - 16,383)
-        let rawValue;
+        // The source value x, 0 to 16,384 (SFe 4.0, section 7.2): 7-bit and 14-bit values are mapped center-max,
+        // So the center and the maximum are exact
+        let x;
         if (this.isCC) {
-            rawValue = channel.midiControllers[this.index];
+            // A controller is its 7-bit value alone, the LSB controllers are sources of their own
+            x = SOURCE_VALUE_7_BIT[channel.midiControllers[this.index] >> 7];
         } else {
             switch (this.index) {
-                default:
-                case ModulatorControllerSources.noController: {
-                    rawValue = 16_383; // Equals to 1
+                // No Controller is the end of the range.
+                // An unknown source makes the modulator ignored when it is read, this is only a fallback
+                default: {
+                    x = 16_384;
                     break;
                 }
 
                 case ModulatorControllerSources.noteOnVelocity: {
-                    rawValue = voice.velocity << 7;
+                    x = SOURCE_VALUE_7_BIT[voice.velocity];
                     break;
                 }
 
                 case ModulatorControllerSources.noteOnKeyNum: {
-                    rawValue = voice.targetKey << 7;
+                    x = SOURCE_VALUE_7_BIT[voice.targetKey];
                     break;
                 }
 
                 case ModulatorControllerSources.polyPressure: {
                     // Use MIDI Note here as key shift is internal
-                    rawValue = channel.polyPressures[voice.midiNote] << 7;
+                    x =
+                        SOURCE_VALUE_7_BIT[
+                            channel.polyPressures[voice.midiNote]
+                        ];
                     break;
                 }
 
                 case ModulatorControllerSources.channelPressure: {
-                    rawValue = channel.midiParameters.pressure << 7;
+                    x = SOURCE_VALUE_7_BIT[channel.midiParameters.pressure];
                     break;
                 }
 
                 case ModulatorControllerSources.pitchWheel: {
-                    rawValue = pitchWheel;
+                    x = SOURCE_VALUE_14_BIT[pitchWheel];
                     break;
                 }
 
                 case ModulatorControllerSources.pitchWheelRange: {
-                    // Pitch wheel range may be a floating point number!
-                    // Therefore, something like "0.5 << 7" won't work,
-                    // So we multiply it by 128 which is essentially the same here
-                    // But it allows for fractional pitch wheel range!
-                    // Ranges of 128 semitones and more would read past the curve tables
-                    rawValue = Math.min(
-                        16_383,
-                        Math.floor(channel.midiParameters.pitchWheelRange * 128)
-                    );
+                    // The range in 1/128 semitones, it may be fractional.
+                    // Ranges of 128 semitones and more would read past the table
+                    x =
+                        SOURCE_VALUE_14_BIT[
+                            Math.min(
+                                16_383,
+                                Math.floor(
+                                    channel.midiParameters.pitchWheelRange * 128
+                                )
+                            )
+                        ];
                     break;
                 }
 
                 case ModulatorControllerSources.modulationDepthRange: {
                     // The parameter is in cents, RPN 5 value is cents * 1.28 (100/128 cents per step)
                     // The source is full at 16 semitones, so it is 8 times that value
-                    rawValue = Math.min(
-                        16_383,
-                        Math.round(
-                            channel.midiParameters.modulationDepth * 1.28
-                        ) * 8
-                    );
+                    x =
+                        SOURCE_VALUE_14_BIT[
+                            Math.min(
+                                16_383,
+                                Math.round(
+                                    channel.midiParameters.modulationDepth *
+                                        1.28
+                                ) * 8
+                            )
+                        ];
                 }
             }
         }
 
         const curve = this.storedCurve;
         if (curve instanceof CustomCurve) {
-            return curve.getValue(rawValue, this.isBipolar, this.isNegative);
+            return curve.getValue(x, this.isBipolar, this.isNegative);
         }
         // 2-bit transform as in 0bPD
         return curve.tables[
             (this.isBipolar ? 0b10 : 0b00) | (this.isNegative ? 1 : 0)
-        ][rawValue];
+        ][x];
     }
 }

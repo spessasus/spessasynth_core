@@ -78,6 +78,23 @@ export function resetChannelInternal(this: MIDIChannel, sendCCEvents = true) {
             continue;
         }
         const resetValue = DEFAULT_MIDI_CONTROLLERS[cc];
+        // The channel mode messages (CC 120 to 127) are not replayed, that would release notes or flip the mono mode.
+        // The mode itself is reset below
+        if (
+            cc >= MIDIControllers.allSoundOff &&
+            cc <= MIDIControllers.polyModeOn
+        ) {
+            if (this._midiControllers[cc] === resetValue) continue;
+            this._midiControllers[cc] = resetValue;
+            // Still tell the host, so it does not keep showing the old value
+            if (sendCCEvents)
+                this.synthCore.callEvent("controllerChange", {
+                    channel: this.channel,
+                    controller: cc as MIDIController,
+                    value: resetValue >> 7
+                });
+            continue;
+        }
         if (
             this._midiControllers[cc] !== resetValue &&
             cc !== MIDIControllers.portamentoControl &&
@@ -163,7 +180,9 @@ export function resetChannelInternal(this: MIDIChannel, sendCCEvents = true) {
 
 export const RP_15_RESET_CC_NUMS: MIDIController[] = [
     MIDIControllers.modulationWheel,
+    MIDIControllers.modulationWheelLSB,
     MIDIControllers.expression,
+    MIDIControllers.expressionLSB,
     MIDIControllers.sustainPedal,
     MIDIControllers.portamentoOnOff,
     MIDIControllers.sostenutoPedal,
@@ -216,8 +235,7 @@ export function resetRP15(this: MIDIChannel) {
             resetValue !== this._midiControllers[resetCC] &&
             !this.lockedControllers[resetCC]
         ) {
-            // Clear the LSB too, controllerChange only sets the upper 7 bits
-            this._midiControllers[resetCC] &= 0x3f_80;
+            // The LSB controllers in the list (CC 33 and 43) are independent, so they are reset on their own
             this.controllerChange(resetCC, resetValue >> 7);
         }
     }

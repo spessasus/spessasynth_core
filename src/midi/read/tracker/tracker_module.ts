@@ -14,12 +14,17 @@ import { MIDIUtils } from "../../midi_tools/midi_utils";
 import { TrackerChannel } from "./tracker_channel";
 import {
     FILTER_CUTOFF_CC,
+    FILTER_CUTOFF_EXTRA_CC,
     FILTER_CUTOFF_RANGE,
     FILTER_RESONANCE_CC,
+    FILTER_RESONANCE_EXTRA_CC,
     FILTER_RESONANCE_RANGE,
     OFFSET_COARSE_CC,
+    OFFSET_COARSE_EXTRA_CC,
     OFFSET_FINE_CC,
+    OFFSET_FINE_EXTRA_CC,
     OFFSET_FINEST_CC,
+    OFFSET_FINEST_EXTRA_CC,
     TrackerMIDITrack
 } from "./tracker_midi_track";
 import { TrackerSampleBank } from "./tracker_sound_bank";
@@ -30,6 +35,18 @@ import type {
     TrackerSample
 } from "./types";
 
+// A controller value whose modulator source value is closest to the fraction (0 to 1).
+// 64 is the center and 127 the end (SFe 4.0, section 7.2, center-max), so the upper half has 63 steps
+const toControllerValue = (fraction: number) =>
+    Math.min(
+        127,
+        Math.max(
+            0,
+            Math.round(
+                fraction <= 0.5 ? fraction * 128 : 64 + (fraction - 0.5) * 126
+            )
+        )
+    );
 /**
  * One MIDI tick is one tracker tick.
  * With 24 ticks per quarter note, the MIDI tempo in BPM equals the tracker tempo,
@@ -919,11 +936,22 @@ export abstract class TrackerModule {
             }
             output.selectPreset(ticks, preset);
             const units = Math.floor(offset / 256);
-            output.controllerChange(ticks, OFFSET_FINE_CC, units & 0x7f);
-            output.controllerChange(ticks, OFFSET_COARSE_CC, units >> 7);
-            output.controllerChange(
+            output.controllerChangePair(
+                ticks,
+                OFFSET_FINE_CC,
+                OFFSET_FINE_EXTRA_CC,
+                units & 0x7f
+            );
+            output.controllerChangePair(
+                ticks,
+                OFFSET_COARSE_CC,
+                OFFSET_COARSE_EXTRA_CC,
+                units >> 7
+            );
+            output.controllerChangePair(
                 ticks,
                 OFFSET_FINEST_CC,
+                OFFSET_FINEST_EXTRA_CC,
                 Math.floor((offset & 0xff) / 2),
                 true
             );
@@ -1028,12 +1056,12 @@ export abstract class TrackerModule {
         output.controllerChange(
             ticks,
             MIDIControllers.mainVolume,
-            Math.min(127, Math.round(128 * Math.sqrt(volume)))
+            toControllerValue(Math.sqrt(volume))
         );
         output.controllerChange(
             ticks,
             MIDIControllers.expression,
-            Math.min(127, Math.round(128 * Math.sqrt(expression)))
+            toControllerValue(Math.sqrt(expression))
         );
         const angle =
             (this.squareRootPanning
@@ -1043,7 +1071,7 @@ export abstract class TrackerModule {
         output.controllerChange(
             ticks,
             MIDIControllers.pan,
-            Math.min(127, Math.max(0, Math.round(64 + (angle - 0.5) * 128)))
+            toControllerValue(angle)
         );
 
         // Resonant filter, zero leaves it open
@@ -1070,7 +1098,19 @@ export abstract class TrackerModule {
                 )
             )
         );
-        output.controllerChange14(ticks, FILTER_CUTOFF_CC, cutoff, true);
-        output.controllerChange14(ticks, FILTER_RESONANCE_CC, resonance, true);
+        output.controllerChange14(
+            ticks,
+            FILTER_CUTOFF_CC,
+            FILTER_CUTOFF_EXTRA_CC,
+            cutoff,
+            true
+        );
+        output.controllerChange14(
+            ticks,
+            FILTER_RESONANCE_CC,
+            FILTER_RESONANCE_EXTRA_CC,
+            resonance,
+            true
+        );
     }
 }

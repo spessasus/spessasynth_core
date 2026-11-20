@@ -1,8 +1,23 @@
 import type { VoiceParameters } from "../../../soundbank/types";
 import type { BasicSample } from "../../../soundbank/basic_soundbank/basic_sample";
-import { GeneratorTypes } from "../../../soundbank/basic_soundbank/generator_types";
+import {
+    GeneratorTypes,
+    PRE_VOICE_GENERATORS
+} from "../../../soundbank/basic_soundbank/generator_types";
 import { VoiceModulator } from "./voice_modulator";
-import type { SampleLoopingMode } from "./voice";
+
+/**
+ * Generators whose modulators are ignored (SFe 4.0, section 7.1).
+ * The first ones act before the voice exists. The rest are not plain values: the spec allows modulating them,
+ * but does not recommend it, so they keep the values the bank stores. The sample offsets are not plain values
+ * either, but they are modulated, as they always were.
+ */
+const UNMODULATED_GENERATORS = new Set<number>([
+    ...PRE_VOICE_GENERATORS,
+    GeneratorTypes.overridingRootKey,
+    GeneratorTypes.exclusiveClass,
+    GeneratorTypes.sampleModes
+]);
 
 /**
  * Represents a cached voice
@@ -61,8 +76,6 @@ export class CachedVoice {
      */
     public readonly playbackStep: number;
 
-    public readonly loopingMode: SampleLoopingMode;
-
     public constructor(
         voiceParams: VoiceParameters,
         midiNote: number,
@@ -71,9 +84,10 @@ export class CachedVoice {
     ) {
         const sample = voiceParams.sample;
         const generators = voiceParams.generators;
-        this.modulators = voiceParams.modulators.map(
-            VoiceModulator.fromModulator.bind(VoiceModulator)
-        );
+        // Modulators on the generators that are not plain values are ignored (SFe 4.0, section 7.1)
+        this.modulators = voiceParams.modulators
+            .filter((m) => !UNMODULATED_GENERATORS.has(m.destination))
+            .map(VoiceModulator.fromModulator.bind(VoiceModulator));
         this.generators = generators;
 
         // Root key override
@@ -106,10 +120,6 @@ export class CachedVoice {
         this.playbackStep =
             (sample.sampleRate / sampleRate) *
             Math.pow(2, sample.pitchCorrection / 1200); // Cent tuning
-        // Unknown modes do not loop
-        const mode = generators[GeneratorTypes.sampleModes];
-        this.loopingMode = (
-            mode >= 0 && mode <= 4 ? mode : 0
-        ) as SampleLoopingMode;
+        // SampleModes is read at note on, after the modulators
     }
 }

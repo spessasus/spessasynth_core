@@ -50,7 +50,13 @@ export function parseRMIDIInternal(
                 currentChunk.data,
                 4
             ).toLowerCase();
-            if (type === "sfbk" || type === "sfpk" || type === "dls ") {
+            // An SFe bank in a RIFF form is "sfen" (the tracker modules embed one)
+            if (
+                type === "sfbk" ||
+                type === "sfpk" ||
+                type === "sfen" ||
+                type === "dls "
+            ) {
                 SpessaLog.info(
                     "%cFound embedded soundbank!",
                     ConsoleColors.recognized

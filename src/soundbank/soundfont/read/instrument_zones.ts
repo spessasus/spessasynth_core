@@ -3,6 +3,7 @@ import type { BasicSample } from "../../basic_soundbank/basic_sample";
 import type { Modulator } from "../../basic_soundbank/modulator";
 import type { Generator } from "../../basic_soundbank/generator";
 import { GeneratorTypes } from "../../basic_soundbank/generator_types";
+import { knownGenerators } from "./generators";
 
 /**
  * Reads the given instrument zone
@@ -23,14 +24,16 @@ export function applyInstrumentZones(
         for (let i = 0; i < instrument.zonesCount; i++) {
             const gensStart = genStartIndexes[genIndex++];
             const gensEnd = genStartIndexes[genIndex];
-            const gens = instrumentGenerators.slice(gensStart, gensEnd);
+            const readGens = instrumentGenerators.slice(gensStart, gensEnd);
+            // Unknown generators are ignored
+            const gens = knownGenerators(readGens);
             const modsStart = modStartIndexes[modIndex++];
             const modsEnd = modStartIndexes[modIndex];
             const mods = instrumentModulators.slice(modsStart, modsEnd);
             // Check for global zone
             if (gens.some((g) => g.type === GeneratorTypes.sampleID)) {
                 // Regular zone
-                instrument.createSoundFontZone(mods, gens, samples);
+                instrument.createSoundFontZone(mods, readGens, samples);
             } else if (i === 0) {
                 // Global zone, only the first zone may be global
                 instrument.globalZone.addGenerators(...gens);

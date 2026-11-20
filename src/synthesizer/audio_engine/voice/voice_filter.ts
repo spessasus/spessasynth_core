@@ -251,10 +251,8 @@ export class VoiceFilter {
         // -1 because it's attenuation, and we don't want attenuation
         const resonanceGain = cbAttenuationToGain(-(qCb - 30.1));
 
-        // The sf spec asks for a reduction in gain based on the Q value.
-        // Note that we calculate it again,
-        // Without the 30.1 cB offset as it only applies to the coefficients, not the gain.
-        const qGain = 1 / Math.sqrt(cbAttenuationToGain(-qCb));
+        // The gain reduction of half the resonance is not part of the coefficients. It comes from initialFilterQ
+        // Alone, so the voice applies it (SFe 4.0, section 7.1.1), and the response here is unscaled
 
         // Note: no sin or cos tables are used here as the coefficients are cached
         const w = (2 * Math.PI * cutoffHz) / this.sampleRate;
@@ -267,37 +265,37 @@ export class VoiceFilter {
         switch (this.type) {
             default: {
                 // SF2 lowpass, w^2 / D
-                b1 = (1 - cosw) * qGain;
+                b1 = 1 - cosw;
                 b0 = b1 / 2;
                 b2 = b0;
                 break;
             }
             case 1: {
                 // Highpass, s^2 / D
-                b0 = ((1 + cosw) / 2) * qGain;
-                b1 = -(1 + cosw) * qGain;
+                b0 = (1 + cosw) / 2;
+                b1 = -(1 + cosw);
                 b2 = b0;
                 break;
             }
             case 2: {
                 // Bandpass with constant skirt gain, w * s / D peaks at Q
-                b0 = (Math.sin(w) / 2) * qGain;
+                b0 = Math.sin(w) / 2;
                 b1 = 0;
                 b2 = -b0;
                 break;
             }
             case 3: {
                 // Peak, (w^2 - s^2) / D is the lowpass minus the highpass: 2 * Q at the cutoff, 1 at both ends
-                b0 = -cosw * qGain;
-                b1 = 2 * qGain;
+                b0 = -cosw;
+                b1 = 2;
                 b2 = b0;
                 break;
             }
             case 4: {
                 // Notch, (w^2 + s^2) / D
-                b0 = qGain;
-                b1 = -2 * cosw * qGain;
-                b2 = qGain;
+                b0 = 1;
+                b1 = -2 * cosw;
+                b2 = 1;
                 break;
             }
         }

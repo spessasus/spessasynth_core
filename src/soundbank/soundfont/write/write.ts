@@ -99,8 +99,13 @@ export function writeSF(
         writeWord(ifilData, major === 2 ? 4 : 0);
         infoArrays.push(RIFFChunk.write("ifil", ifilData, rf64));
     }
-    // The spec requires isng. An SFe bank is made for the SFe 4 engine
-    writeSF2Info("isng", isSFe ? "SFe 4" : (info.soundEngine ?? "EMU8000"));
+    // The spec requires isng. An SFe bank is made for the SFe 4 engine,
+    // An SF2 file should not claim it and falls back to the SF2 default (SFe 4.0, section 9.1)
+    const soundEngine =
+        info.soundEngine && info.soundEngine !== "SFe 4"
+            ? info.soundEngine
+            : "EMU8000";
+    writeSF2Info("isng", isSFe ? "SFe 4" : soundEngine);
     // The spec requires INAM, even if the name is empty
     writeSF2Info("INAM", info.name ?? "");
     writeSF2Info("irom", info.romInfo);
@@ -205,6 +210,33 @@ export function writeSF(
     }
 
     SpessaLog.groupEnd();
+    // Note:
+    // https://github.com/spessasus/soundfont-proposals/blob/main/extended_limits.md
+    SpessaLog.group("%cWriting instruments...", ConsoleColors.info);
+    const instData = writeSF2Elements(bank, format, rf64, false, curveIndex);
+    SpessaLog.groupEnd();
+
+    SpessaLog.group("%cWriting presets...", ConsoleColors.info);
+    const presData = writeSF2Elements(bank, format, rf64, true, curveIndex);
+    SpessaLog.groupEnd();
+
+    // The indices are checked before the samples are written, which can take long
+    // A sample link above 16 bits needs xdta too
+    const sampleIndexes = new Map(bank.samples.map((s, i) => [s, i]));
+    const linkOverflow = bank.samples.some(
+        (s) =>
+            s.linkedSample !== undefined &&
+            (sampleIndexes.get(s.linkedSample) ?? 0) > 0xff_ff
+    );
+    // Without xdta the indices must fit 16 bits, the names are cut to 20 characters (SFe 4.0, section 9.1)
+    if (
+        !writeExtendedLimits &&
+        (instData.indexOverflow || presData.indexOverflow || linkOverflow)
+    ) {
+        throw new Error(
+            "The bank has more zones, generators, modulators or samples than 16-bit indices allow. Enable writeExtendedLimits to write it."
+        );
+    }
     SpessaLog.info("%cWriting SDTA...", ConsoleColors.info);
     // Write sdta
     const smplStartOffsets: number[] = [];
@@ -221,17 +253,6 @@ export function writeSF(
     // Write pdta
     SpessaLog.info("%cWriting SHDR...", ConsoleColors.info);
     const shdrChunk = getSHDR(bank, smplStartOffsets, smplEndOffsets, rf64);
-
-    // Note:
-    // https://github.com/spessasus/soundfont-proposals/blob/main/extended_limits.md
-
-    SpessaLog.group("%cWriting instruments...", ConsoleColors.info);
-    const instData = writeSF2Elements(bank, format, rf64, false, curveIndex);
-    SpessaLog.groupEnd();
-
-    SpessaLog.group("%cWriting presets...", ConsoleColors.info);
-    const presData = writeSF2Elements(bank, format, rf64, true, curveIndex);
-    SpessaLog.groupEnd();
 
     const chunks: ExtendedSF2Chunks[] = [
         presData.hdr,
@@ -256,6 +277,7 @@ export function writeSF(
         writeExtendedLimits &&
         (instData.writeXdta ||
             presData.writeXdta ||
+            linkOverflow ||
             bank.presets.some((p) => p.name.length > 20) ||
             bank.instruments.some((i) => i.name.length > 20) ||
             bank.samples.some((s) => s.name.length > 20));

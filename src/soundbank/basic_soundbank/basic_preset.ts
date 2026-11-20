@@ -249,6 +249,9 @@ export class BasicPreset implements MIDIPatchFull {
         velocity: number
     ): VoiceParameters[] {
         const voiceParameters = new Array<VoiceParameters>();
+        // The latter of two identical modulators in a list is picked
+        const defaultModulators =
+            this.parentSoundBank.effectiveDefaultModulators;
         for (const presetZone of this.zones) {
             // Filter zones out of range
             if (
@@ -290,14 +293,19 @@ export class BasicPreset implements MIDIPatchFull {
 
             // Preset modulators (add global to local)
             // The ones that target an instrument-only generator are ignored, so they supersede nothing
-            const presetModulators = presetZone.modulators.filter((m) =>
-                appliesToPreset(m)
+            const presetModulators = Modulator.getLatestOnly(
+                presetZone.modulators.filter((m) => appliesToPreset(m))
             );
             BasicPreset.addUniqueModulators(
                 presetModulators,
-                this.globalZone.modulators.filter((m) => appliesToPreset(m))
+                Modulator.getLatestOnly(
+                    this.globalZone.modulators.filter((m) => appliesToPreset(m))
+                )
             );
 
+            const globalInstModulators = Modulator.getLatestOnly(
+                instrument.globalZone.modulators
+            );
             for (const instZone of instrument.zones) {
                 if (
                     !BasicPreset.isInRange(
@@ -316,19 +324,16 @@ export class BasicPreset implements MIDIPatchFull {
                     continue;
                 }
 
-                // Modulators
-                const modulators = [...instZone.modulators];
+                // Modulators, the latter of two identical ones in a list wins
+                const modulators = Modulator.getLatestOnly(instZone.modulators);
                 // Add unique from global zone
                 BasicPreset.addUniqueModulators(
                     modulators,
-                    instrument.globalZone.modulators
+                    globalInstModulators
                 );
 
                 // Add unique default modulators
-                BasicPreset.addUniqueModulators(
-                    modulators,
-                    this.parentSoundBank.defaultModulators
-                );
+                BasicPreset.addUniqueModulators(modulators, defaultModulators);
 
                 // Sum preset and instrument modulators (sum their amounts) sf spec page 54, section 9.5
                 for (const presetMod of presetModulators) {
@@ -441,8 +446,11 @@ export class BasicPreset implements MIDIPatchFull {
         const globalPresetZone = this.globalZone;
         globalPresetGenerators.push(...globalPresetZone.generators);
         // Modulators to instrument-only generators are ignored in preset zones
+        // The later of two identical modulators in a zone wins, like in getVoiceParameters
         globalPresetModulators.push(
-            ...globalPresetZone.modulators.filter((m) => appliesToPreset(m))
+            ...Modulator.getLatestOnly(
+                globalPresetZone.modulators.filter((m) => appliesToPreset(m))
+            )
         );
         const globalPresetKeyRange = globalPresetZone.keyRange;
         const globalPresetVelRange = globalPresetZone.velRange;
@@ -465,8 +473,8 @@ export class BasicPreset implements MIDIPatchFull {
                 (g) => new Generator(g.type, g.value)
             );
             addUnique(presetGenerators, globalPresetGenerators);
-            const presetModulators = presetZone.modulators.filter((m) =>
-                appliesToPreset(m)
+            const presetModulators = Modulator.getLatestOnly(
+                presetZone.modulators.filter((m) => appliesToPreset(m))
             );
             addUniqueMods(presetModulators, globalPresetModulators);
             const instrument = presetZone.instrument;
@@ -476,7 +484,9 @@ export class BasicPreset implements MIDIPatchFull {
             const globalInstModulators: Modulator[] = [];
             const globalInstZone = instrument.globalZone;
             globalInstGenerators.push(...globalInstZone.generators);
-            globalInstModulators.push(...globalInstZone.modulators);
+            globalInstModulators.push(
+                ...Modulator.getLatestOnly(globalInstZone.modulators)
+            );
             const globalInstKeyRange = globalInstZone.keyRange;
             const globalInstVelRange = globalInstZone.velRange;
             // For each non-global instrument zone
@@ -516,7 +526,9 @@ export class BasicPreset implements MIDIPatchFull {
                     (g) => new Generator(g.type, g.value)
                 );
                 addUnique(instGenerators, globalInstGenerators);
-                const instModulators = [...instZone.modulators];
+                const instModulators = Modulator.getLatestOnly(
+                    instZone.modulators
+                );
                 addUniqueMods(instModulators, globalInstModulators);
 
                 /**

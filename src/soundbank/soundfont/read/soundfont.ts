@@ -19,7 +19,7 @@ import { BasicSoundBank } from "../../basic_soundbank/basic_soundbank";
 import { applyInstrumentZones } from "./instrument_zones";
 import { readZoneIndexes } from "./zones";
 import type { Generator } from "../../basic_soundbank/generator";
-import type { Modulator } from "../../basic_soundbank/modulator";
+import { MOD_BYTE_SIZE, type Modulator } from "../../basic_soundbank/modulator";
 import { fromSF2DefaultModulators, upgradeSF2Bank } from "../sf2_compatibility";
 import { parseDateString } from "../../../utils/date";
 import { StbVorbis } from "stb-vorbis";
@@ -57,6 +57,10 @@ export class SoundFont2 extends BasicSoundBank {
 
         const type = readBinaryStringIndexed(mainFileArray, 4).toLowerCase();
         this.verifyTexts(type, ["sfbk", "sfpk", "sfen"]);
+        // 64-bit chunk sizes (RIFS) are only defined for SFe (SFe 4.0, section 3.1)
+        if (rf64 && type !== "sfen") {
+            throw new Error(`Expected 'sfen' in a 'RIFS' file, got '${type}'`);
+        }
         /*
         Some SF2Pack description:
         this is essentially sf2, but the entire smpl chunk is compressed (we only support Ogg Vorbis here)
@@ -75,6 +79,9 @@ export class SoundFont2 extends BasicSoundBank {
         let dmodChunk: RIFFChunk | undefined;
         let curveChunk: RIFFChunk | undefined;
         let xmodChunk: RIFFChunk | undefined;
+        // A second DMOD, XMOD, CURV or xdta makes an SFe file invalid (SFe 4.0, section 4.2),
+        // In an SF2 file the last one wins as before
+        const duplicates = new Array<string>();
 
         while (infoChunk.data.length > infoChunk.data.currentIndex) {
             const chunk = RIFFChunk.read(infoChunk.data, rf64);
@@ -103,17 +110,20 @@ export class SoundFont2 extends BasicSoundBank {
                 // Dmod: default modulators
                 case "DMOD": {
                     // Read after INFO, it depends on the version
+                    if (dmodChunk) duplicates.push("DMOD");
                     dmodChunk = chunk;
                     break;
                 }
 
                 // SFe custom curves and the extended DMOD records
                 case "CURV": {
+                    if (curveChunk) duplicates.push("CURV");
                     curveChunk = chunk;
                     break;
                 }
 
                 case "XMOD": {
+                    if (xmodChunk) duplicates.push("XMOD");
                     xmodChunk = chunk;
                     break;
                 }
@@ -122,6 +132,7 @@ export class SoundFont2 extends BasicSoundBank {
                     // Possible xdta
                     const listType = readBinaryStringIndexed(chunk.data, 4);
                     if (listType === "xdta") {
+                        if (xdtaChunk) duplicates.push("xdta");
                         SpessaLog.info(
                             "%cExtended SF2 found!",
                             ConsoleColors.recognized
@@ -186,6 +197,11 @@ export class SoundFont2 extends BasicSoundBank {
         // Generators and modulator destinations above endOper are only read from SFe banks.
         // SFe files below version 4 used other generator numbers, read them as SF2.
         const isSFe = isSFeType && this.soundBankInfo.version.major >= 4;
+        if (isSFe && duplicates.length > 0) {
+            throw new Error(
+                `Invalid SFe file: more than one ${duplicates[0]} chunk.`
+            );
+        }
         this.bankType = isSFe ? "sfe" : "sf2";
         if (isSFeType && this.soundBankInfo.version.major > 4) {
             this.parsingError(
@@ -201,6 +217,19 @@ export class SoundFont2 extends BasicSoundBank {
         // Modulators index the raw list, the bank keeps the valid curves
         for (const curve of curves) {
             if (curve) this.customCurves.push(curve);
+        }
+        // A DMOD that is not a whole number of 10-byte records is malformed.
+        // An SFe file is rejected (SFe 4.0, section 7.3), an SF2 file is read as if it had no DMOD (the section 7.3 list, as section 9.2 says)
+        if (dmodChunk && dmodChunk.data.length % MOD_BYTE_SIZE !== 0) {
+            if (isSFe) {
+                throw new Error(
+                    `Invalid DMOD chunk: its size (${dmodChunk.data.length}) is not a multiple of 10 bytes.`
+                );
+            }
+            SpessaLog.warn(
+                `Ignoring the DMOD chunk: its size (${dmodChunk.data.length}) is not a multiple of 10 bytes.`
+            );
+            dmodChunk = undefined;
         }
         if (dmodChunk) {
             const read = readModulators(dmodChunk, isSFe, curves, xmodChunk);
@@ -385,7 +414,8 @@ export class SoundFont2 extends BasicSoundBank {
             );
             if (xSamples.length === samples.length) {
                 for (const [i, s] of samples.entries()) {
-                    s.name += xSamples[i].name;
+                    // The xdta half continues only a full name, a zero byte ends it (SFe 4.0, section 5.5)
+                    if (s.name.length === 20) s.name += xSamples[i].name;
                     s.linkedSampleIndex |= xSamples[i].linkedSampleIndex << 16;
                 }
             }
@@ -412,7 +442,7 @@ export class SoundFont2 extends BasicSoundBank {
             const xInst = readInstruments(xChunks.inst, true);
             if (xInst.length === instruments.length) {
                 for (const [i, inst] of instruments.entries()) {
-                    inst.name += xInst[i].name;
+                    if (inst.name.length === 20) inst.name += xInst[i].name;
                     inst.zoneStartIndex |= xInst[i].zoneStartIndex << 16;
                 }
                 // Adjust zone counts
@@ -470,7 +500,7 @@ export class SoundFont2 extends BasicSoundBank {
             const xPreset = readPresets(xChunks.phdr, this, true);
             if (xPreset.length === presets.length) {
                 for (const [i, pres] of presets.entries()) {
-                    pres.name += xPreset[i].name;
+                    if (pres.name.length === 20) pres.name += xPreset[i].name;
                     pres.zoneStartIndex |= xPreset[i].zoneStartIndex << 16;
                 }
                 // Adjust zone counts
@@ -509,7 +539,7 @@ export class SoundFont2 extends BasicSoundBank {
         );
 
         // Convert to SFe
-        if (!isSFe) upgradeSF2Bank(this);
+        if (!isSFe) upgradeSF2Bank(this, dmodChunk !== undefined);
         this.flush();
         SpessaLog.info(
             `%cParsing finished! %c"${this.soundBankInfo.name}"%c has %c${this.presets.length}%c presets,

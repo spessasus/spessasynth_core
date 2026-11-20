@@ -19,6 +19,7 @@ import {
     computeModulators
 } from "../voice/compute_modulator";
 import {
+    type GeneratorLimit,
     GeneratorLimits,
     GENERATORS_AMOUNT,
     type GeneratorType
@@ -215,9 +216,9 @@ export class MIDIChannel {
      * such as volume, pan, modulation, etc.
      * @remarks
      * A bit of an explanation:
-     * The controller table is stored as an int16 array, it stores 14-bit values, allowing for full 14-bit LSB resolution.
-     * The only exception from this are the Registered and Non-Registered Parameter Numbers.
-     * Data entries do store it!
+     * The controller table is stored as an int16 array, each controller as its 7-bit value shifted left by 7.
+     * The LSB controllers (CC 32 to 63) have their own slots. Only the data entry (CC 6) keeps the
+     * data entry LSB (CC 38) in its low 7 bits.
      * @internal
      */
     protected readonly _midiControllers: Int16Array = new Int16Array(
@@ -466,10 +467,9 @@ export class MIDIChannel {
      * >
      * > A bit of an explanation:
      * > The controller table is stored as an `Int16Array`,
-     * > it stores 14-bit values, allowing for full 14-bit LSB resolution.
-     * > The only exception from this are
-     * > the Registered and Non-Registered Parameter Numbers.
-     * > Data entries do store it!
+     * > each controller as its 7-bit value shifted left by 7 (`value >> 7` gives the controller value).
+     * > The LSB controllers (CC 32 to 63) have their own slots.
+     * > Only the data entry (CC 6) keeps the data entry LSB (CC 38) in its low 7 bits.
      *
      * > **Warning**
      * >
@@ -860,7 +860,11 @@ export class MIDIChannel {
             }
             this.perNotePitch = true;
 
-            this.pitchWheels[midiNote] = pitch;
+            // A whole 0 to 16383, it indexes the 14-bit source table
+            this.pitchWheels[midiNote] = Math.min(
+                16_383,
+                Math.max(0, Math.round(pitch))
+            );
 
             // Recompute only specific modulators
             this.computeModulatorsAll(0, ModulatorControllerSources.pitchWheel);
@@ -1170,7 +1174,10 @@ export class MIDIChannel {
 
     /** @internal */
     protected setGeneratorOffset(gen: GeneratorType, value: number) {
-        this.generators.offsets[gen] = value * GeneratorLimits[gen].nrpn;
+        // An NRPN may name a generator that does not exist
+        const limit = GeneratorLimits[gen] as GeneratorLimit | undefined;
+        if (!limit) return;
+        this.generators.offsets[gen] = value * limit.nrpn;
         this.generators.offsetsEnabled = true;
         let vc = 0;
         if (this._voiceCount > 0)
@@ -1251,6 +1258,8 @@ export class MIDIChannel {
             return;
 
         this._drumChannel = isDrum;
+        // Mono mode skips drum channels, so the tracked note would be stale after the switch
+        this.lastMonoNote = -1;
         this.updateInternalParams();
     }
 }

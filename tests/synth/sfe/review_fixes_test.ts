@@ -12,7 +12,6 @@ import {
     type ModulatorSourceIndex,
     SoundBankCloner,
     SoundBankLoader,
-    SpessaLog,
     SPESSASYNTH_DEFAULT_MODULATORS,
     SpessaSynthProcessor
 } from "../../../src";
@@ -340,8 +339,9 @@ const linkCount = (bank: BasicSoundBank, c: CustomCurve) => {
         (m) => m.primarySource.index !== MIDIControllers.softPedal
     );
     const back = sf2RoundTrip(bank);
+    // CC 71 to filterQOffset is SFe only, SF2 drops it and the reader does not add it back
     check(
-        back.defaultModulators.length === bank.defaultModulators.length &&
+        back.defaultModulators.length === bank.defaultModulators.length - 1 &&
             back.defaultModulators.some(
                 (m) => m.destination === GeneratorTypes.variationEffectsSend
             ),
@@ -407,7 +407,16 @@ const linkCount = (bank: BasicSoundBank, c: CustomCurve) => {
         { [GeneratorTypes.sampleModes]: 4, [GeneratorTypes.gain]: 30 },
         (zone, b) => {
             b.addCustomCurves(c);
-            zone.addModulators(customModulator(c));
+            // A real CC 20 (the helper's source is the reserved general controller 20, which is ignored and no loss)
+            zone.addModulators(
+                new Modulator(
+                    new ModulatorSource(MIDIControllers.undefinedCC20, c, true),
+                    new ModulatorSource(),
+                    GeneratorTypes.pan,
+                    100,
+                    0
+                )
+            );
         }
     );
     const losses = rich.getSF2Losses();
@@ -769,7 +778,7 @@ console.info("Second review:");
     );
 }
 {
-    // Preset modulators add to the instrument's ones, and so do the compensators
+    // A zone CC 71 to Q stays as it is after SF2, no gain modulator is added any more (SFe 4.0, section 9.2)
     const cc71 = (amount: number) =>
         new Modulator(
             new ModulatorSource(
@@ -786,32 +795,18 @@ console.info("Second review:");
     const bank = makeBank(sineSample());
     bank.presets[0].zones[0].addModulators(cc71(-100));
     const loaded = SoundBankLoader.fromArrayBuffer(bank.writeSF2());
-    const twins = loaded.presets[0].zones[0].modulators.filter(
-        (m) => m.destination === GeneratorTypes.gain
-    );
+    const presetMods = loaded.presets[0].zones[0].modulators;
     check(
-        twins.length === 1 &&
-            twins[0].transformAmount === -50 &&
-            !twins[0].secondarySource.isNegative,
-        "a preset zone CC 71 to Q of -100 lowers the compensation above 64 by 50"
+        presetMods.length === 1 &&
+            presetMods[0].destination === GeneratorTypes.initialFilterQ &&
+            presetMods[0].transformAmount === -100,
+        "a preset zone CC 71 to Q of -100 comes back alone, without a gain modulator"
     );
     const losses = loaded.getSF2Losses();
     check(
         losses.modulators === 0 && losses.addedModulators === 0,
-        "the preset compensator is not a loss"
+        "the preset CC 71 to Q is not a loss"
     );
-    // The DLS writer skips the compensators without a warning
-    const warn = SpessaLog.logFunctions.warn;
-    let warnings = 0;
-    // The CC 71 to Q modulator itself can't be stored in DLS, that warning stays
-    SpessaLog.logFunctions.warn = (...message: unknown[]) => {
-        if (String(message[0]).includes("to: gain")) warnings++;
-    };
-    SpessaLog.warnEnabled = true;
-    loaded.writeDLS();
-    SpessaLog.warnEnabled = false;
-    SpessaLog.logFunctions.warn = warn;
-    check(warnings === 0, "writeDLS does not warn about the compensators");
 }
 
 console.info("Final review:");

@@ -578,15 +578,15 @@ for (const amount of [
     }
 }
 
-// The bank the tracker builds is an SFe bank, and its attenuation is stable
+// The bank the tracker builds is an SFe bank written as SFe, and its attenuation is stable
 {
     const path = "tests/files/it_support/work_eek/surasshu_-_eek.it";
     if (existsSync(path)) {
         const file = readFileSync(path);
         const types = new Array<string>();
         // eslint-disable-next-line @typescript-eslint/unbound-method
-        const original = BasicSoundBank.prototype.writeSF2;
-        BasicSoundBank.prototype.writeSF2 = function (
+        const original = BasicSoundBank.prototype.writeSFe;
+        BasicSoundBank.prototype.writeSFe = function (
             this: BasicSoundBank,
             ...args
         ) {
@@ -603,11 +603,11 @@ for (const amount of [
                 path
             );
         } finally {
-            BasicSoundBank.prototype.writeSF2 = original;
+            BasicSoundBank.prototype.writeSFe = original;
         }
         check(
             types.length === 1 && types[0] === "sfe",
-            `the tracker bank is typed as SFe (${types.join(",")})`
+            `the tracker bank is typed and written as SFe (${types.join(",")})`
         );
         const embedded = midi.embeddedSoundBank;
         check(
@@ -631,6 +631,14 @@ for (const amount of [
             check(
                 attenuations(first).some((v) => v > 0),
                 "the embedded bank has an attenuation"
+            );
+            // The RMIDI reader finds the SFe bank again
+            const rmi = BasicMIDI.fromArrayBuffer(
+                midi.writeRMIDI(embedded, { correctBankOffset: false })
+            );
+            check(
+                rmi.embeddedSoundBank?.byteLength === embedded.byteLength,
+                "an RMI made from the tracker module keeps its SFe bank"
             );
         }
     } else {
@@ -659,20 +667,20 @@ for (const amount of [
                     m.secondarySource.toSourceEnum() === amountSource)
         );
     check(
-        list.length === 16 &&
+        list.length === 15 &&
             !list.some(
                 (m) =>
                     !m.primarySource.isCC &&
                     m.primarySource.index ===
                         ModulatorControllerSources.channelPressure
             ),
-        `a new bank has 16 default modulators and no channel pressure vibrato (${list.length})`
+        `a new bank has 15 default modulators and no channel pressure vibrato (${list.length})`
     );
     check(
         has(
             MIDIControllers.filterResonance,
-            GeneratorTypes.gain,
-            125,
+            GeneratorTypes.filterQOffset,
+            250,
             0x0c_c7
         ) &&
             has(
@@ -696,7 +704,7 @@ for (const amount of [
                 1600,
                 ModulatorControllerSources.modulationDepthRange
             ),
-        "a new bank holds the CC 71 gain, CC 74, CC 91, CC 93 and CC 1 vibrato modulators of section 7.3"
+        "a new bank holds the CC 71 resonance, CC 74, CC 91, CC 93 and CC 1 vibrato modulators of section 7.3"
     );
 
     const sameList = (a: readonly Modulator[], b: readonly Modulator[]) =>
@@ -732,9 +740,13 @@ for (const amount of [
     const plusOne = makeBank(sineSample());
     plusOne.defaultModulators = [...plusOne.defaultModulators, extra];
     const back = readAs(plusOne);
+    // CC 71 to filterQOffset is SFe only, SF2 drops it and the reader does not add it back
+    const sf2List = list.filter(
+        (m) => m.destination !== GeneratorTypes.filterQOffset
+    );
     check(
-        back.defaultModulators.length === 17 &&
-            sameList(back.defaultModulators, [...list, extra]),
+        back.defaultModulators.length === sf2List.length + 1 &&
+            sameList(back.defaultModulators, [...sf2List, extra]),
         `the list of section 7.3 plus one modulator comes back as that list plus the modulator (${back.defaultModulators.length} modulators)`
     );
 }

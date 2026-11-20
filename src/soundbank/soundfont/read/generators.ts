@@ -4,9 +4,36 @@ import { signedInt16 } from "../../../utils/byte_functions/little_endian";
 import { Generator } from "../../basic_soundbank/generator";
 import {
     type GeneratorType,
-    GeneratorTypes
+    GeneratorTypes,
+    MAX_GENERATOR
 } from "../../basic_soundbank/generator_types";
 import { fromSF2Attenuation } from "../sf2_compatibility";
+
+/**
+ * The full index of a zone's instrument or sample: the MSB generator holds the top 16 bits (SFe 4.0, section 7.1.1).
+ * Both are read unsigned.
+ * @param generators The generators of the zone as the file stores them, unknown ones included.
+ * @param index The instrument or sampleID generator.
+ * @param msb The matching MSB generator type.
+ */
+export function readZoneIndex(
+    generators: readonly Generator[],
+    index: Generator,
+    msb: GeneratorType
+) {
+    // The MSB only counts right before the generator it extends, as the file stores them
+    const before = generators[generators.indexOf(index) - 1];
+    const top = before?.type === msb ? before.value : 0;
+    return (top & 0xff_ff) * 65_536 + (index.value & 0xff_ff);
+}
+
+/**
+ * The generators a zone keeps: unknown ones (above the last defined generator) are ignored.
+ * @param generators The generators of the zone, as read.
+ */
+export function knownGenerators(generators: readonly Generator[]) {
+    return generators.filter((g) => g.type <= MAX_GENERATOR);
+}
 
 export class ReadGenerator extends Generator {
     /**

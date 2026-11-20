@@ -38,6 +38,18 @@ export function programChange(this: MIDIChannel, program: number) {
     if (!preset) {
         preset = this.synthCore.onMissingPreset(this.patch, this.channelSystem);
         if (!preset) {
+            // A channel without a selected preset plays nothing until a later selection finds one (SFe 4.0, section 11.2.3)
+            this.preset = undefined;
+            // The empty name tells the host there is no preset
+            this.synthCore.callEvent("programChange", {
+                channel: this.channel,
+                bankLSB: this.patch.bankLSB,
+                bankMSB: this.patch.bankMSB,
+                program: this.patch.program,
+                name: "",
+                isGMGSDrum: this.patch.isGMGSDrum,
+                isDrum: this._drumChannel
+            });
             return;
         }
     }

@@ -65,9 +65,9 @@ export function getSHDR(
         xshdrData.currentIndex += 2;
     }
 
-    // Write EOS and zero everything else
+    // Write EOS and zero everything else.
+    // The xdta terminal record stays all zeros (SFe 4.0, section 5.5)
     writeBinaryStringIndexed(shdrData, "EOS", sampleLength);
-    writeBinaryStringIndexed(xshdrData, "EOS", sampleLength);
     const shdr = RIFFChunk.write("shdr", shdrData, rf64);
     const xshdr = RIFFChunk.write("shdr", xshdrData, rf64);
     return {

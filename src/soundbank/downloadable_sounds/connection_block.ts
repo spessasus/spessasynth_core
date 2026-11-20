@@ -205,9 +205,10 @@ export class ConnectionBlock {
         ) {
             return;
         }
-        // The CC 71 to gain twins are added back when the file is loaded, DLS has no gain to store them
+        // The amount 0 CC 71 twin only turns off a default that DLS does not have (SFe 4.0, section 9.2)
         if (
-            m.destination === GeneratorTypes.gain &&
+            m.transformAmount === 0 &&
+            m.destination === GeneratorTypes.filterQOffset &&
             m.primarySource.isController(MIDIControllers.filterResonance)
         ) {
             return;

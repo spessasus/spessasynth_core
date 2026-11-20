@@ -14,6 +14,7 @@ export class BasicPresetZone extends BasicLinkedZone<
     BasicInstrument
 > {
     protected readonly childGenerator = GeneratorTypes.instrument;
+    protected readonly childMSBGenerator = GeneratorTypes.instrumentMSB;
 
     /**
      * Creates a new preset zone.

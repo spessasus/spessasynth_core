@@ -110,7 +110,7 @@ export const GeneratorTypes = Object.freeze({
     releaseModEnv2: 81,
     keyNumToModEnv2Hold: 82,
     keyNumToModEnv2Decay: 83,
-    // Timecents for 100dB, the second decay segment from sustain to sustain + sustain2VolEnv
+    // Timecents for 960 cB, the second decay segment from sustain to sustain + sustain2VolEnv
     decay2VolEnv: 84,
     // Centibels, relative to sustainVolEnv. 0 = no second decay segment
     sustain2VolEnv: 85,
@@ -121,7 +121,11 @@ export const GeneratorTypes = Object.freeze({
     // 0 = release on note off, 1 = ignore note off (the voice plays until its envelope or sample ends)
     ignoreNoteOff: 88,
     // Effect send - how much is sent to the variation effect (GS delay, XG variation) 0 - 1000
-    variationEffectsSend: 89
+    variationEffectsSend: 89,
+    // The top 16 bits of the instrument index of a preset zone, for instruments beyond the first 65536
+    instrumentMSB: 90,
+    // The top 16 bits of the sample index of an instrument zone, for samples beyond the first 65536
+    sampleIDMSB: 91
 } as const);
 
 /**
@@ -221,37 +225,44 @@ export const GeneratorLimits: Readonly<Record<GeneratorType, GeneratorLimit>> =
         [GeneratorTypes.endOper]: { min: 0, max: 0, def: 0, nrpn: 0 },
         [GeneratorTypes.instrument]: { min: 0, max: 0, def: 0, nrpn: 0 },
         [GeneratorTypes.sampleID]: { min: 0, max: 0, def: 0, nrpn: 0 },
+        [GeneratorTypes.instrumentMSB]: {
+            min: 0,
+            max: 65_535,
+            def: 0,
+            nrpn: 0
+        },
+        [GeneratorTypes.sampleIDMSB]: { min: 0, max: 65_535, def: 0, nrpn: 0 },
         [GeneratorTypes.keyRange]: { min: 0, max: 0, def: 0, nrpn: 0 },
         [GeneratorTypes.velRange]: { min: 0, max: 0, def: 0, nrpn: 0 },
 
         // Offsets
         [GeneratorTypes.startAddrsOffset]: {
-            min: 0,
-            max: 32_768,
+            min: -32_768,
+            max: 32_767,
             def: 0,
             nrpn: 1
         },
         [GeneratorTypes.endAddrOffset]: {
             min: -32_768,
-            max: 32_768,
+            max: 32_767,
             def: 0,
             nrpn: 1
         },
         [GeneratorTypes.startloopAddrsOffset]: {
             min: -32_768,
-            max: 32_768,
+            max: 32_767,
             def: 0,
             nrpn: 1
         },
         [GeneratorTypes.endloopAddrsOffset]: {
             min: -32_768,
-            max: 32_768,
+            max: 32_767,
             def: 0,
             nrpn: 1
         },
         [GeneratorTypes.startAddrsCoarseOffset]: {
-            min: 0,
-            max: 32_768,
+            min: -32_768,
+            max: 32_767,
             def: 0,
             nrpn: 1
         },
@@ -299,7 +310,7 @@ export const GeneratorLimits: Readonly<Record<GeneratorType, GeneratorLimit>> =
 
         [GeneratorTypes.endAddrsCoarseOffset]: {
             min: -32_768,
-            max: 32_768,
+            max: 32_767,
             def: 0,
             nrpn: 1
         },
@@ -357,13 +368,13 @@ export const GeneratorLimits: Readonly<Record<GeneratorType, GeneratorLimit>> =
         [GeneratorTypes.delayModEnv]: {
             min: -32_768,
             max: 5000,
-            def: -32_768,
+            def: -12_000,
             nrpn: 2
-        }, // -32768 = instant, this is done to prevent click for lowpass
+        },
         [GeneratorTypes.attackModEnv]: {
             min: -32_768,
             max: 8000,
-            def: -32_768,
+            def: -12_000,
             nrpn: 2
         },
         [GeneratorTypes.holdModEnv]: {
@@ -446,7 +457,7 @@ export const GeneratorLimits: Readonly<Record<GeneratorType, GeneratorLimit>> =
         // Misc
         [GeneratorTypes.startloopAddrsCoarseOffset]: {
             min: -32_768,
-            max: 32_768,
+            max: 32_767,
             def: 0,
             nrpn: 1
         },
@@ -460,7 +471,7 @@ export const GeneratorLimits: Readonly<Record<GeneratorType, GeneratorLimit>> =
         },
         [GeneratorTypes.endloopAddrsCoarseOffset]: {
             min: -32_768,
-            max: 32_768,
+            max: 32_767,
             def: 0,
             nrpn: 1
         },
@@ -622,3 +633,18 @@ export const GeneratorLimits: Readonly<Record<GeneratorType, GeneratorLimit>> =
             nrpn: 2
         }
     });
+
+/**
+ * Generators that no modulator can change, they act before the voice exists (SFe 4.0, section 7.1).
+ * @internal
+ */
+export const PRE_VOICE_GENERATORS: ReadonlySet<number> = new Set<number>([
+    GeneratorTypes.keyRange,
+    GeneratorTypes.velRange,
+    GeneratorTypes.keyNum,
+    GeneratorTypes.velocity,
+    GeneratorTypes.instrument,
+    GeneratorTypes.sampleID,
+    GeneratorTypes.instrumentMSB,
+    GeneratorTypes.sampleIDMSB
+]);

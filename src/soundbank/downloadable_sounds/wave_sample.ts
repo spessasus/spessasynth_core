@@ -166,9 +166,9 @@ export class WaveSample extends DLSVerifier {
         // Gain is stored as a 32-bit value, shift here
         waveSample.gain = -attenuationCb << 16;
         const loopingMode = zone.getGenerator(GeneratorTypes.sampleModes, 0);
-        // Don't add loops unless needed
-        // DLS has no alternating loop (SFe sampleModes 4), it is dropped like in SF2
-        if (loopingMode !== 0 && loopingMode !== 4) {
+        // Don't add loops unless needed: 1 and 3 loop, 2 (start on release) and unknown values do not.
+        // DLS has no alternating loop (SFe sampleModes 4), so it becomes a forward loop like in SF2 (SFe 4.0, section 9.1)
+        if (loopingMode === 1 || loopingMode === 3 || loopingMode === 4) {
             // Make sure to get offsets
             const loopStart =
                 zone.sample.loopStart +
@@ -185,13 +185,14 @@ export class WaveSample extends DLSVerifier {
                     32_768;
             let dlsLoopType: DLSLoopType;
             switch (loopingMode) {
-                case 1:
                 default: {
+                    // Forward loop, for 1 and 4
                     dlsLoopType = 0;
                     break;
                 }
 
                 case 3: {
+                    // Loop until release
                     dlsLoopType = 1;
                 }
             }

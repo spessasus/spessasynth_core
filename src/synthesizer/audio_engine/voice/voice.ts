@@ -90,7 +90,7 @@ export class Voice {
      * The current values for the respective modulators.
      * If there are more modulators, the array must be resized.
      */
-    public modulatorValues = new Int16Array(64);
+    public modulatorValues = new Float64Array(64);
 
     /**
      * Modulation envelope.

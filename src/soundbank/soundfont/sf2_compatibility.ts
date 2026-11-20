@@ -1,5 +1,8 @@
 import {
     copyDefaultModulators,
+    DecodedModulator,
+    DEFAULT_RESONANT_MOD_AMOUNT_SOURCE,
+    DEFAULT_RESONANT_MOD_SOURCE,
     isIllegalSource,
     Modulator,
     SPESSASYNTH_DEFAULT_MODULATORS
@@ -8,14 +11,16 @@ import { ModulatorSource } from "../basic_soundbank/modulator_source";
 import { Generator } from "../basic_soundbank/generator";
 import {
     type GeneratorType,
-    GeneratorTypes
+    GeneratorTypes,
+    INSTRUMENT_ONLY_GENERATORS,
+    PRE_VOICE_GENERATORS
 } from "../basic_soundbank/generator_types";
-import {
-    addResonanceCompensation,
-    getResonantCompensators
-} from "../basic_soundbank/resonance_compensation";
 import { CustomCurve } from "../basic_soundbank/custom_curve";
-import { ModulatorControllerSources, ModulatorCurveTypes } from "../enums";
+import {
+    ModulatorControllerSources,
+    ModulatorCurveTypes,
+    ModulatorTransformTypes
+} from "../enums";
 import { MIDIControllers } from "../../midi/enums";
 import type { BasicSoundBank } from "../basic_soundbank/basic_soundbank";
 import type { BasicPreset } from "../basic_soundbank/basic_preset";
@@ -34,6 +39,29 @@ const SF2_SEND_SCALE = 5;
 
 // The initial attenuation of an SF2 file is 2.5 times the centibels of the bank (the EMU8000 factor of 0.4)
 const SF2_ATTENUATION_SCALE = 0.4;
+
+// The amount 0 twin of the default CC 71 to filterQOffset modulator, it turns that one off in a zone (SFe 4.0, section 9.2)
+const resonanceTwin = () =>
+    new DecodedModulator(
+        DEFAULT_RESONANT_MOD_SOURCE,
+        DEFAULT_RESONANT_MOD_AMOUNT_SOURCE,
+        GeneratorTypes.filterQOffset,
+        0,
+        0
+    );
+
+// If an instrument zone of an SF2 file without DMOD gets the twin.
+// It needs a CC 71 to initialFilterQ modulator with any SF2 curve. Ignored modulators don't count
+function hasResonanceModulator(modulators: readonly Modulator[]) {
+    return modulators.some(
+        (m) =>
+            !isIgnoredModulator(m) &&
+            m.destination === GeneratorTypes.initialFilterQ &&
+            m.primarySource.isController(MIDIControllers.filterResonance) &&
+            m.primarySource.curveType <= ModulatorCurveTypes.switch &&
+            m.secondarySource.curveType <= ModulatorCurveTypes.switch
+    );
+}
 
 function isEnvelopeTime(s: ModulatorSource) {
     return (
@@ -131,26 +159,26 @@ export function withoutModulationDepth(m: Modulator) {
 }
 
 /**
- * If SF2 can store the generator. The generators above endOper and the alternating loop are SFe only.
+ * If SF2 can store the generator. The generators above endOper are SFe only.
+ * The sampleModes values outside 0 to 3 are written in another form, see {@link toSF2Generator}.
  * @param type The generator type.
- * @param value The generator value.
  * @internal
  */
-export function sf2KeepsGenerator(type: GeneratorType, value: number) {
-    return (
-        type <= GeneratorTypes.endOper &&
-        !(type === GeneratorTypes.sampleModes && value === 4)
-    );
+export function sf2KeepsGenerator(type: GeneratorType) {
+    return type <= GeneratorTypes.endOper;
 }
 
 /**
  * If SF2 can store the modulator. Destinations above endOper and custom curves are SFe only,
  * and so is the Modulation Depth Range, except for the mod wheel vibrato that follows it.
+ * Ignored modulators are not written either (SFe 4.0, section 9.1).
  * @param m The modulator.
+ * @param preset If the modulator is in a preset zone.
  * @internal
  */
-export function sf2KeepsModulator(m: Modulator) {
+export function sf2KeepsModulator(m: Modulator, preset = false) {
     return (
+        !isIgnoredModulator(m, preset) &&
         m.destination <= GeneratorTypes.endOper &&
         !m.usesCustomCurve &&
         withoutModulationDepth(m) !== undefined
@@ -188,28 +216,38 @@ export function fromSF2Attenuation(value: number) {
  * @internal
  */
 export function toSF2Generator(g: Generator) {
-    return g.type === GeneratorTypes.initialAttenuation
-        ? new Generator(
-              g.type,
-              Math.max(
-                  -32_768,
-                  Math.min(32_767, Math.round(g.value / SF2_ATTENUATION_SCALE))
-              ),
-              false
-          )
-        : g;
+    if (g.type === GeneratorTypes.initialAttenuation) {
+        return new Generator(
+            g.type,
+            Math.max(
+                -32_768,
+                Math.min(32_767, Math.round(g.value / SF2_ATTENUATION_SCALE))
+            ),
+            false
+        );
+    }
+    // SF2 reads only the two lowest bits of sampleModes. The alternating loop becomes a forward loop
+    // And any other value outside 0 to 3 becomes 0, written so the zone does not inherit the global zone's value (SFe 4.0, section 9.1)
+    if (g.type === GeneratorTypes.sampleModes && (g.value < 0 || g.value > 3)) {
+        return new Generator(g.type, g.value === 4 ? 1 : 0, false);
+    }
+    return g;
 }
 
 /**
  * The modulators of a zone or of the default list as an SF2 file stores them.
  * @param modulators The modulators of the bank.
+ * @param preset If they are the modulators of a preset zone.
  * @returns The modulators to write. Send modulators are scaled copies, the rest are the same objects.
  * @internal
  */
-export function toSF2Modulators(modulators: readonly Modulator[]) {
+export function toSF2Modulators(
+    modulators: readonly Modulator[],
+    preset = false
+) {
     const written = new Array<Modulator>();
     for (const m of modulators) {
-        if (!sf2KeepsModulator(m)) continue;
+        if (!sf2KeepsModulator(m, preset)) continue;
         // A mod wheel vibrato that follows RPN 5 is already a copy
         const plain = withoutModulationDepth(m) ?? m;
         const amount = isSendModulator(plain)
@@ -279,8 +317,8 @@ function restoredDefaults(read: readonly Modulator[]) {
     // An empty list means no default modulators
     if (read.length === 0) return { modulators: [], curves: [] };
     const defaults = copyDefaultModulators();
-    // A modulator the reader ignored supersedes nothing
-    const valid = read.filter((m) => m.destination !== GeneratorTypes.invalid);
+    // A modulator that is ignored supersedes nothing (SFe 4.0, section 9.2)
+    const valid = read.filter((m) => !isIgnoredModulator(m));
     // The envelope times come back unless the list has a CC 72, 73 or 75 modulator of its own (even with amount 0)
     const hasEnvelopeTime = valid.some(
         (m) =>
@@ -310,7 +348,6 @@ function restoredDefaults(read: readonly Modulator[]) {
  * @param bank The bank being read, it receives the curves of the added modulators.
  * @param read The modulators of the chunk.
  * @returns The default modulators of the bank.
- * The resonance compensation is added later, by {@link upgradeSF2Bank}.
  * @internal
  */
 export function fromSF2DefaultModulators(
@@ -332,14 +369,13 @@ function roundTripChanges(
     restored: readonly Modulator[],
     preset = false
 ) {
-    const written = modulators.filter((m) => sf2KeepsModulator(m));
-    const back = [...restored, ...getResonantCompensators(written, preset)];
+    const written = modulators.filter((m) => sf2KeepsModulator(m, preset));
     return {
         lost: modulators.filter((m) => {
-            // A source type no reader knows is written, and ignored when read
-            if (hasUnknownSourceType(m)) return true;
-            if (!sf2KeepsModulator(m)) {
-                return !back.some((r) => Modulator.isIdentical(r, m, true));
+            // An ignored modulator is not written (SFe 4.0, section 9.1), it never applied, so it is not a loss
+            if (isIgnoredModulator(m, preset)) return false;
+            if (!sf2KeepsModulator(m, preset)) {
+                return !restored.some((r) => Modulator.isIdentical(r, m, true));
             }
             // A mod wheel vibrato that reads back with another amount
             if (!isDepthRange(m.secondarySource)) return false;
@@ -347,7 +383,7 @@ function roundTripChanges(
             followModulationDepth(read);
             return !Modulator.isIdentical(read, m, true);
         }),
-        added: back.filter(
+        added: restored.filter(
             (r) => !modulators.some((m) => Modulator.isIdentical(r, m, true))
         ).length,
         changedSends: written.filter(
@@ -359,16 +395,32 @@ function roundTripChanges(
     };
 }
 
-// A source every reader ignores: an unknown type, or an illegal or reserved controller
-function hasUnknownSourceType(m: Modulator) {
-    return [m.primarySource, m.secondarySource].some(
-        (s) => s.curveType > ModulatorCurveTypes.custom || isIllegalSource(s)
+// Every generator a destination can be, the invalid one and endOper aside
+const KNOWN_DESTINATIONS = new Set<number>(Object.values(GeneratorTypes));
+KNOWN_DESTINATIONS.delete(GeneratorTypes.invalid);
+KNOWN_DESTINATIONS.delete(GeneratorTypes.endOper);
+
+// A modulator that SFe 4.0 ignores (section 7.4), the SF2 writer drops these (SFe 4.0, section 9.1).
+// The reader gives most of them the invalid destination. The rest are an unknown transform or destination,
+// A destination no modulator can change (or an instrument-only one in a preset zone),
+// An unknown source type, or an illegal or reserved controller as a source
+function isIgnoredModulator(m: Modulator, preset = false) {
+    return (
+        !KNOWN_DESTINATIONS.has(m.destination) ||
+        PRE_VOICE_GENERATORS.has(m.destination) ||
+        (preset && INSTRUMENT_ONLY_GENERATORS.has(m.destination)) ||
+        (m.transformType !== ModulatorTransformTypes.linear &&
+            m.transformType !== ModulatorTransformTypes.absolute) ||
+        [m.primarySource, m.secondarySource].some(
+            (s) =>
+                s.curveType > ModulatorCurveTypes.custom || isIllegalSource(s)
+        )
     );
 }
 
 /**
  * Counts what changes when the bank is written as SF2 and read back.
- * What the SF2 reader recreates as it was (the resonance compensation, the envelope time and variation send defaults)
+ * What the SF2 reader recreates as it was (the envelope time and variation send defaults)
  * is not counted.
  * @param bank The bank to check.
  * @internal
@@ -385,16 +437,14 @@ export function getSF2LossesInternal(bank: BasicSoundBank) {
         bankNumbers: 0
     };
     const lost = new Array<Modulator>();
-    if (sf2NeedsDefaultModulators(bank)) {
+    const writesDMOD = sf2NeedsDefaultModulators(bank);
+    if (writesDMOD) {
         const defaults = bank.defaultModulators;
         const changes = roundTripChanges(
             defaults,
-            // What the reader keeps: an unknown source type is written, and ignored when read
-            restoredDefaults(
-                defaults.filter(
-                    (m) => sf2KeepsModulator(m) && !hasUnknownSourceType(m)
-                )
-            ).modulators
+            // What the reader keeps
+            restoredDefaults(defaults.filter((m) => sf2KeepsModulator(m)))
+                .modulators
         );
         losses.defaultModulators = changes.lost.length;
         losses.addedModulators += changes.added;
@@ -408,14 +458,24 @@ export function getSF2LossesInternal(bank: BasicSoundBank) {
     ].entries()) {
         for (const zone of [element.globalZone, ...element.zones]) {
             for (const g of zone.generators) {
-                if (g.type === GeneratorTypes.sampleModes && g.value === 4)
-                    losses.alternatingLoops++;
-                else if (!sf2KeepsGenerator(g.type, g.value))
-                    losses.generators++;
+                if (g.type === GeneratorTypes.sampleModes) {
+                    // 4 is written as a forward loop, other values outside 0 to 3 as 0
+                    if (g.value === 4) losses.alternatingLoops++;
+                    else if (g.value < 0 || g.value > 3) losses.generators++;
+                } else if (!sf2KeepsGenerator(g.type)) losses.generators++;
             }
+            // Without DMOD the reader gives an instrument zone with CC 71 to Q the resonance twin again
+            const restored =
+                !writesDMOD &&
+                i >= presetCount &&
+                hasResonanceModulator(
+                    zone.modulators.filter((m) => sf2KeepsModulator(m))
+                )
+                    ? [resonanceTwin()]
+                    : [];
             const changes = roundTripChanges(
                 zone.modulators,
-                [],
+                restored,
                 i < presetCount
             );
             losses.modulators += changes.lost.length;
@@ -445,14 +505,23 @@ export function getSF2LossesInternal(bank: BasicSoundBank) {
 
 /**
  * Updates SF2 bank to SFe format as the spec describes.
+ * The zone modulators to initialFilterQ stay as they are, they lower the level with the resonance as in SF2 (SFe 4.0, section 9.2).
  * @param bank The bank that was read.
+ * @param hasDMOD If the file had a DMOD chunk. Its list has no CC 71 to filterQOffset, so the zones get no twin.
  * @internal
  */
-export function upgradeSF2Bank(bank: BasicSoundBank) {
+export function upgradeSF2Bank(bank: BasicSoundBank, hasDMOD: boolean) {
     for (const element of [...bank.presets, ...bank.instruments]) {
         for (const zone of [element.globalZone, ...element.zones])
             fromSF2Modulators(zone.modulators);
     }
-    // Banks from before gain get the CC 71 compensation as modulators
-    addResonanceCompensation(bank);
+    if (hasDMOD) return;
+    // Resonance (the last step): a zone with its own CC 71 to Q turns the default CC 71 to filterQOffset off.
+    // That way the resonance is not doubled. Instrument zones only, a global zone covers its local zones
+    for (const instrument of bank.instruments) {
+        for (const zone of [instrument.globalZone, ...instrument.zones]) {
+            if (hasResonanceModulator(zone.modulators))
+                zone.addModulators(resonanceTwin());
+        }
+    }
 }

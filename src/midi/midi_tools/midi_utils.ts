@@ -3627,8 +3627,8 @@ export class MIDIUtils {
                         return [OTHER];
                     }
 
-                    case 0x00:
-                    case 0x01: {
+                    // TONE MAP-0 NUMBER (01) is not handled, like in the synth
+                    case 0x00: {
                         // Tone map number (cc#32)
                         return [
                             {

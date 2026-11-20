@@ -145,9 +145,10 @@ check(
     attackCount(sf2.defaultModulators) === 1,
     "SF2: envelope modulators restored"
 );
+// The CC 71 to filterQOffset default is SFe only, SF2 drops it and the reader does not add it back (SFe 4.0, section 9.2)
 check(
-    sf2.defaultModulators.length === bank.defaultModulators.length,
-    "SF2: the same number of default modulators"
+    sf2.defaultModulators.length === bank.defaultModulators.length - 1,
+    "SF2: the same default modulators except CC 71 to filterQOffset"
 );
 
 // A CC 73 modulator with amount 0 keeps them out

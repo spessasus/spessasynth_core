@@ -1,7 +1,8 @@
 import {
     GeneratorLimits,
     GENERATORS_AMOUNT,
-    type GeneratorType
+    type GeneratorType,
+    GeneratorTypes
 } from "../../../soundbank/basic_soundbank/generator_types";
 import type { MIDIChannel } from "../channel/midi_channel";
 import type { Voice } from "./voice";
@@ -11,6 +12,33 @@ import type { Voice } from "./voice";
  * To avoid allocating on the audio thread.
  */
 const OFFSET_GENERATORS = new Int16Array(GENERATORS_AMOUNT);
+
+/**
+ * Buffer for the unclamped sums of the generators and their modulators.
+ * Only the final sum saturates, so the order of the modulators never matters.
+ * It is a float buffer so the fractions are only cut once. The single source path sums the float
+ * modulator values too, so both paths give the same result.
+ */
+const GENERATOR_SUMS = new Float64Array(GENERATORS_AMOUNT);
+
+/**
+ * The final value of a generator after its modulators.
+ * sampleModes is truncated toward zero and any value other than 0 to 4 means 0 (SFe 4.0, section 7.1),
+ * every other generator saturates at its limits.
+ * @param generator The generator type.
+ * @param sum The generator plus its modulators.
+ */
+function finalGeneratorValue(generator: GeneratorType, sum: number) {
+    if (generator === GeneratorTypes.sampleModes) {
+        const mode = Math.trunc(sum);
+        return mode >= 0 && mode <= 4 ? mode : 0;
+    }
+    const limit = GeneratorLimits[generator];
+    return limit
+        ? Math.min(limit.max, Math.max(limit.min, sum))
+        : // Unused generator, only prevent the overflow
+          Math.min(32_767, Math.max(-32_768, sum));
+}
 
 /**
  * Computes a given modulator
@@ -90,30 +118,21 @@ export function computeModulators(
 
     if (sourceUsesCC === -1) {
         // All modulators mode: compute all modulators
-        modulatedGenerators.set(generators);
+        // Sum without limits first, only the final sum saturates (SFe 4.0, section 7.1)
+        GENERATOR_SUMS.set(generators);
         for (let i = 0; i < modulators.length; i++) {
-            const mod = modulators[i];
-            // Prevent -32k overflow
-            // Testcase: gm.dls polysynth
-            modulatedGenerators[mod.destination] = Math.min(
-                32_767,
-                Math.max(
-                    -32_768,
-                    modulatedGenerators[mod.destination] +
-                        this.computeModulator(voice, pitch, i)
-                )
+            GENERATOR_SUMS[modulators[i].destination] += this.computeModulator(
+                voice,
+                pitch,
+                i
             );
         }
-        // Apply limits
+        // Apply limits, an unused generator only saturates
+        // Testcase: gm.dls polysynth
         for (let gen = 0; gen < modulatedGenerators.length; gen++) {
-            const limit = GeneratorLimits[gen as GeneratorType];
-            if (!limit) {
-                // Skip unused
-                continue;
-            }
-            modulatedGenerators[gen] = Math.min(
-                limit.max,
-                Math.max(limit.min, modulatedGenerators[gen])
+            modulatedGenerators[gen] = finalGeneratorValue(
+                gen as GeneratorType,
+                GENERATOR_SUMS[gen]
             );
         }
         return;
@@ -144,11 +163,10 @@ export function computeModulators(
             }
             // Apply the limits instantly to prevent -32k overflow
             // Testcase: gm.dls polysynth
-            const limits = GeneratorLimits[destination];
-            modulatedGenerators[destination] = limits
-                ? Math.max(limits.min, Math.min(outputValue, limits.max))
-                : // Unused generator, only prevent the overflow
-                  Math.max(-32_768, Math.min(outputValue, 32_767));
+            modulatedGenerators[destination] = finalGeneratorValue(
+                destination,
+                outputValue
+            );
         }
     }
 }

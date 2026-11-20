@@ -35,6 +35,10 @@ for (let pan = MIN_PAN; pan <= MAX_PAN; pan++) {
     panTableRight[tableIndex] = Math.sin(HALF_PI * realPan);
 }
 
+// The resonance gain reduction 10^(-q / 400) for every initialFilterQ (0 to 960 cB, always whole)
+const resonanceGainTable = new Float32Array(961);
+for (let q = 0; q <= 960; q++) resonanceGainTable[q] = Math.pow(10, -q / 400);
+
 /**
  * Computes the LFO value for the given phase.
  * All waveforms are at zero and rising at the default start phase of 0.25.
@@ -154,6 +158,10 @@ export function renderVoice(
     // Gain (SFe), positive is louder
     const gainCb = modulated[GeneratorTypes.gain];
     if (gainCb !== 0) voiceGain *= cbAttenuationToGain(-gainCb);
+    // The filter's gain reduction of half the resonance, from initialFilterQ only (0 to 960 cB).
+    // FilterQOffset changes the Q but not the level (SFe 4.0, section 7.1.1)
+    const qCb = modulated[GeneratorTypes.initialFilterQ];
+    if (qCb !== 0) voiceGain *= resonanceGainTable[qCb];
 
     // Controller matrix (GS / XG)
     const matrix = this.matrix;

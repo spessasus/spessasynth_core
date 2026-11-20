@@ -5,8 +5,30 @@
  */
 import { type ModulatorCurveType, ModulatorCurveTypes } from "../enums";
 
-// The length of the precomputed curve tables
+// The source value range, 0 to 16384 (SFe 4.0, section 7.2). The precomputed tables have one more entry, so 16384 is a real index
 const MODULATOR_RESOLUTION = 16_384;
+
+/**
+ * The source value of a 7-bit value (velocity, key, pressures, controllers), center-max (SFe 4.0, section 7.2).
+ * 64 is exactly the center (8192) and 127 exactly the end (16384).
+ * @internal
+ */
+export const SOURCE_VALUE_7_BIT = new Uint16Array(128);
+for (let v = 0; v < 128; v++) {
+    SOURCE_VALUE_7_BIT[v] =
+        v <= 64 ? v * 128 : Math.round(8192 + (8192 * (v - 64)) / 63);
+}
+
+/**
+ * The source value of a 14-bit value (the pitch wheel and the computed ranges), center-max (SFe 4.0, section 7.2).
+ * 8192 stays the center and 16383 is exactly the end (16384).
+ * @internal
+ */
+export const SOURCE_VALUE_14_BIT = new Uint16Array(16_384);
+for (let w = 0; w < 16_384; w++) {
+    SOURCE_VALUE_14_BIT[w] =
+        w <= 8192 ? w : Math.round(8192 + (8192 * (w - 8192)) / 8191);
+}
 
 // Precalculate lookup tables for concave and convex curves
 const concave = new Float32Array(MODULATOR_RESOLUTION + 1);
@@ -42,7 +64,8 @@ export abstract class ModulatorCurve {
     public readonly type: ModulatorCurveType;
 
     /**
-     * The precomputed output, one table per transform (0bPD: polarity, direction), indexed by the 14-bit source value.
+     * The precomputed output, one table per transform (0bPD: polarity, direction), indexed by the source value
+     * (0 to 16,384).
      * @internal
      */
     public readonly tables = new Array<Float32Array>();
@@ -100,8 +123,8 @@ export abstract class ModulatorCurve {
         for (let transform = 0; transform < 4; transform++) {
             const isBipolar = (transform & 0b10) !== 0;
             const isNegative = (transform & 1) !== 0;
-            const table = new Float32Array(MODULATOR_RESOLUTION);
-            for (let v = 0; v < MODULATOR_RESOLUTION; v++) {
+            const table = new Float32Array(MODULATOR_RESOLUTION + 1);
+            for (let v = 0; v <= MODULATOR_RESOLUTION; v++) {
                 const value = v / MODULATOR_RESOLUTION;
                 table[v] = this.evaluate(
                     isNegative ? 1 - value : value,
@@ -183,8 +206,8 @@ class SwitchCurve extends ModulatorCurve {
         for (let transform = 0; transform < 4; transform++) {
             const isBipolar = (transform & 0b10) !== 0;
             const isNegative = (transform & 1) !== 0;
-            const table = new Float32Array(MODULATOR_RESOLUTION);
-            for (let v = 0; v < MODULATOR_RESOLUTION; v++) {
+            const table = new Float32Array(MODULATOR_RESOLUTION + 1);
+            for (let v = 0; v <= MODULATOR_RESOLUTION; v++) {
                 const on = v >= MODULATOR_RESOLUTION / 2 !== isNegative;
                 table[v] = this.evaluate(on ? 1 : 0, isBipolar);
             }

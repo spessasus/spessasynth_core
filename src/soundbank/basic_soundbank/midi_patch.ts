@@ -297,8 +297,15 @@ export class MIDIPatchTools {
                 return p;
             }
 
-            // No match, pick any matching drum
-            p = patches.find((p) => p.isDrum && p.program === program);
+            // No match, pick any matching drum (rule 3.1.3).
+            // Below program 49 GS and XG kits still mean the same.
+            // A kit at bank MSB 120 (GM2) numbers its kits like GS, so it counts at any program
+            p = patches.find(
+                (p) =>
+                    p.isDrum &&
+                    p.program === program &&
+                    (program < 49 || p.bankMSB === 120)
+            );
             if (p) {
                 returnReplacement(p);
                 return p;
@@ -326,7 +333,8 @@ export class MIDIPatchTools {
             // For example,
             // XG MU2000 and similar have regular drums on program 56, while GS has the SFX kit.
             // So avoid selecting it and pick any XG drums.
-            if (p && p.program < 49) {
+            // GM2 numbers its kits like GS, so there any program is fine (SFe 4.0, section 11.2.3 rule 3.2.2)
+            if (p && (p.program < 49 || system === "gm2")) {
                 returnReplacement(p);
                 return p;
             }

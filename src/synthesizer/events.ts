@@ -84,6 +84,11 @@ export interface NoteOffEvent extends ChannelEvent {
  * >
  * > _Do not_ use `isGMGSDrum` as the indication!
  *
+ * > **Note**
+ * >
+ * > When no preset is found for the selection, the channel plays nothing and the event has an empty `name`.
+ * > The bank and program are then the ones the MIDI data asked for, and `isDrum` is the channel's drum flag.
+ *
  * @group Synthesizer.Events
  */
 export interface ProgramChangeEvent extends MIDIPatchFull, ChannelEvent {}

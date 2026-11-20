@@ -31,7 +31,8 @@ export function noteOff(this: MIDIChannel, midiNote: number) {
         return;
     }
 
-    const mono = !this._midiParameters.polyMode;
+    // A drum part ignores mono mode
+    const mono = !this._midiParameters.polyMode && !this._drumChannel;
     // Mono mode overrides sustain
     const sustain =
         this._midiControllers[MIDIControllers.sustainPedal] >= 8192 && !mono;

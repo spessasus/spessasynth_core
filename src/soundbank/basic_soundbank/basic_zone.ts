@@ -120,10 +120,12 @@ export class BasicZone {
         validate = true
     ) {
         switch (type) {
-            case GeneratorTypes.sampleID: {
+            case GeneratorTypes.sampleID:
+            case GeneratorTypes.sampleIDMSB: {
                 throw new Error("Use setSample()");
             }
-            case GeneratorTypes.instrument: {
+            case GeneratorTypes.instrument:
+            case GeneratorTypes.instrumentMSB: {
                 throw new Error("Use setInstrument()");
             }
 
@@ -159,8 +161,11 @@ export class BasicZone {
 
                 case GeneratorTypes.invalid:
                 case GeneratorTypes.sampleID:
-                case GeneratorTypes.instrument: {
-                    // Don't add these, they already have their own properties
+                case GeneratorTypes.instrument:
+                case GeneratorTypes.sampleIDMSB:
+                case GeneratorTypes.instrumentMSB: {
+                    // Don't add these, they already have their own properties.
+                    // An index MSB anywhere but next to its index is ignored (SFe 4.0, section 7.1.1)
                     break;
                 }
 

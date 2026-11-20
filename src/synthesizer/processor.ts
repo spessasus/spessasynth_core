@@ -1923,6 +1923,9 @@ export class SpessaSynthProcessor {
      */
     public clearCache() {
         this.cachedVoices.clear();
+        // A default modulator edited in place may change which ones are duplicates
+        for (const entry of this.soundBankManager.soundBankList)
+            entry.soundBank.clearDefaultModulatorCache();
     }
 
     /**

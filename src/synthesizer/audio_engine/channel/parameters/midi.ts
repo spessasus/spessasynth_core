@@ -252,6 +252,12 @@ export function setMIDIParameterInternal<P extends keyof ChannelMIDIParameter>(
     value: ChannelMIDIParameter[P]
 ) {
     if (this.lockedMIDIParameters[parameter]) return;
+    // The pitch wheel indexes the 14-bit source table, so it must be a whole 0 to 16383
+    if (parameter === "pitchWheel")
+        value = Math.min(
+            16_383,
+            Math.max(0, Math.round(value as number))
+        ) as ChannelMIDIParameter[P];
     const changed = this._midiParameters[parameter] !== value;
     // @ts-expect-error This is the only place where we set them
     this._midiParameters[parameter] = value;

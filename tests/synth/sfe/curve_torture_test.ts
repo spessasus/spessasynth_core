@@ -27,7 +27,7 @@ const CC = 16;
 // Same output as the SF2 linear curve for every raw value in the positive direction
 const identity = new CustomCurve([
     { x: 0, y: 0 },
-    { x: 16_383, y: 16_383 }
+    { x: 16_384, y: 16_384 }
 ]);
 // A curve with many points, to exercise the segment search off the 7-bit grid
 const wiggly = new CustomCurve(

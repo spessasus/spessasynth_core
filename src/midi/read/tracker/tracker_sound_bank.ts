@@ -3,18 +3,27 @@ import { EmptySample } from "../../../soundbank/basic_soundbank/basic_sample";
 import { BasicInstrument } from "../../../soundbank/basic_soundbank/basic_instrument";
 import { BasicPreset } from "../../../soundbank/basic_soundbank/basic_preset";
 import { Generator } from "../../../soundbank/basic_soundbank/generator";
-import { GeneratorTypes } from "../../../soundbank/basic_soundbank/generator_types";
+import {
+    type GeneratorType,
+    GeneratorTypes
+} from "../../../soundbank/basic_soundbank/generator_types";
 import { Modulator } from "../../../soundbank/basic_soundbank/modulator";
 import { ModulatorSource } from "../../../soundbank/basic_soundbank/modulator_source";
 import { ModulatorCurveTypes } from "../../../soundbank/enums";
 import type { MIDIController } from "../../enums";
 import {
     FILTER_CUTOFF_CC,
+    FILTER_CUTOFF_EXTRA_CC,
     FILTER_CUTOFF_RANGE,
     FILTER_RESONANCE_CC,
+    FILTER_RESONANCE_EXTRA_CC,
     FILTER_RESONANCE_RANGE,
     OFFSET_COARSE_CC,
-    OFFSET_FINE_CC
+    OFFSET_COARSE_EXTRA_CC,
+    OFFSET_FINE_CC,
+    OFFSET_FINE_EXTRA_CC,
+    OFFSET_FINEST_CC,
+    OFFSET_FINEST_EXTRA_CC
 } from "./tracker_midi_track";
 import {
     type TrackerLoopType,
@@ -23,6 +32,41 @@ import {
     type TrackerSampleVariant,
     TrackerSampleVariants
 } from "./types";
+
+const modulator = (
+    cc: MIDIController,
+    destination: GeneratorType,
+    amount: number
+) =>
+    new Modulator(
+        new ModulatorSource(cc, ModulatorCurveTypes.linear, true),
+        new ModulatorSource(),
+        destination,
+        amount,
+        0
+    );
+// Both controllers of a pair (see OFFSET_FINE_EXTRA_CC) get the same modulator
+const pair = (
+    cc: MIDIController,
+    extra: MIDIController,
+    destination: GeneratorType,
+    amount: number
+) => [
+    modulator(cc, destination, amount),
+    modulator(extra, destination, amount)
+];
+// A 14-bit pair and its LSB, which is worth 1/128 of the pair.
+// The amounts are multiples of 128, so the LSB amount is whole as the file stores it.
+// The LSB is sent alone, so above 64 it is only close to linear (under a cent of cutoff)
+const pair14 = (
+    cc: MIDIController,
+    extra: MIDIController,
+    destination: GeneratorType,
+    amount: number
+) => [
+    ...pair(cc, extra, destination, amount),
+    modulator((cc + 32) as MIDIController, destination, amount / 128)
+];
 
 /**
  * The volume envelope release (in timecents) of the sound bank instruments.
@@ -254,7 +298,7 @@ export class TrackerSampleBank {
      * @param formatName The module format name.
      * @param rootKey The MIDI key at which the samples play at their middle C rate.
      * @param attenuation The attenuation of every sample in centibels.
-     * @returns The SF2 binary.
+     * @returns The SFe binary. SF2 can't store the gain modulators of the resonance.
      */
     public write(
         title: string,
@@ -267,49 +311,50 @@ export class TrackerSampleBank {
         bank.soundBankInfo.software = "SpessaSynth";
         bank.soundBankInfo.comment = `Converted from ${formatName}`;
 
-        const ccSource = (cc: MIDIController) =>
-            new ModulatorSource(cc, ModulatorCurveTypes.linear, true);
         const modulators = [
-            // The sample offset controllers modulate the sample start
-            new Modulator(
-                ccSource(OFFSET_FINE_CC),
-                new ModulatorSource(),
+            // The sample offset controllers modulate the sample start.
+            // The largest amount, each step is 255.99 sample points.
+            // The synthesizer truncates the result, so offsets land one sample point early
+            ...pair(
+                OFFSET_FINE_CC,
+                OFFSET_FINE_EXTRA_CC,
                 GeneratorTypes.startAddrsOffset,
-                // The largest amount, each step is 255.99 sample points (and 2 for the LSB).
-                // The synthesizer truncates the result, so offsets land one sample point early
-                32_767,
-                0
+                32_767
             ),
-            new Modulator(
-                ccSource(OFFSET_COARSE_CC),
-                new ModulatorSource(),
+            // 2 sample points per step
+            ...pair(
+                OFFSET_FINEST_CC,
+                OFFSET_FINEST_EXTRA_CC,
+                GeneratorTypes.startAddrsOffset,
+                256
+            ),
+            // Slightly above 128 so the truncated result is exactly the controller value
+            ...pair(
+                OFFSET_COARSE_CC,
+                OFFSET_COARSE_EXTRA_CC,
                 GeneratorTypes.startAddrsCoarseOffset,
-                // Slightly above 128 so the truncated result is exactly the controller value
-                129,
-                0
+                129
             ),
             // The resonant filter, zero leaves it open
-            new Modulator(
-                ccSource(FILTER_CUTOFF_CC),
-                new ModulatorSource(),
+            ...pair14(
+                FILTER_CUTOFF_CC,
+                FILTER_CUTOFF_EXTRA_CC,
                 GeneratorTypes.initialFilterFc,
-                -FILTER_CUTOFF_RANGE,
-                0
+                -FILTER_CUTOFF_RANGE
             ),
-            new Modulator(
-                ccSource(FILTER_RESONANCE_CC),
-                new ModulatorSource(),
+            ...pair14(
+                FILTER_RESONANCE_CC,
+                FILTER_RESONANCE_EXTRA_CC,
                 GeneratorTypes.initialFilterQ,
-                FILTER_RESONANCE_RANGE,
-                0
+                FILTER_RESONANCE_RANGE
             ),
-            // The synthesizer lowers the gain by half of the resonance, trackers do not
-            new Modulator(
-                ccSource(FILTER_RESONANCE_CC),
-                new ModulatorSource(),
-                GeneratorTypes.initialAttenuation,
-                -FILTER_RESONANCE_RANGE / 2,
-                0
+            // The synthesizer lowers the gain by half of the resonance, trackers do not.
+            // The gain generator is SFe only, a negative attenuation would stop at 0
+            ...pair14(
+                FILTER_RESONANCE_CC,
+                FILTER_RESONANCE_EXTRA_CC,
+                GeneratorTypes.gain,
+                FILTER_RESONANCE_RANGE / 2
             )
         ];
 
@@ -389,7 +434,7 @@ export class TrackerSampleBank {
             bank.addPresets(bankPreset);
         }
         bank.flush();
-        return bank.writeSF2();
+        return bank.writeSFe();
     }
 
     private createLayout(

@@ -1,3 +1,4 @@
+import { SpessaLog } from "../../../utils/loggin";
 import { RIFFChunk } from "../../../utils/riff_chunk";
 import { readLittleEndianIndexed } from "../../../utils/byte_functions/little_endian";
 import { readBinaryStringIndexed } from "../../../utils/byte_functions/string";
@@ -7,6 +8,7 @@ import type { BasicInstrument } from "../../basic_soundbank/basic_instrument";
 import type { Modulator } from "../../basic_soundbank/modulator";
 import type { Generator } from "../../basic_soundbank/generator";
 import { BasicPresetZone } from "../../basic_soundbank/basic_preset_zone";
+import { knownGenerators, readZoneIndex } from "./generators";
 import { GeneratorTypes } from "../../basic_soundbank/generator_types";
 
 /**
@@ -47,19 +49,30 @@ export class SoundFontPreset extends BasicPreset {
         const instrumentID = generators.find(
             (g) => g.type === GeneratorTypes.instrument
         );
-        let instrument;
-        if (instrumentID) {
-            instrument = instruments[instrumentID.value];
-        } else {
+        if (!instrumentID) {
             throw new Error("No instrument ID found in preset zone.");
         }
+        // Unsigned, with instrumentMSB as the top 16 bits (SFe 4.0, section 7.1.1)
+        const index = readZoneIndex(
+            generators,
+            instrumentID,
+            GeneratorTypes.instrumentMSB
+        );
+        const instrument = instruments[index];
+        // A zone whose index refers past the instruments is ignored (SFe 4.0, section 7.1.1)
         if (!instrument) {
-            throw new Error(
-                `Invalid instrument ID: ${instrumentID.value}, available instruments: ${instruments.length}`
+            SpessaLog.warn(
+                `Invalid instrument ID: ${index}, available instruments: ${instruments.length}. Ignoring the zone.`
             );
+            return;
         }
         const z = new BasicPresetZone(this, instrument);
-        z.addGenerators(...generators);
+        // Unknown generators are ignored, and so is everything after the index, as in SF2 (SFe 4.0, section 7.1.1)
+        z.addGenerators(
+            ...knownGenerators(
+                generators.slice(0, generators.indexOf(instrumentID) + 1)
+            )
+        );
         z.addModulators(...modulators);
         this.zones.push(z);
         return z;
