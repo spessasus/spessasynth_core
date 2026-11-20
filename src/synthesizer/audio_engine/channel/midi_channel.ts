@@ -770,7 +770,8 @@ export class MIDIChannel {
         this.noteOffID.fill(0);
         this.playingNotes.fill(false);
         if (force) {
-            // Force stop all
+            // Force stop all, so mono mode has no note left to take over
+            this.lastMonoNote = -1;
             let vc = 0;
             if (this._voiceCount > 0)
                 for (const v of this.synthCore.voices) {

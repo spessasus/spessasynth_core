@@ -71,10 +71,10 @@ export function noteOff(this: MIDIChannel, midiNote: number) {
     // Mono mode, restore highest still pressed note
     if (mono) {
         const highest = this.playingNotes.lastIndexOf(true);
-        if (highest === -1) {
-            // No note is playing
-            this.lastMonoNote = -1;
-        } else if (this.lastMonoNote === midiNote) {
+        // With no key held, the last mono note is kept, so the next note of another key takes the voice over.
+        // That happens even while the voice is still in its release, like the Sound Canvas
+        // Testcase: Sound Canvas MIDI Collection_Nintendo_Mario_sm1_01.mid (ghost notes cut the long release)
+        if (highest !== -1 && this.lastMonoNote === midiNote) {
             // The if condition above:
             // Ensure that we don't retrigger note that's not this one
             // For example notes might go like this:

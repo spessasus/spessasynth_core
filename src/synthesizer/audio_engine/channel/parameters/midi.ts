@@ -252,12 +252,20 @@ export function setMIDIParameterInternal<P extends keyof ChannelMIDIParameter>(
     value: ChannelMIDIParameter[P]
 ) {
     if (this.lockedMIDIParameters[parameter]) return;
+    const changed = this._midiParameters[parameter] !== value;
     // @ts-expect-error This is the only place where we set them
     this._midiParameters[parameter] = value;
 
     switch (parameter) {
         case "pitchWheel": {
             this.computeModulatorsAll(0, ModulatorControllerSources.pitchWheel);
+            break;
+        }
+
+        case "polyMode": {
+            // A mode switch starts mono mode fresh, without a note to take over.
+            // GS and XG SysEx may send the same mode again while a key is held, that keeps the note
+            if (changed) this.lastMonoNote = -1;
             break;
         }
 

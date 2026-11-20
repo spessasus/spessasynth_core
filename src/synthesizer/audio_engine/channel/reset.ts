@@ -135,6 +135,7 @@ export function resetChannelInternal(this: MIDIChannel, sendCCEvents = true) {
     this.matrix.reset();
     this.sf2NRPNGeneratorLSB = 0;
     this.playingNotes.fill(false);
+    this.lastMonoNote = -1;
     this.xgInsertionAssigned = false;
     this.resetVibratoParams();
 

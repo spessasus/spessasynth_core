@@ -793,9 +793,11 @@ It is the default mode on all channels.
 #### Mono Mode
 
 Mono Mode allows only a single note on the channel.
-A Note On for a different pitch will immediately terminate the previously tracked mono note.
+A Note On for a different pitch will immediately terminate the previously tracked mono note,
+also when that note is already in its release, like the Sound Canvas.
 Releasing a note while another one is held will retrigger the highest currently held note,
 with the velocity of the last Note On.
+The tracked note is forgotten on a switch between poly and mono mode, a forced stop and a reset.
 
 ### Portamento Implementation
 
