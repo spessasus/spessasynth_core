@@ -61,6 +61,7 @@ class DriveStage extends ParallelStage {
         // The amp runs when it is switched off too, so switching it on does not click
         const amp = this.amp.process(y);
         if (this.ampOn) y = amp;
+        // noinspection JSSuspiciousNameCombination
         this.left = this.right = y;
     }
 

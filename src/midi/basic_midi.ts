@@ -323,6 +323,7 @@ export class BasicMIDI {
         return mid;
     }
 
+    // noinspection JSUnusedGlobalSymbols
     /**
      * Loads a MIDI file (SMF, RMIDI, XMF, Tracker Modules) from a given file.
      * @param file The file to load.

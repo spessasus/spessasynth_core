@@ -14,6 +14,7 @@ import {
     BasicSoundBank,
     CustomCurve,
     DEFAULT_SOUND_BANK_LOAD_OPTIONS,
+    GeneratorLimits,
     type GeneratorType,
     GeneratorTypes,
     MIDIControllers,
@@ -28,7 +29,6 @@ import {
     SPESSASYNTH_DEFAULT_MODULATORS,
     SpessaSynthProcessor
 } from "../../../src";
-import { GeneratorLimits } from "../../../src/soundbank/basic_soundbank/generator_types";
 import { fromSF2DefaultModulators } from "../../../src/soundbank/soundfont/sf2_compatibility";
 import {
     check,

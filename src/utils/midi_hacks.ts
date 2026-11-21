@@ -1,7 +1,5 @@
 import type { MIDISystem } from "../soundbank/types";
 
-export const XG_SFX_VOICE = 64;
-
 const GM2_DEFAULT_BANK = 121;
 
 /**

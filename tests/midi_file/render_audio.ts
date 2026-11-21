@@ -218,6 +218,7 @@ async function writeTargetChecksums(
     checksums: Record<string, string>
 ) {
     const checksumsPath = path.join(checksumsDir, `${target}.json`);
+    // noinspection ES6MissingAwait
     const currentQueue = writeQueues.get(target) ?? Promise.resolve();
     // noinspection ES6MissingAwait
     const nextQueue = currentQueue

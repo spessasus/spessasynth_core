@@ -556,6 +556,7 @@ export class BasicSample {
         }
     }
 
+    // noinspection JSUnusedGlobalSymbols
     /**
      * Links the sample to a given instrument.
      * @param instrument the instrument to link to.
@@ -565,6 +566,7 @@ export class BasicSample {
         this.linkedTo.push(instrument);
     }
 
+    // noinspection JSUnusedGlobalSymbols
     /**
      * Unlinks the sample from a given instrument.
      * @param instrument the instrument to unlink from.

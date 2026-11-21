@@ -11,11 +11,6 @@ export const TremoloWaves = {
 } as const;
 
 /**
- * @internal
- */
-export type TremoloWave = (typeof TremoloWaves)[keyof typeof TremoloWaves];
-
-/**
  * The second stages of the combinations.
  * @internal
  */

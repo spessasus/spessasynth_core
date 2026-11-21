@@ -4,6 +4,7 @@ import { existsSync, readFileSync } from "node:fs";
 import {
     BasicMIDI,
     BasicSoundBank,
+    Generator,
     GeneratorTypes,
     type MIDIController,
     MIDIControllers,
@@ -15,7 +16,6 @@ import {
     SoundBankLoader,
     SpessaLog
 } from "../../../src";
-import { Generator } from "../../../src/soundbank/basic_soundbank/generator";
 import { toSF2Generator } from "../../../src/soundbank/soundfont/sf2_compatibility";
 import { check, finish, makeBank, sineSample } from "./sfe_test_utils";
 
