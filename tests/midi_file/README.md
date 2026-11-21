@@ -19,7 +19,7 @@ to render their output using `spessasynth_core` and reference VST plugins.
 - `test:midi:render` - complete MIDI and wav generation, with full setup.
 - `test:midi:generate` - just the MIDI files.
 - `test:midi:clean` - clean all artifacts.
-- `build:renderer` - builds the VST renderer.
+- `test:midi:build-renderer` - builds the VST renderer.
 
 ## Needed files for `test:midi:render`
 

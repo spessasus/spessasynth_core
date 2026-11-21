@@ -7,23 +7,24 @@
     "module": "dist/index.js",
     "types": "dist/index.d.ts",
     "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1",
-        "lint": "eslint",
-        "build:fast": "rimraf -rf dist && tsdown src/index.ts --tsconfig src/tsconfig.json --platform neutral --sourcemap",
-        "build": "npm run test:types && npm run build:fast",
-        "build:renderer": "tsx tests/midi_file/renderer/build.ts",
-        "format": "prettier --list-different --write .",
-        "test:types": "npm run lint && tsc -b ",
-        "test:midi:generate": "tsx tests/midi_file/generate_midi.ts",
-        "test:midi:clean": "tsx tests/midi_file/clean.ts",
-        "test:midi:render": "tsx tests/midi_file/render_audio.ts",
-        "prepublishOnly": "npm run format && npm run build",
-        "prepare": "husky",
-        "dev:vorbis": "npm uninstall stb-vorbis; npm install ../stb-vorbis",
+        "build": "npm run check && npm run build:fast",
+        "build:fast": "rimraf dist && tsdown src/index.ts --tsconfig src/tsconfig.json --platform neutral --sourcemap",
+        "check": "npm run lint && node node_modules/typescript7/bin/tsc -b",
+        "deps:local": "npm uninstall stb-vorbis; npm install ../stb-vorbis",
+        "deps:npm": "npm uninstall stb-vorbis; npm install stb-vorbis",
         "docs": "tsx node_modules/typedoc/bin/typedoc src/index.ts --options typedoc.json",
+        "docs:serve": "concurrently \"npm run docs:watch\" \"npx serve site/\"",
         "docs:watch": "tsx node_modules/typedoc/bin/typedoc src/index.ts --options typedoc.json --watch",
-        "docs:serve": "npx concurrently \"npm run docs:watch\" \"npx serve site/\"",
-        "release:vorbis": "npm uninstall stb-vorbis; npm install stb-vorbis"
+        "format": "prettier --list-different --write .",
+        "format:check": "prettier --check .",
+        "lint": "eslint",
+        "prepare": "husky",
+        "prepublishOnly": "node -e \"const l=Object.entries(require('./package.json').dependencies).filter(([,v])=>/^(file|link):/.test(v));if(l.length){console.error('Linked locally: '+l.map(([k])=>k).join(', ')+'. Run npm run deps:npm before publishing.');process.exit(1)}\" && npm run format:check && npm run build",
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "test:midi:build-renderer": "tsx tests/midi_file/renderer/build.ts",
+        "test:midi:clean": "tsx tests/midi_file/clean.ts",
+        "test:midi:generate": "tsx tests/midi_file/generate_midi.ts",
+        "test:midi:render": "tsx tests/midi_file/render_audio.ts"
     },
     "repository": {
         "type": "git",
@@ -57,6 +58,9 @@
         "url": "https://github.com/spessasus/spessasynth_core/issues",
         "email": "spesekspesek@gmail.com"
     },
+    "engines": {
+        "node": ">=24"
+    },
     "files": [
         "dist",
         "README.md",
@@ -70,6 +74,7 @@
         "@types/markdown-it": "14.2.0",
         "@types/midi": "^2.0.4",
         "@types/node": "^26.6.6",
+        "concurrently": "^10.0.7",
         "eslint": "^10.4.0",
         "eslint-config-prettier": "^10.1.8",
         "eslint-plugin-unicorn": "^64.0.0",
@@ -82,7 +87,8 @@
         "tsx": "^4.22.3",
         "typedoc": "0.28.20",
         "typescript": "^6.0.3",
-        "typescript-eslint": "^8.59.4"
+        "typescript-eslint": "^8.59.4",
+        "typescript7": "npm:typescript@^7.0.2"
     },
     "lint-staged": {
         "*.ts": [

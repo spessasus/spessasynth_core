@@ -255,7 +255,7 @@ async function getRendererPath(arch: "x86" | "x64") {
 
     if (!(await fileExists(rendererPath))) {
         console.info(`Renderer ${arch} not found. Building renderer...`);
-        child_process.execFileSync("npm", ["run", "build:renderer"], {
+        child_process.execFileSync("npm", ["run", "test:midi:build-renderer"], {
             cwd: rootDir,
             stdio: "inherit",
             shell: true

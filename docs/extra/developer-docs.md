@@ -43,7 +43,7 @@ It also enforces the requirement of **spessasynth_core being able to run in the 
 
 ### Start coding
 
-To test your changes, run the `npm run dev` script in `SpessaSynth`. This does three things:
+To test your changes, run the `npm run deps:local` script in `SpessaSynth`. This does three things:
 
 1. It builds your copy of `spessasynth_core`
 2. It builds your copy of `spessasynth_lib`, using your copy of `core`.
