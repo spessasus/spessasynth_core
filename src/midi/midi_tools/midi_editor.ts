@@ -584,7 +584,8 @@ export class MIDIEditor {
             this.assignMIDIPort(i, midi.tracks[i].port);
         }
 
-        const channelsAmount = this.currentPortOffset;
+        // Always at least 16 channels, even if the file has no notes
+        const channelsAmount = Math.max(16, this.currentPortOffset);
         for (let i = 0; i < channelsAmount; i++) {
             this.channelStatuses.push({
                 channel: i,
