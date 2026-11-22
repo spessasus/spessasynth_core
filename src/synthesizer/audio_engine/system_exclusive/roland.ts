@@ -1356,7 +1356,10 @@ export function rolandSystemExclusive(
                     return;
                 }
 
-                // User Drum Set Bulk Dump
+                // User Drum Set Bulk Dump (SC-88 and up)
+                // Each packet carries one raw byte per key, starting at key a3 (real units always send 0).
+                // Guessed by analyzing 95043-2.KYC.mid
+                // Verified on hardware
                 if (a1 === 0x29) {
                     const dataLength = syx.length - 9;
                     SpessaLog.info(
@@ -1364,125 +1367,49 @@ export function rolandSystemExclusive(
                         ConsoleColors.recognized,
                         ConsoleColors.value
                     );
-
-                    // Top half of a2 stays the same (indicates which user drum)
-                    // While the bottom param is something else
-                    // Guessed by analyzing 95043-2.KYC.mid
-
-                    let actualDrumParam: number;
-                    switch (a2 & 0x0f) {
-                        default: {
-                            SpessaLog.gsFail(
-                                "User Drum Bulk Dump System Exclusive",
+                    const packet = a2 & 0x0f;
+                    // Packet B is the 12 character name (plus 4 zero bytes), handled once
+                    if (packet === 0xb) {
+                        handleUserDrum.call(this, a2 & 0xf0, 0, 0, syx);
+                        return;
+                    }
+                    // Packets 0 to A match the real time parameters, packet 6 holds both Rx flags
+                    const actualDrumParam = [
+                        1, 2, 3, 4, 5, 6, -1, 9, 0xa, 0xb, 0xc
+                    ][packet];
+                    if (actualDrumParam === undefined) {
+                        SpessaLog.gsFail(
+                            "User Drum Bulk Dump System Exclusive",
+                            syx
+                        );
+                        return;
+                    }
+                    for (let i = 0; i < dataLength && a3 + i < 128; i++) {
+                        const value = syx[i + 7];
+                        const midiNote = a3 + i;
+                        if (actualDrumParam === -1) {
+                            // Bit 0 is Rx NOTE OFF and bit 4 Rx NOTE ON, bit 3 is internal
+                            handleUserDrum.call(
+                                this,
+                                (a2 & 0xf0) | 7,
+                                midiNote,
+                                value & 1,
                                 syx
                             );
-                            return;
+                            handleUserDrum.call(
+                                this,
+                                (a2 & 0xf0) | 8,
+                                midiNote,
+                                (value >> 4) & 1,
+                                syx
+                            );
+                            continue;
                         }
-
-                        case 0x0: {
-                            // Most at 60 = play note?
-                            actualDrumParam = 1;
-                            break;
-                        }
-
-                        case 0x1: {
-                            // Level?
-                            actualDrumParam = 2;
-                            break;
-                        }
-
-                        case 0x2: {
-                            // Matches gm.dls exclusive class pretty well, assign group?
-                            actualDrumParam = 3;
-                            break;
-                        }
-
-                        case 0x3: {
-                            // Most at 64, so pan?
-                            actualDrumParam = 4;
-                            break;
-                        }
-
-                        case 0x4: {
-                            // 0 on bass, so reverb?
-                            actualDrumParam = 5;
-                            break;
-                        }
-
-                        case 0x5: {
-                            // 0 on all, so chorus?
-                            actualDrumParam = 6;
-                            break;
-                        }
-
-                        case 0x6: {
-                            // 16 on all
-                            // In the order, rx notes should be here, it's 0x10, so maybe
-                            // It's both? on << 4 | off?
-                            // Special handling is needed
-                            const address2Off = (a2 & 0xf0) | 7;
-                            const address2On = (a2 & 0xf0) | 8;
-                            for (
-                                let midiNote = 0;
-                                midiNote < dataLength;
-                                midiNote++
-                            ) {
-                                handleUserDrum.call(
-                                    this,
-                                    address2Off,
-                                    midiNote,
-                                    syx[midiNote + 7] & 0xf,
-                                    syx
-                                );
-                                handleUserDrum.call(
-                                    this,
-                                    address2On,
-                                    midiNote,
-                                    syx[midiNote + 7] >> 4,
-                                    syx
-                                );
-                            }
-                            return;
-                        }
-
-                        case 0x7: {
-                            // All 0, so delay
-                            actualDrumParam = 9;
-                            break;
-                        }
-
-                        case 0x8: {
-                            // All 2 and this is a 88pro midi, so the map is 2
-                            actualDrumParam = 0xa;
-                            break;
-                        }
-
-                        case 0x9: {
-                            // 0xA matches note number so the only one left is the program
-                            actualDrumParam = 0xb;
-                            break;
-                        }
-
-                        case 0xa: {
-                            // Drum numbers increase so source note
-                            actualDrumParam = 0xc;
-                            break;
-                        }
-
-                        case 0xb: {
-                            // 16 chars, seems to be a name (spec is wrong? says 12)
-                            actualDrumParam = 0;
-                            break;
-                        }
-                    }
-
-                    const address2 = (a2 & 0xf0) | actualDrumParam;
-                    for (let midiNote = 0; midiNote < dataLength; midiNote++) {
                         handleUserDrum.call(
                             this,
-                            address2,
+                            (a2 & 0xf0) | actualDrumParam,
                             midiNote,
-                            syx[midiNote + 7],
+                            value,
                             syx
                         );
                     }

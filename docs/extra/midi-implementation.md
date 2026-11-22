@@ -512,6 +512,9 @@ They are only listed once a sound bank with presets is loaded.
 Bulk dump messages set many parameters in one message.
 
 SpessaSynth currently recognizes the bulk dump messages for User Drum Set only.
+Each packet (`29 dp kk`, set `d`, packet `p`) carries one byte per key, starting at key `kk` (real units always send `00`).
+Packets `0` to `A` set the parameters in the table above in order, except packet `6`, which holds both Rx flags:
+bit 0 is Rx NOTE OFF, bit 4 is Rx NOTE ON, and bit 3 is ignored. Packet `B` is the 12 character name of the set.
 
 ### Yamaha XG
 

@@ -2804,102 +2804,42 @@ export class MIDIUtils {
             return [this.handleSingleUserDrum(a2, a3, value)];
         }
 
-        // User Drum Set Bulk Dump
+        // User Drum Set Bulk Dump (SC-88 and up)
+        // Each packet carries one raw byte per key, starting at key a3
         if (a1 === 0x29) {
+            // Packet B is the 12 character name (plus 4 zero bytes), not per key
+            if ((a2 & 0x0f) === 0xb) return [OTHER];
             const dataLength = syx.length - 9;
-            // See the corresponding code in synth sysEx handler for comments
-
-            let actualDrumParam: number;
-            switch (a2 & 0x0f) {
-                default: {
-                    return [OTHER];
-                }
-
-                case 0x0: {
-                    actualDrumParam = 1;
-                    break;
-                }
-
-                case 0x1: {
-                    actualDrumParam = 2;
-                    break;
-                }
-
-                case 0x2: {
-                    actualDrumParam = 3;
-                    break;
-                }
-
-                case 0x3: {
-                    actualDrumParam = 4;
-                    break;
-                }
-
-                case 0x4: {
-                    actualDrumParam = 5;
-                    break;
-                }
-
-                case 0x5: {
-                    actualDrumParam = 6;
-                    break;
-                }
-
-                case 0x6: {
-                    const address2Off = (a2 & 0xf0) | 7;
-                    const address2On = (a2 & 0xf0) | 8;
-                    const analyzed = new Array<AnalyzedSysExMessage>();
-                    for (let midiNote = 0; midiNote < dataLength; midiNote++) {
-                        analyzed.push(
-                            this.handleSingleUserDrum(
-                                address2Off,
-                                midiNote,
-                                syx[midiNote + 7] & 0xf
-                            ),
-                            this.handleSingleUserDrum(
-                                address2On,
-                                midiNote,
-                                syx[midiNote + 7] >> 4
-                            )
-                        );
-                    }
-                    return analyzed;
-                }
-
-                case 0x7: {
-                    actualDrumParam = 9;
-                    break;
-                }
-
-                case 0x8: {
-                    actualDrumParam = 0xa;
-                    break;
-                }
-
-                case 0x9: {
-                    actualDrumParam = 0xb;
-                    break;
-                }
-
-                case 0xa: {
-                    actualDrumParam = 0xc;
-                    break;
-                }
-
-                case 0xb: {
-                    actualDrumParam = 0;
-                    break;
-                }
-            }
-
-            const address2 = (a2 & 0xf0) | actualDrumParam;
+            // Packets 0 to A match the real time parameters, packet 6 holds both Rx flags
+            const actualDrumParam = [1, 2, 3, 4, 5, 6, -1, 9, 0xa, 0xb, 0xc][
+                a2 & 0x0f
+            ];
+            if (actualDrumParam === undefined) return [OTHER];
             const analyzed = new Array<AnalyzedSysExMessage>();
-            for (let midiNote = 0; midiNote < dataLength; midiNote++) {
+            for (let i = 0; i < dataLength && a3 + i < 128; i++) {
+                const value = syx[i + 7];
+                const midiNote = a3 + i;
+                if (actualDrumParam === -1) {
+                    // Bit 0 is Rx NOTE OFF and bit 4 Rx NOTE ON, bit 3 is internal
+                    analyzed.push(
+                        this.handleSingleUserDrum(
+                            (a2 & 0xf0) | 7,
+                            midiNote,
+                            value & 1
+                        ),
+                        this.handleSingleUserDrum(
+                            (a2 & 0xf0) | 8,
+                            midiNote,
+                            (value >> 4) & 1
+                        )
+                    );
+                    continue;
+                }
                 analyzed.push(
                     this.handleSingleUserDrum(
-                        address2,
+                        (a2 & 0xf0) | actualDrumParam,
                         midiNote,
-                        syx[midiNote + 7]
+                        value
                     )
                 );
             }
