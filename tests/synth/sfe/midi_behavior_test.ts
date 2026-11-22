@@ -431,8 +431,8 @@ console.info("Default controller values and modulators:");
     synth.controllerChange(0, MIDIControllers.brightness, 0);
     synth.process(left, right, 0, QUANTUM);
     check(
-        generator(GeneratorTypes.initialFilterFc) === 1500,
-        `CC 74 of 0 lowers it to the 1500 limit (${generator(GeneratorTypes.initialFilterFc)})`
+        generator(GeneratorTypes.initialFilterFc) === 1200,
+        `CC 74 of 0 lowers it by the full 4800 cents, the sum has no 1500 limit (${generator(GeneratorTypes.initialFilterFc)})`
     );
 }
 

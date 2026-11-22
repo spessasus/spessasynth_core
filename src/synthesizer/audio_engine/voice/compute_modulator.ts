@@ -23,8 +23,7 @@ const GENERATOR_SUMS = new Float64Array(GENERATORS_AMOUNT);
 
 /**
  * The final value of a generator after its modulators.
- * sampleModes is truncated toward zero and any value other than 0 to 4 means 0 (SFe 4.0, section 7.1),
- * every other generator saturates at its limits.
+ * sampleModes is truncated toward zero and any value other than 0 to 4 means 0 (SFe 4.0, section 7.1).
  * @param generator The generator type.
  * @param sum The generator plus its modulators.
  */
@@ -33,10 +32,15 @@ function finalGeneratorValue(generator: GeneratorType, sum: number) {
         const mode = Math.trunc(sum);
         return mode >= 0 && mode <= 4 ? mode : 0;
     }
-    const limit = GeneratorLimits[generator];
+    // InitialFilterFc is left unclamped since only the final cutoff is limited
+    // (SFe 4.0, section 8.1.2)
+    const limit =
+        generator === GeneratorTypes.initialFilterFc
+            ? undefined
+            : GeneratorLimits[generator];
     return limit
         ? Math.min(limit.max, Math.max(limit.min, sum))
-        : // Unused generator, only prevent the overflow
+        : // Unused generator or initialFilterFc, only prevent the overflow
           Math.min(32_767, Math.max(-32_768, sum));
 }
 

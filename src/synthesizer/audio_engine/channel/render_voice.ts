@@ -569,7 +569,7 @@ export function renderVoice(
             targetCutoff > 13_499 &&
             f.currentInitialFc > 13_499
         ) {
-            f.currentInitialFc = 13_500;
+            // We allow above 13500 at this point in time
             // Filter is open, apply gain
             for (let i = 0; i < sampleCount; i++) {
                 out[i] += buffer[i] * gain;
