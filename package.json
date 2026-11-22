@@ -103,6 +103,6 @@
     },
     "dependencies": {
         "fflate": "0.8.3",
-        "stb-vorbis": "^0.0.7"
+        "stb-vorbis": "^0.0.8"
     }
 }
