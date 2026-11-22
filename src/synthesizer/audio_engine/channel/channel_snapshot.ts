@@ -178,6 +178,10 @@ export function applySnapshot(this: MIDIChannel, snapshot: ChannelSnapshot) {
         this.setBankMSB(snapshot.patch.bankMSB);
         this.setBankLSB(snapshot.patch.bankLSB);
         this.setIsGMGSDrum(snapshot.patch.isGMGSDrum);
+        // Note:
+        // On XG this program change can switch the drum map (Drum Setup 2)
+        // And send a channelParamChange event before the MIDI parameters below restore the saved map.
+        // The final state is correct.
         this.programChange(snapshot.patch.program);
         // The selected preset decides if this is a drum channel.
         // Only without a preset the flag from the snapshot is used

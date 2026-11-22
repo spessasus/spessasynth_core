@@ -652,6 +652,11 @@ A drum instrument is defined as a single MIDI key in the drum preset.
 Edits are applied to every channel whose PART MODE matches the drum setup number,
 stored in the Channel MIDI Parameter {@link ChannelMIDIParameter.drumMap `drumMap`}.
 DRUM SETUP 1 edits the parts in `DRUMS1` mode (the drum channel's mode after XG reset), DRUM SETUP 2 edits `DRUMS2` parts and so on.
+A part in `NORMAL` mode that selects a drum kit with Bank Select MSB `127` (or `120`, or `126` for the SFX kit)
+and a Program Change switches to `DRUMS2` (decided by the bank alone, even if the sound bank lacks the kit),
+and a melodic voice switches a `DRUMS2` part back to `NORMAL` (also when `DRUMS2` was set with PART MODE).
+The drum channel (part 10) keeps `DRUMS1`, and a part set to plain `DRUM` mode (which no drum setup edits) is left alone.
+Verified on hardware.
 
 | Name            | Description                                                                                                                                                |
 | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |

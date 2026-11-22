@@ -40,6 +40,16 @@ export class BankSelectHacks {
         return bankMSB === 120 || bankMSB === 127;
     }
 
+    /**
+     * Checks if a program change on this bank selects an XG drum kit, the SFX kit (126) included.
+     * Decides the XG drum setup of a part,
+     * unlike {@link isXGDrum} which is for the preset lookup.
+     * Confirmed with syxg50
+     */
+    public static selectsXGDrumKit(bankMSB: number) {
+        return this.isXGDrum(bankMSB) || bankMSB === 126;
+    }
+
     public static isSystemXG(system: MIDISystem) {
         return system === "gm2" || system === "xg";
     }

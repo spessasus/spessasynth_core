@@ -9,6 +9,10 @@ import { SpessaLog } from "../../../utils/loggin";
 import { DrumParameterUtils } from "../../../midi/drum_parameters";
 import { ConsoleColors } from "../../../utils/other";
 import { BankSelectHacks } from "../../../utils/midi_hacks";
+import {
+    DEFAULT_XG_DRUM_MAP,
+    MELODIC_MAP
+} from "../../../midi/midi_tools/sysex_data";
 
 /**
  * Changes the program (preset) of the channel.
@@ -27,6 +31,26 @@ export function programChange(this: MIDIChannel, program: number) {
         this.setIsGMGSDrum(false);
         this.setBankLSB(0);
         this.setBankMSB(BankSelectHacks.getDrumBank(this.channelSystem));
+    }
+
+    // XG: a part in normal mode switched to a drum kit uses Drum Setup 2.
+    // A melodic voice brings it back to normal.
+    // Part 10 keeps Drum Setup 1, a part in the plain drum mode (no setup) is left alone.
+    // Verified on syxg50
+    if (
+        this.channelSystem === "xg" &&
+        this.channel % 16 !== MIDI_DRUM_CHANNEL
+    ) {
+        // Switch with the bank alone,
+        // So it does not depend on the sound bank having the kit
+        const isDrumKit = BankSelectHacks.selectsXGDrumKit(this.patch.bankMSB);
+        const drumSetup2 = DEFAULT_XG_DRUM_MAP + 1;
+        const map = this._midiParameters.drumMap;
+        if (map === MELODIC_MAP && isDrumKit) {
+            this.setMIDIParameter("drumMap", drumSetup2);
+        } else if (map === drumSetup2 && !isDrumKit) {
+            this.setMIDIParameter("drumMap", MELODIC_MAP);
+        }
     }
 
     this.patch.program = program;
