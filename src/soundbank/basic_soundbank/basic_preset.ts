@@ -560,7 +560,11 @@ export class BasicPreset implements MIDIPatchFull {
                         gen.type === GeneratorTypes.keyRange ||
                         gen.type === GeneratorTypes.instrument ||
                         gen.type === GeneratorTypes.endOper ||
-                        INSTRUMENT_ONLY_GENERATORS.has(gen.type)
+                        INSTRUMENT_ONLY_GENERATORS.has(gen.type) ||
+                        // Reserved and unknown generators have no default to sum to
+                        // Ignore them
+                        // Testcase: Airfont_340.sf2
+                        !Object.hasOwn(GeneratorLimits, gen.type)
                     ) {
                         continue;
                     }
