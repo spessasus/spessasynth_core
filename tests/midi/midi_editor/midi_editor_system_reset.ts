@@ -163,7 +163,8 @@ const lockOpts: ModifyMIDIOptions = {
     const midi = new MIDITestMaker("Sole GM replaced", {
         system: "gm"
     });
-    for (const e of midi.tracks[0].events) {
+    const events = midi.tracks[0].events;
+    for (const e of events) {
         if (e.statusByte === MIDIMessageTypes.systemExclusive) {
             e.ticks = 240;
         }

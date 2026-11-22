@@ -12,8 +12,8 @@ import { timecentsToSeconds } from "../voice/unit_converter";
 import { SpessaLog } from "../../../utils/loggin";
 import { randomGenerator } from "../../../utils/other";
 
-const clamp = (num: number, min: number, max: number) =>
-    Math.max(min, Math.min(max, num));
+// Every clamp here has a lower bound of zero
+const clamp = (num: number, max: number) => Math.max(0, Math.min(max, num));
 
 /**
  * Sends a "MIDI Note on" message and starts a note.
@@ -35,8 +35,9 @@ export function noteOn(
     const black = this.synthCore.systemParameters.blackMIDIMode;
     if (
         // If black MIDI conditions are met...
-        (black && this.synthCore.voiceCount > 200 && velocity < 40) ||
-        (black && velocity < 10) ||
+        (black &&
+            ((this.synthCore.voiceCount > 200 && velocity < 40) ||
+                velocity < 10)) ||
         // Or channel is muted...
         this._systemParameters.isMuted ||
         // Or channel has no preset...
@@ -44,16 +45,6 @@ export function noteOn(
     ) {
         return;
     }
-
-    // Apply Velocity Sense and clamp
-    const realVelocity = clamp(
-        Math.floor(
-            velocity * (this._midiParameters.velocitySenseDepth / 64) +
-                (this._midiParameters.velocitySenseOffset - 64) * 2
-        ),
-        0,
-        127
-    );
 
     // Sanity check
     if (midiNote > 127 || midiNote < 0) return;
@@ -72,6 +63,15 @@ export function noteOn(
 
     // The key shift may push the note out of range
     if (soundBankNote > 127 || soundBankNote < 0) return;
+
+    // Apply Velocity Sense and clamp
+    const realVelocity = clamp(
+        Math.floor(
+            velocity * (this._midiParameters.velocitySenseDepth / 64) +
+                (this._midiParameters.velocitySenseOffset - 64) * 2
+        ),
+        127
+    );
 
     // Monophonic retrigger
     if (
@@ -311,16 +311,14 @@ export function noteOn(
         // End is exclusive, not inclusive.
         // Testcase: https://github.com/spessasus/spessasynth_core/issues/90
         const endExclusive = cached.sampleData.length;
-        voice.wavetable.cursor = clamp(cursorStartOffset, 0, endExclusive - 1);
-        voice.wavetable.end = clamp(endExclusive + endOffset, 0, endExclusive);
+        voice.wavetable.cursor = clamp(cursorStartOffset, endExclusive - 1);
+        voice.wavetable.end = clamp(endExclusive + endOffset, endExclusive);
         voice.wavetable.loopStart = clamp(
             cached.loopStart + loopStartOffset,
-            0,
             endExclusive
         );
         voice.wavetable.loopEnd = clamp(
             cached.loopEnd + loopEndOffset,
-            0,
             endExclusive
         );
         // Swap loops if needed

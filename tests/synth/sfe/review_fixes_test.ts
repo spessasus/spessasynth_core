@@ -29,13 +29,13 @@ import {
     sineSample
 } from "./sfe_test_utils";
 
-const curve = (y: number, name = "") =>
+const curve = (y: number) =>
     new CustomCurve(
         [
             { x: 0, y: 0 },
             { x: 16_383, y }
         ],
-        name
+        ""
     );
 const customModulator = (c: CustomCurve, cc = 20) =>
     new Modulator(
@@ -376,10 +376,11 @@ const linkCount = (bank: BasicSoundBank, c: CustomCurve) => {
             [GeneratorTypes.sampleModes]: 1,
             [GeneratorTypes.initialFilterFc]: 6000
         },
-        (zone) =>
+        (zone) => {
             zone.generators.push(
                 new Generator(GeneratorTypes.filterType, 9, false)
-            )
+            );
+        }
     );
     const a = await renderLeft(lowpass, note(0, 0.4), 0.5);
     const b = await renderLeft(unknown, note(0, 0.4), 0.5);
@@ -504,7 +505,7 @@ const linkCount = (bank: BasicSoundBank, c: CustomCurve) => {
     // The reverb record of DMOD: source 0x00DB, destination 16, amount 200 (0x00C8)
     const record = [0xdb, 0x00, 0x10, 0x00, 0xc8, 0x00];
     let found = false;
-    for (let i = 0; i < file.length - record.length && !found; i++)
+    for (let i = 0; !found && i < file.length - record.length; i++)
         found = record.every((v, k) => file[i + k] === v);
     check(found, "DMOD stores a full reverb send as 200");
     check(
@@ -833,16 +834,18 @@ console.info("Final review:");
     // Point the CC 73 record (source 0x00C9, attackVolEnv) at an SFe generator, which SF2 does not have
     let patched = false;
     for (let i = 0; i < file.length - 10; i++) {
-        if (
+        if (!(
             file[i] === 0xc9 &&
             file[i + 1] === 0 &&
             file[i + 2] === GeneratorTypes.attackVolEnv &&
             file[i + 3] === 0 &&
             file[i + 4] === 100
-        ) {
-            file[i + 2] = GeneratorTypes.modEnv2ToPitch;
-            patched = true;
+        )) {
+            continue;
         }
+
+        file[i + 2] = GeneratorTypes.modEnv2ToPitch;
+        patched = true;
     }
     const loaded = SoundBankLoader.fromArrayBuffer(file.buffer);
     check(

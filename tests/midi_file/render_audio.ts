@@ -53,10 +53,10 @@ function readWav(bin: ArrayBuffer) {
     // Skip sample rate, bytesPerSecond and bytesPerSample
     fmt.data.currentIndex += 6;
     const bitsPerSample = readLittleEndianIndexed(fmt.data, 2);
-    const bytesPerSample = bitsPerSample / 8;
     if (formatTag === 3 && bitsPerSample !== 32) {
         throw new Error(`Unsupported IEEE float depth: ${bitsPerSample}`);
     }
+    const bytesPerSample = bitsPerSample / 8;
 
     // Read data
     const sampleLength = data.data.length / (channels * bytesPerSample);
@@ -66,12 +66,15 @@ function readWav(bin: ArrayBuffer) {
         sampleData.push(new Float32Array(sampleLength));
     }
     const divider = 1 << (bytesPerSample * 8 - 1);
-    const floatData =
-        formatTag === 3
-            ? new Float32Array(
-                  data.data.slice(0, sampleLength * channels * 4).buffer
-              )
-            : undefined;
+    let floatData: Float32Array | undefined;
+    if (formatTag === 3) {
+        const floatBytes = data.data.slice(0, sampleLength * channels * 4);
+        floatData = new Float32Array(
+            floatBytes.buffer,
+            floatBytes.byteOffset,
+            floatBytes.byteLength / 4
+        );
+    }
     for (let sampleIndex = 0; sampleIndex < sampleLength; sampleIndex++) {
         for (let channel = 0; channel < channels; channel++) {
             if (floatData) {
@@ -129,8 +132,7 @@ if (!worker_threads.isMainThread) {
     const appendLog = (...a: unknown[]) => {
         const data = a
             .map((b) =>
-                (b as string)
-                    .toString()
+                String(b)
                     // Exclude colors
                     .replaceAll("%c", "")
             )
@@ -143,13 +145,19 @@ if (!worker_threads.isMainThread) {
         info: appendLog,
         warn: appendLog,
         group: () => {
-            /* Empty */
+            /*
+            Empty
+            */
         },
         groupCollapsed: () => {
-            /* Empty */
+            /*
+            Empty
+            */
         },
         groupEnd: () => {
-            /* Empty */
+            /*
+            Empty
+            */
         }
     };
 
@@ -221,18 +229,21 @@ async function writeTargetChecksums(
     // noinspection ES6MissingAwait
     const currentQueue = writeQueues.get(target) ?? Promise.resolve();
     // noinspection ES6MissingAwait
-    const nextQueue = currentQueue
-        .catch(() => {
-            /* Empty */
-        })
-        .then(async () => {
-            await fs.mkdir(checksumsDir, { recursive: true });
-            const tempPath = `${checksumsPath}.tmp`;
-            await fs.writeFile(tempPath, JSON.stringify(checksums), {
-                encoding: "utf-8"
-            });
-            await fs.rename(tempPath, checksumsPath);
+    const nextQueue = (async () => {
+        try {
+            await currentQueue;
+        } catch {
+            /*
+            Empty
+            */
+        }
+        await fs.mkdir(checksumsDir, { recursive: true });
+        const tempPath = `${checksumsPath}.tmp`;
+        await fs.writeFile(tempPath, JSON.stringify(checksums), {
+            encoding: "utf-8"
         });
+        await fs.rename(tempPath, checksumsPath);
+    })();
     writeQueues.set(target, nextQueue);
     return nextQueue;
 }
@@ -296,7 +307,8 @@ const targetChecksums = new Map<string, Record<string, string>>();
 const filesToRenderByTarget = new Map<string, string[]>();
 
 // Check if checksums exist for each target
-for (const renderTarget of Object.keys(renderTestsConfig.renderTargets ?? {})) {
+const renderTargetNames = Object.keys(renderTestsConfig.renderTargets ?? {});
+for (const renderTarget of renderTargetNames) {
     const targetChecksumsPath = path.join(checksumsDir, `${renderTarget}.json`);
     let checksums: Record<string, string> = {};
     try {
@@ -516,9 +528,8 @@ if (totalFilesToRender === 0) {
     );
     console.time("Native render completed in");
 
-    for (const [renderTargetName, params] of Object.entries(
-        renderTestsConfig.renderTargets ?? {}
-    )) {
+    const renderTargets = Object.entries(renderTestsConfig.renderTargets ?? {});
+    for (const [renderTargetName, params] of renderTargets) {
         const filesToRender = filesToRenderByTarget.get(renderTargetName) ?? [];
         if (filesToRender.length === 0) {
             console.info(`Nothing to render for ${renderTargetName}!`);
@@ -555,18 +566,16 @@ if (totalFilesToRender === 0) {
                 `Finished rendering ${file} (${targetRendered}/${filesToRender.length}) for ${renderTargetName}`
             );
 
-            if (ok) {
-                const sha256 = fileHashes.get(file);
-                if (sha256) {
-                    const currentChecksums =
-                        targetChecksums.get(renderTargetName)!;
-                    currentChecksums[file] = sha256;
-                    await writeTargetChecksums(
-                        renderTargetName,
-                        currentChecksums
-                    );
-                }
+            if (!ok) {
+                return;
             }
+            const sha256 = fileHashes.get(file);
+            if (!sha256) {
+                return;
+            }
+            const currentChecksums = targetChecksums.get(renderTargetName)!;
+            currentChecksums[file] = sha256;
+            await writeTargetChecksums(renderTargetName, currentChecksums);
         };
 
         if (multithreaded) {

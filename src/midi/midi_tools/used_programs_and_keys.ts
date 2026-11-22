@@ -22,6 +22,14 @@ import type { MIDIPatchFull } from "../../soundbank/basic_soundbank/midi_patch";
 import type { CallableSoundBank, UserDrumSetParameter } from "../types";
 import { DrumParameterUtils } from "../drum_parameters";
 
+// Message types that can change the used programs and keys
+const RELEVANT_STATUSES = new Set<number>([
+    MIDIMessageTypes.noteOn,
+    MIDIMessageTypes.controllerChange,
+    MIDIMessageTypes.programChange,
+    MIDIMessageTypes.systemExclusive
+]);
+
 interface InternalChannelType<T extends MIDIPatchFull> {
     preset?: T;
     bankMSB: number;
@@ -144,12 +152,7 @@ export function getUsedProgramsAndKeys<T extends MIDIPatchFull>(
             continue;
         }
         const status = e.statusByte < 0xf0 ? e.statusByte & 0xf0 : e.statusByte;
-        if (
-            status !== MIDIMessageTypes.noteOn &&
-            status !== MIDIMessageTypes.controllerChange &&
-            status !== MIDIMessageTypes.programChange &&
-            status !== MIDIMessageTypes.systemExclusive
-        ) {
+        if (!RELEVANT_STATUSES.has(status)) {
             continue;
         }
 
@@ -244,10 +247,10 @@ export function getUsedProgramsAndKeys<T extends MIDIPatchFull>(
             }
 
             case MIDIMessageTypes.noteOn: {
-                const channel = (e.statusByte & 0xf) + channelOffset;
-                const ch = channels[channel];
                 // That's a note off
                 if (e.data[1] === 0) continue;
+                const channel = (e.statusByte & 0xf) + channelOffset;
+                const ch = channels[channel];
 
                 let midiNote =
                     e.data[0] + (ch.isDrum ? 0 : masterKeyShift) + ch.keyShift;
@@ -356,7 +359,7 @@ export function getUsedProgramsAndKeys<T extends MIDIPatchFull>(
                                 const sysexChannel =
                                     syx.channel + channelOffset;
                                 // Channel may be above 15
-                                if (!channels[sysexChannel]) break;
+                                if (channels[sysexChannel] === undefined) break;
                                 channels[sysexChannel].isDrum = syx.value > 0;
                             }
                             break;
@@ -414,15 +417,17 @@ export function getUsedProgramsAndKeys<T extends MIDIPatchFull>(
         }
     }
 
-    for (const [preset, keysForPreset] of usedProgramsAndKeys.entries()) {
-        if (keysForPreset.size === 0) {
-            SpessaLog.info(
-                `%cDetected change but no keys for %c${preset.name}`,
-                ConsoleColors.info,
-                ConsoleColors.value
-            );
-            usedProgramsAndKeys.delete(preset);
+    for (const [preset, keysForPreset] of usedProgramsAndKeys) {
+        if (keysForPreset.size > 0) {
+            continue;
         }
+
+        SpessaLog.info(
+            `%cDetected change but no keys for %c${preset.name}`,
+            ConsoleColors.info,
+            ConsoleColors.value
+        );
+        usedProgramsAndKeys.delete(preset);
     }
 
     SpessaLog.groupEnd();

@@ -53,10 +53,9 @@ for (let i = 0; i < absoluteCentLookupTable.length; i++) {
  * @returns The frequency in Hz.
  */
 export function absCentsToHz(cents: number): number {
-    if (cents < MIN_ABS_CENT || cents > MAX_ABS_CENT) {
-        return 440 * Math.pow(2, (cents - 6900) / 1200);
-    }
-    return absoluteCentLookupTable[(cents - MIN_ABS_CENT) | 0];
+    return cents < MIN_ABS_CENT || cents > MAX_ABS_CENT
+        ? 440 * Math.pow(2, (cents - 6900) / 1200)
+        : absoluteCentLookupTable[(cents - MIN_ABS_CENT) | 0];
 }
 
 // Centibel lookup table (1 cB precision)

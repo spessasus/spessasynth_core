@@ -34,11 +34,12 @@ export function load(application: Application) {
                 }
                 html = html.replace(
                     /<title>[\s\S]*?<\/title>/,
-                    `<title>${escapeHTML(TITLE)}</title>`
+                    () => `<title>${escapeHTML(TITLE)}</title>`
                 );
                 html = html.replace(
                     "<head>",
-                    `<head><base href="${escapeHTML(base)}" /><meta name="robots" content="noindex" />`
+                    () =>
+                        `<head><base href="${escapeHTML(base)}" /><meta name="robots" content="noindex" />`
                 );
 
                 const contentStart = html.indexOf('<div class="col-content">');

@@ -7,8 +7,8 @@ import {
     frequency,
     levelDb,
     makeBank,
-    note,
     noiseSample,
+    note,
     renderLeft,
     sineSample
 } from "./sfe_test_utils";
@@ -111,6 +111,6 @@ const all: Partial<Record<GeneratorType, number>> = {
 };
 checkStorage(
     makeBank(sineSample(), all),
-    Object.keys(all).map((t) => Number(t) as GeneratorType)
+    Object.keys(all).map(Number) as GeneratorType[]
 );
 finish("mod_env2_test");

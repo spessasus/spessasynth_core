@@ -171,7 +171,6 @@ export class HermiteOscillator extends WavetableOscillator {
 
                 // Slow path, a single sample near the sample start or end
                 const y0 = cursor | 0; // Point before the cursor
-                const t = cursor - y0; // The distance from y0 to cursor [0;1]
 
                 // Flag as finished if needed
                 if (y0 + 1 >= end) {
@@ -179,6 +178,7 @@ export class HermiteOscillator extends WavetableOscillator {
                     outputBuffer.fill(0, i, sampleCount);
                     return false;
                 }
+                const t = cursor - y0; // The distance from y0 to cursor [0;1]
 
                 // Grab the samples
                 // There is no point before the first one or after the last one, so they are duplicated

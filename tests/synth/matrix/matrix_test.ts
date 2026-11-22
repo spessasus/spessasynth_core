@@ -52,8 +52,8 @@ const pressure = (value: number): RenderEvent => ({
 
 const play = (events: RenderEvent[], bank = sine) =>
     renderLeft(bank, [...events, ...note(0.01)], 0.4);
-const level = async (events: RenderEvent[], bank = sine) =>
-    levelDb(await play(events, bank), 0.15, 0.4);
+const level = async (events: RenderEvent[]) =>
+    levelDb(await play(events), 0.15, 0.4);
 const pitch = async (events: RenderEvent[]) =>
     frequency(await play(events), 0.15, 0.4);
 

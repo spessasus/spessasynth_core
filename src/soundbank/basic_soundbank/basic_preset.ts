@@ -37,7 +37,7 @@ export const PHDR_BYTE_SIZE = 38;
 
 const defaultGeneratorValues = new Int16Array(GENERATORS_AMOUNT);
 for (let i = 0; i < defaultGeneratorValues.length; i++) {
-    if (GeneratorLimits[i as GeneratorType])
+    if (Object.hasOwn(GeneratorLimits, i))
         defaultGeneratorValues[i] = GeneratorLimits[i as GeneratorType].def;
 }
 
@@ -132,7 +132,7 @@ export class BasicPreset implements MIDIPatchFull {
         adder: readonly Modulator[]
     ) {
         for (const addedMod of adder) {
-            if (!main.some((mm) => Modulator.isIdentical(addedMod, mm)))
+            if (main.every((mm) => !Modulator.isIdentical(addedMod, mm)))
                 main.push(addedMod);
         }
     }
@@ -425,14 +425,14 @@ export class BasicPreset implements MIDIPatchFull {
     public toFlattenedInstrument(): BasicInstrument {
         const addUnique = (main: Generator[], adder: Generator[]) => {
             main.push(
-                ...adder.filter((g) => !main.some((mg) => mg.type === g.type))
+                ...adder.filter((g) => main.every((mg) => mg.type !== g.type))
             );
         };
 
         const addUniqueMods = (main: Modulator[], adder: Modulator[]) => {
             main.push(
-                ...adder.filter(
-                    (m) => !main.some((mm) => Modulator.isIdentical(m, mm))
+                ...adder.filter((m) =>
+                    main.every((mm) => !Modulator.isIdentical(m, mm))
                 )
             );
         };
@@ -591,7 +591,7 @@ export class BasicPreset implements MIDIPatchFull {
                         g.type !== GeneratorTypes.velRange &&
                         g.type !== GeneratorTypes.endOper &&
                         g.type !== GeneratorTypes.instrument &&
-                        (!(g.type in GeneratorLimits) ||
+                        (!Object.hasOwn(GeneratorLimits, g.type) ||
                             g.value !== GeneratorLimits[g.type].def)
                 );
 

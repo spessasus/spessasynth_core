@@ -37,8 +37,8 @@ export class HRTFPair {
      * One 32 kHz sample in host samples.
      */
     private readonly step: number;
-    private setA: HRTFSet;
-    private setB: HRTFSet;
+    private firstSet: HRTFSet;
+    private secondSet: HRTFSet;
     private weight = 1;
 
     /**
@@ -50,23 +50,30 @@ export class HRTFPair {
         // The far taps reach 29 samples back, plus the interpolator's points
         this.nearLine = new DelayLine(Math.ceil(32 * this.step) + 4);
         this.farLine = new DelayLine(Math.ceil(this.step) + 4);
-        this.setA = set;
-        this.setB = set;
+        this.firstSet = set;
+        this.secondSet = set;
     }
 
     /**
      * @param a The set at weight 1.
      * @param b The set at weight 0.
-     * @param weight The share of set A.
+     * @param weight The share of the first set.
      */
     public setSets(a: HRTFSet, b: HRTFSet, weight: number) {
-        this.setA = a;
-        this.setB = b;
+        this.firstSet = a;
+        this.secondSet = b;
         this.weight = weight;
     }
 
     public process(x: number) {
-        const { nearLine, farLine, step, setA: a, setB: b, weight: w } = this;
+        const {
+            nearLine,
+            farLine,
+            step,
+            firstSet: a,
+            secondSet: b,
+            weight: w
+        } = this;
         const v = 1 - w;
         // Reads of earlier samples (before this sample's writes)
         const n2 = nearLine.readLagrange(2 * step - 1);

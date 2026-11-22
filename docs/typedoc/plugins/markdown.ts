@@ -1,9 +1,9 @@
 import { Application } from "typedoc";
 import type MarkdownIt from "markdown-it";
 
-import { admonitionPlugin } from "./markdown-it/admonition";
-import { footnotePlugin } from "./markdown-it/footnotes";
-import { snippetsPlugin } from "./markdown-it/snippets";
+import { admonitionPlugin } from "./markdown_it/admonition";
+import { footnotePlugin } from "./markdown_it/footnotes";
+import { snippetsPlugin } from "./markdown_it/snippets";
 
 // noinspection JSUnusedGlobalSymbols
 export function load(application: Application) {

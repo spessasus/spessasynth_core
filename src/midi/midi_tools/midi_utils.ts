@@ -344,7 +344,7 @@ export class MIDIUtils {
                     );
                 }
                 if (
-                    !Number.isInteger(parameter) ||
+                    !Number.isSafeInteger(parameter) ||
                     parameter < 0 ||
                     parameter > 19
                 ) {
@@ -387,7 +387,7 @@ export class MIDIUtils {
             }
             default: {
                 if (
-                    !Number.isInteger(parameter) ||
+                    !Number.isSafeInteger(parameter) ||
                     parameter < 0 ||
                     parameter > 15
                 ) {
@@ -395,7 +395,7 @@ export class MIDIUtils {
                         `Invalid XG reverb parameter: ${parameter}`
                     );
                 }
-                const a3 = parameter < 10 ? parameter + 0x02 : parameter + 0x06;
+                const a3 = parameter + (parameter < 10 ? 0x02 : 0x06);
                 return this.xgMessage(ticks, 0x02, 0x01, a3, [value]);
             }
         }
@@ -434,7 +434,7 @@ export class MIDIUtils {
             }
             default: {
                 if (
-                    !Number.isInteger(parameter) ||
+                    !Number.isSafeInteger(parameter) ||
                     parameter < 0 ||
                     parameter > 15
                 ) {
@@ -442,7 +442,7 @@ export class MIDIUtils {
                         `Invalid XG chorus parameter: ${parameter}`
                     );
                 }
-                const a3 = parameter < 10 ? parameter + 0x22 : parameter + 0x26;
+                const a3 = parameter + (parameter < 10 ? 0x22 : 0x26);
                 return this.xgMessage(ticks, 0x02, 0x01, a3, [value]);
             }
         }
@@ -506,7 +506,7 @@ export class MIDIUtils {
             default: {
                 if (
                     typeof parameter !== "number" ||
-                    !Number.isInteger(parameter) ||
+                    !Number.isSafeInteger(parameter) ||
                     parameter < 0 ||
                     parameter > 15
                 ) {
@@ -514,22 +514,14 @@ export class MIDIUtils {
                         `Invalid XG variation parameter: ${parameter}`
                     );
                 }
-                if (parameter < 10) {
-                    return this.xgMessage(
-                        ticks,
-                        0x02,
-                        0x01,
-                        0x42 + parameter * 2,
-                        [(value >> 7) & 0x7f, value & 0x7f]
-                    );
-                }
-                return this.xgMessage(
-                    ticks,
-                    0x02,
-                    0x01,
-                    0x70 + parameter - 10,
-                    [value & 0x7f]
-                );
+                return parameter < 10
+                    ? this.xgMessage(ticks, 0x02, 0x01, 0x42 + parameter * 2, [
+                          (value >> 7) & 0x7f,
+                          value & 0x7f
+                      ])
+                    : this.xgMessage(ticks, 0x02, 0x01, 0x70 + parameter - 10, [
+                          value & 0x7f
+                      ]);
             }
         }
     }
@@ -565,7 +557,7 @@ export class MIDIUtils {
             }
             default: {
                 if (
-                    !Number.isInteger(parameter) ||
+                    !Number.isSafeInteger(parameter) ||
                     parameter < 0 ||
                     parameter > 15
                 ) {
@@ -574,25 +566,24 @@ export class MIDIUtils {
                     );
                 }
                 if (parameter < 10) {
-                    if (value >> 7 === 0) {
-                        // Fits in the LSB alone: LSB-only address
-                        return this.xgMessage(
-                            ticks,
-                            0x03,
-                            insertionNumber,
-                            0x02 + parameter,
-                            [value & 0x7f]
-                        );
-                    }
-                    // Needs the LSB: two-byte [Ext.2] address
-                    // Yamaha XG spec v1.32, page 41.
-                    return this.xgMessage(
-                        ticks,
-                        0x03,
-                        insertionNumber,
-                        0x30 + parameter * 2,
-                        [(value >> 7) & 0x7f, value & 0x7f]
-                    );
+                    return value >> 7 === 0
+                        ? // Fits in the LSB alone: LSB-only address
+                          this.xgMessage(
+                              ticks,
+                              0x03,
+                              insertionNumber,
+                              0x02 + parameter,
+                              [value & 0x7f]
+                          )
+                        : // Needs the LSB: two-byte [Ext.2] address
+                          // Yamaha XG spec v1.32, page 41.
+                          this.xgMessage(
+                              ticks,
+                              0x03,
+                              insertionNumber,
+                              0x30 + parameter * 2,
+                              [(value >> 7) & 0x7f, value & 0x7f]
+                          );
                 }
 
                 // Parameters 10-15 only have single-byte versions, use that
@@ -861,23 +852,16 @@ export class MIDIUtils {
             }
 
             case "polyMode": {
-                return value
-                    ? [
-                          MIDIMessage.controllerChange(
-                              ticks,
-                              channel,
-                              MIDIControllers.polyModeOn,
-                              0
-                          )
-                      ]
-                    : [
-                          MIDIMessage.controllerChange(
-                              ticks,
-                              channel,
-                              MIDIControllers.monoModeOn,
-                              0
-                          )
-                      ];
+                return [
+                    MIDIMessage.controllerChange(
+                        ticks,
+                        channel,
+                        value
+                            ? MIDIControllers.polyModeOn
+                            : MIDIControllers.monoModeOn,
+                        0
+                    )
+                ];
             }
 
             case "keyShift": {
@@ -1089,7 +1073,7 @@ export class MIDIUtils {
         if (key > 127 || key < 0) {
             throw new Error("Key must be between 0 and 127.");
         }
-        if (!(parameter in NRPNDrumParamMap)) {
+        if (!Object.hasOwn(NRPNDrumParamMap, parameter)) {
             throw new Error(`Invalid NRPN drum parameter ${parameter}`);
         }
         const msb = NRPNDrumParamMap[parameter as NRPNDrumParameter];
@@ -1607,17 +1591,17 @@ export class MIDIUtils {
         // Ensure XG
         if (syx[2] !== 0x4c || syx.length < 7) return [OTHER];
         const a1 = syx[3]; // Address 1
-        const a2 = syx[4]; // Address 2
-        const a3 = syx[5]; // Address 3
-        // Value = syx[6]
-        const value = syx[6];
-
         if (
             a1 === 0x06 || // Display letters
             a1 === 0x07 // Display bitmap
         ) {
             return [{ type: "Display Data" }];
         }
+
+        const a2 = syx[4]; // Address 2
+        const a3 = syx[5]; // Address 3
+        // Value = syx[6]
+        const value = syx[6];
 
         if (a1 === 0x00 && a2 === 0x00) {
             // XG SYSTEM
@@ -2608,7 +2592,7 @@ export class MIDIUtils {
         // Decoded as "master key shift" even though it means "SC-88 output assign"
         // Testcase: FADED88.mid
         // Both 00 00 7F and 40 00 7F are accepted
-        if ((a1 === 0x00 || a1 === 0x40) && a2 === 0x00 && a3 === 0x7f) {
+        if (a2 === 0x00 && a3 === 0x7f && (a1 === 0x00 || a1 === 0x40)) {
             switch (value) {
                 // GS Reset/Mode-1 (Single Module Mode)
                 case 0x00:
@@ -2924,9 +2908,6 @@ export class MIDIUtils {
 
         // 0x40 -> Part Parameters, 0x50 -> Part Parameters (BLOCK B) Testcase: 95043-2.KYC.mid
         if (a1 !== 0x40 && a1 !== 0x50) return [OTHER];
-
-        // Block B is the second 16-channel set
-        const channelOffset = a1 === 0x50 ? 16 : 0;
 
         // Effects
         if (a2 === 0x01) {
@@ -3255,6 +3236,8 @@ export class MIDIUtils {
             return [{ type: "Other" }];
         }
 
+        // Block B is the second 16-channel set
+        const channelOffset = a1 === 0x50 ? 16 : 0;
         switch (a2 >> 4) {
             // Patch part parameter
             case 1: {

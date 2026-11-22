@@ -30,12 +30,6 @@ export function wavToAudio(buffer: ArrayBuffer) {
     // Chunk IDs are letters and digits with optional trailing spaces, a pad byte is usually zero
     const isFourCC = (at: number) =>
         at + 4 <= bytes.length && /^[\dA-Za-z]+ *$/.test(fourCC(at));
-    const nextChunk = (body: number, size: number) => {
-        const end = body + size;
-        return size % 2 === 1 && !(isFourCC(end) && !isFourCC(end + 1))
-            ? end + 1
-            : end;
-    };
     if (
         buffer.byteLength < 12 ||
         fourCC(0) !== "RIFF" ||
@@ -43,6 +37,12 @@ export function wavToAudio(buffer: ArrayBuffer) {
     ) {
         throw new Error("Not a WAVE file.");
     }
+    const nextChunk = (body: number, size: number) => {
+        const end = body + size;
+        return size % 2 === 1 && (!isFourCC(end) || isFourCC(end + 1))
+            ? end + 1
+            : end;
+    };
 
     let format = 0;
     let channels = 0;
@@ -120,9 +120,7 @@ export function wavToAudio(buffer: ArrayBuffer) {
                     const subSize = readLittleEndian(bytes, 4, at + 4);
                     if (
                         subSize >= 4 &&
-                        (subId === "labl" ||
-                            subId === "note" ||
-                            subId === "ltxt")
+                        ["labl", "note", "ltxt"].includes(subId)
                     ) {
                         namedCues.add(readLittleEndian(bytes, 4, at + 8));
                     }
@@ -159,8 +157,16 @@ export function wavToAudio(buffer: ArrayBuffer) {
     if (isFloat) {
         samples =
             bytesPerSample === 4
-                ? new Float32Array(pcm.buffer)
-                : new Float64Array(pcm.buffer);
+                ? new Float32Array(
+                      pcm.buffer,
+                      pcm.byteOffset,
+                      pcm.byteLength / 4
+                  )
+                : new Float64Array(
+                      pcm.buffer,
+                      pcm.byteOffset,
+                      pcm.byteLength / 8
+                  );
     } else {
         switch (bytesPerSample) {
             case 1: {
@@ -171,7 +177,11 @@ export function wavToAudio(buffer: ArrayBuffer) {
                 break;
             }
             case 2: {
-                samples = new Int16Array(pcm.buffer);
+                samples = new Int16Array(
+                    pcm.buffer,
+                    pcm.byteOffset,
+                    pcm.byteLength / 2
+                );
                 scale = 32_768;
                 break;
             }
@@ -190,7 +200,11 @@ export function wavToAudio(buffer: ArrayBuffer) {
                 break;
             }
             default: {
-                samples = new Int32Array(pcm.buffer);
+                samples = new Int32Array(
+                    pcm.buffer,
+                    pcm.byteOffset,
+                    pcm.byteLength / 4
+                );
                 scale = 2_147_483_648;
             }
         }

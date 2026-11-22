@@ -94,10 +94,9 @@ export class MIDIPatchTools {
      * @param patch The patch to convert.
      */
     public static toMIDIString(patch: MIDIPatch) {
-        if (patch.isGMGSDrum) {
-            return `DRUM:${patch.bankMSB}:${patch.bankLSB}:${patch.program}`;
-        }
-        return `${patch.bankLSB}:${patch.bankMSB}:${patch.program}`;
+        return patch.isGMGSDrum
+            ? `DRUM:${patch.bankMSB}:${patch.bankLSB}:${patch.program}`
+            : `${patch.bankLSB}:${patch.bankMSB}:${patch.program}`;
     }
 
     // noinspection JSUnusedGlobalSymbols
@@ -175,21 +174,16 @@ export class MIDIPatchTools {
      * @param patch2 The second patch.
      */
     public static matches(patch1: MIDIPatch, patch2: MIDIPatch) {
-        if (patch1.isGMGSDrum || patch2.isGMGSDrum) {
-            // Drum kits are told apart by the program,
-            // The MSB and the LSB
-            return (
-                patch1.isGMGSDrum === patch2.isGMGSDrum &&
-                patch1.program === patch2.program &&
-                patch1.bankMSB === patch2.bankMSB &&
-                patch1.bankLSB === patch2.bankLSB
-            );
-        }
-        return (
-            patch1.program === patch2.program &&
-            patch1.bankLSB === patch2.bankLSB &&
-            patch1.bankMSB === patch2.bankMSB
-        );
+        // Drum kits are told apart by the program,
+        // The MSB and the LSB
+        return patch1.isGMGSDrum || patch2.isGMGSDrum
+            ? patch1.isGMGSDrum === patch2.isGMGSDrum &&
+                  patch1.program === patch2.program &&
+                  patch1.bankMSB === patch2.bankMSB &&
+                  patch1.bankLSB === patch2.bankLSB
+            : patch1.program === patch2.program &&
+                  patch1.bankLSB === patch2.bankLSB &&
+                  patch1.bankMSB === patch2.bankMSB;
     }
 
     /**
@@ -334,7 +328,7 @@ export class MIDIPatchTools {
             // XG MU2000 and similar have regular drums on program 56, while GS has the SFX kit.
             // So avoid selecting it and pick any XG drums.
             // GM2 numbers its kits like GS, so there any program is fine (SFe 4.0, section 11.2.3 rule 3.2.2)
-            if (p && (p.program < 49 || system === "gm2")) {
+            if (p && (system === "gm2" || p.program < 49)) {
                 returnReplacement(p);
                 return p;
             }
@@ -364,11 +358,13 @@ export class MIDIPatchTools {
                 return p;
             }
         }
-        p = isXG
-            ? // XG uses LSB so search for that.
-              matchingPrograms.find((p) => p.bankLSB === bankLSB)
-            : // GS uses MSB so search for that.
-              matchingPrograms.find((p) => p.bankMSB === bankMSB);
+        p = matchingPrograms.find(
+            isXG
+                ? // XG uses LSB so search for that.
+                  (p) => p.bankLSB === bankLSB
+                : // GS uses MSB so search for that.
+                  (p) => p.bankMSB === bankMSB
+        );
         if (p) {
             returnReplacement(p);
             return p;
@@ -396,15 +392,15 @@ export class MIDIPatchTools {
         presets: T[],
         preferXG: boolean
     ): T {
-        const p: T | undefined = preferXG // Get any XG drums
-            ? presets.find((p) => this.isXGDrum(p)) // Get any GM/GS drums
-            : presets.find((p) => p.isGMGSDrum);
-        if (p) {
-            // Return the found preset
-            return p;
-        }
-        // Return any drum preset
+        const p: T | undefined = presets.find(
+            preferXG // Get any XG drums
+                ? (p) => this.isXGDrum(p) // Get any GM/GS drums
+                : (p) => p.isGMGSDrum
+        );
+        // Return the found preset
         return (
+            p ??
+            // Return any drum preset
             presets.find((p) => p.isDrum) ?? // ...no?
             // Then just return any preset
             presets[0]

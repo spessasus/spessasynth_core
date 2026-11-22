@@ -45,17 +45,17 @@ export function readBinaryStringIndexed(
 /**
  * Gets ASCII bytes from string.
  * @param string the string.
- * @param addZero adds a zero terminator at the end.
+ * @param zeroTerminate adds a zero terminator at the end.
  * @param ensureEven ensures even byte count.
  * @returns the binary data.
  */
 export function getStringBytes(
     string: string,
-    addZero = false,
+    zeroTerminate = false,
     ensureEven = false
 ): IndexedByteArray {
     let len = string.length;
-    if (addZero) {
+    if (zeroTerminate) {
         len++;
     }
     if (ensureEven && len % 2 !== 0) {

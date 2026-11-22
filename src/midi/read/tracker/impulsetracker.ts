@@ -191,6 +191,15 @@ const RETRIGGER_OFFSETS = [
 ];
 
 /**
+ * The vibrato effects that the volume column vibrato depth applies on top of.
+ */
+const VIBRATO_EFFECTS = new Set<number>([
+    ImpulseTrackerEffects.vibrato,
+    ImpulseTrackerEffects.vibratoVolumeSlide,
+    ImpulseTrackerEffects.fineVibrato
+]);
+
+/**
  * The Amiga period of a 8363 Hz middle C, used by the Amiga frequency slides.
  */
 const AMIGA_CONSTANT = 1712 * 8363;
@@ -1088,9 +1097,7 @@ export class ImpulseTrackerModule extends TrackerModule {
         const [volumeCommand, volumeParam] = decodeVolume(ch.rowVolume);
         if (
             volumeCommand === VolumeCommands.vibratoDepth &&
-            (ch.rowEffect === ImpulseTrackerEffects.vibrato ||
-                ch.rowEffect === ImpulseTrackerEffects.vibratoVolumeSlide ||
-                ch.rowEffect === ImpulseTrackerEffects.fineVibrato)
+            VIBRATO_EFFECTS.has(ch.rowEffect)
         ) {
             this.setVibrato(ch, volumeParam, 4);
             frequency = this.applyVibrato(ch, frequency, firstTick);
@@ -1744,7 +1751,7 @@ export class ImpulseTrackerModule extends TrackerModule {
         // Old format (Impulse Tracker 1.xx) with a volume envelope only
         instrument.fadeout = readLittleEndian(binary, 2, offset + 0x18) << 6;
         instrument.newNoteAction = binary[offset + 0x1a] & 3;
-        instrument.duplicateCheckType = binary[offset + 0x1b] ? 1 : 0;
+        instrument.duplicateCheckType = binary[offset + 0x1b] > 0 ? 1 : 0;
         const points = new Array<TrackerEnvelopePoint>();
         for (let p = 0; p < MAX_ENVELOPE_POINTS; p++) {
             const tick = binary[offset + 0x1_f8 + p * 2];
@@ -1961,7 +1968,7 @@ export class ImpulseTrackerModule extends TrackerModule {
         }
 
         let triggerNote = rowTick === startTick;
-        if (startTick > 0 && tickCount === startTick) {
+        if (tickCount === startTick && startTick > 0) {
             // Delayed notes are triggered again by a row delay
             triggerNote = true;
         }
@@ -1975,7 +1982,7 @@ export class ImpulseTrackerModule extends TrackerModule {
             if (this.instrumentMode && (note === NOTE_NONE || isNote(note))) {
                 // Invalid instrument numbers do nothing, but they are remembered
                 const check = instrumentNumber || ch.oldInstrument;
-                if (check && !this.itInstruments[check - 1]) {
+                if (check && this.itInstruments[check - 1] === undefined) {
                     note = NOTE_NONE;
                     instrumentNumber = 0;
                 }
@@ -1984,8 +1991,8 @@ export class ImpulseTrackerModule extends TrackerModule {
                 note === NOTE_NONE && instrumentNumber !== 0;
             // Instrument numbers reset the envelopes depending on Old Effects and Compatible Gxx
             if (
-                this.instrumentMode &&
                 instrumentNumber &&
+                this.instrumentMode &&
                 !isNote(note) &&
                 ((porta && this.compatibleGxx) || (!porta && this.oldEffects))
             ) {
@@ -1998,15 +2005,15 @@ export class ImpulseTrackerModule extends TrackerModule {
                 const ended = !ch.active;
                 if (this.instrumentMode) {
                     if (
+                        ended ||
                         ch.instrument !==
-                            this.itInstruments[instrumentNumber - 1] ||
-                        ended
+                            this.itInstruments[instrumentNumber - 1]
                     ) {
                         note = ch.note;
                     }
                 } else if (
-                    ch.sample !== this.getSample(instrumentNumber - 1) ||
-                    ended
+                    ended ||
+                    ch.sample !== this.getSample(instrumentNumber - 1)
                 ) {
                     note = ch.note;
                 }
@@ -2040,7 +2047,7 @@ export class ImpulseTrackerModule extends TrackerModule {
                 this.instrumentChange(ch, instrumentNumber, porta, true, true);
                 if (isNote(note)) {
                     ch.newInstrument = 0;
-                    if (oldSample !== ch.sample && porta && ch.playing) {
+                    if (porta && oldSample !== ch.sample && ch.playing) {
                         // A sample swap during a portamento restarts the new sample
                         this.retrigger(ch, 0);
                     }
@@ -2483,14 +2490,16 @@ export class ImpulseTrackerModule extends TrackerModule {
             if (param & 0xf0) {
                 this.fineVolume(ch, param >> 4, 1, false);
                 return;
-            } else if (ch.isFirstTick) {
+            }
+            if (ch.isFirstTick) {
                 volume -= 0x0f;
             }
         } else if ((param & 0xf0) === 0xf0) {
             if (param & 0x0f) {
                 this.fineVolume(ch, param & 0x0f, -1, false);
                 return;
-            } else if (ch.isFirstTick) {
+            }
+            if (ch.isFirstTick) {
                 volume += 0x0f;
             }
         }
@@ -2818,14 +2827,11 @@ export class ImpulseTrackerModule extends TrackerModule {
             return TrackerSampleVariants.reverse;
         }
         const sample = ch.sample;
-        if (
-            sample?.sustainLoopType !== undefined &&
-            sample.sustainLoopType !== TrackerLoopTypes.none &&
-            !ch.sustainLoop
-        ) {
-            return TrackerSampleVariants.release;
-        }
-        return TrackerSampleVariants.normal;
+        return sample?.sustainLoopType === undefined ||
+            sample.sustainLoopType === TrackerLoopTypes.none ||
+            ch.sustainLoop
+            ? TrackerSampleVariants.normal
+            : TrackerSampleVariants.release;
     }
 
     /**
@@ -2871,7 +2877,7 @@ export class ImpulseTrackerModule extends TrackerModule {
         if (!ch.playing) {
             return;
         }
-        if (ch.sustainLoop && ch.sample && keyWasOn) {
+        if (keyWasOn && ch.sustainLoop && ch.sample) {
             // The sample continues with its regular loop
             ch.sustainLoop = false;
             if (ch.sample.loopType !== TrackerLoopTypes.pingPong) {
@@ -2904,13 +2910,15 @@ export class ImpulseTrackerModule extends TrackerModule {
             }
             tickCount %= rowLength;
         }
-        if (tickCount === tick) {
-            this.stopSample(ch);
-            ch.active = false;
-            ch.period = 0;
-            ch.fadeout = 0;
-            ch.noteFade = true;
+        if (tickCount !== tick) {
+            return;
         }
+
+        this.stopSample(ch);
+        ch.active = false;
+        ch.period = 0;
+        ch.fadeout = 0;
+        ch.noteFade = true;
     }
 
     /**
@@ -2953,10 +2961,12 @@ export class ImpulseTrackerModule extends TrackerModule {
             ch.resonance = ch.restoreResonance - 1;
             ch.restoreResonance = 0;
         }
-        if (ch.restoreCutoff > 0) {
-            ch.cutoff = ch.restoreCutoff - 1;
-            ch.restoreCutoff = 0;
+        if (!(ch.restoreCutoff > 0)) {
+            return;
         }
+
+        ch.cutoff = ch.restoreCutoff - 1;
+        ch.restoreCutoff = 0;
     }
 
     /**
@@ -3044,9 +3054,9 @@ export class ImpulseTrackerModule extends TrackerModule {
             }
         }
         if (
-            this.instrumentMode &&
             !instrumentChanged &&
             sampleChanged &&
+            this.instrumentMode &&
             ch.sample &&
             !isNote(ch.rowNote)
         ) {
@@ -3149,7 +3159,7 @@ export class ImpulseTrackerModule extends TrackerModule {
         } else {
             ch.keyOff = false;
             ch.noteFade = false;
-            if (sample !== ch.sample || instrumentChanged) {
+            if (instrumentChanged || sample !== ch.sample) {
                 ch.reverse = false;
             }
             if (instrument) {
@@ -3168,7 +3178,7 @@ export class ImpulseTrackerModule extends TrackerModule {
             }
         }
 
-        if (ch.rowNote === NOTE_OFF && this.oldEffects && sampleChanged) {
+        if (sampleChanged && ch.rowNote === NOTE_OFF && this.oldEffects) {
             // A note off with an instrument number keeps the previous sample playing
             ch.instrumentVolume = oldInstrumentVolume;
             ch.volume = sample.volume;
@@ -3392,14 +3402,18 @@ export class ImpulseTrackerModule extends TrackerModule {
         if (!porta || (this.compatibleGxx && ch.rowInstrument)) {
             ch.keyOff = false;
         }
-        if (!porta) {
-            ch.triggered = true;
-            ch.filterEnabled = false;
-            if (resetEnvelopes) {
-                ch.autoVibratoDepth = 0;
-                ch.autoVibratoPos = 0;
-            }
+        if (porta) {
+            return;
         }
+
+        ch.triggered = true;
+        ch.filterEnabled = false;
+        if (!resetEnvelopes) {
+            return;
+        }
+
+        ch.autoVibratoDepth = 0;
+        ch.autoVibratoPos = 0;
     }
 
     /**
@@ -3419,7 +3433,7 @@ export class ImpulseTrackerModule extends TrackerModule {
         if (!isNote(note)) {
             return;
         }
-        if (!this.instrumentMode || forceCut) {
+        if (forceCut || !this.instrumentMode) {
             if (ch.playing) {
                 this.stopSample(ch);
             }
@@ -3494,10 +3508,12 @@ export class ImpulseTrackerModule extends TrackerModule {
                     break;
                 }
             }
-            if (!voice.volume) {
-                voice.fadeout = 0;
-                voice.noteFade = true;
+            if (voice.volume) {
+                continue;
             }
+
+            voice.fadeout = 0;
+            voice.noteFade = true;
         }
 
         if (!ch.active) {
@@ -3537,10 +3553,12 @@ export class ImpulseTrackerModule extends TrackerModule {
                 break;
             }
         }
-        if (!voice.volume) {
-            voice.fadeout = 0;
-            voice.noteFade = true;
+        if (voice.volume) {
+            return;
         }
+
+        voice.fadeout = 0;
+        voice.noteFade = true;
     }
 
     /**
@@ -3556,15 +3574,16 @@ export class ImpulseTrackerModule extends TrackerModule {
             ch.retriggerCount = param & 0x0f;
             doRetrigger = true;
         }
-        if ((!ch.playing && !this.retriggerStoppedSamples) || !doRetrigger) {
+        if (!doRetrigger || (!ch.playing && !this.retriggerStoppedSamples)) {
             return;
         }
         const change = param >> 4;
         let volume = ch.volume * 4;
         if (change) {
-            volume = RETRIGGER_MULTIPLIERS[change]
-                ? Math.trunc((volume * RETRIGGER_MULTIPLIERS[change]) / 16)
-                : volume + RETRIGGER_OFFSETS[change] * 4;
+            volume =
+                RETRIGGER_MULTIPLIERS[change] > 0
+                    ? Math.trunc((volume * RETRIGGER_MULTIPLIERS[change]) / 16)
+                    : volume + RETRIGGER_OFFSETS[change] * 4;
             volume = Math.min(256, Math.max(0, volume));
         }
         const note = ch.newNote;
@@ -3577,7 +3596,7 @@ export class ImpulseTrackerModule extends TrackerModule {
         if (this.instrumentMode) {
             // The retriggered note counts as a note on this row
             ch.rowNote = note;
-        } else if (ch.rowNote === NOTE_NONE && oldPeriod) {
+        } else if (oldPeriod && ch.rowNote === NOTE_NONE) {
             ch.period = oldPeriod;
         }
         this.retrigger(ch, 0);
@@ -3840,11 +3859,10 @@ export class ImpulseTrackerModule extends TrackerModule {
                     (ch.sustainLoop
                         ? sample.sustainLoopType
                         : sample.loopType) !== TrackerLoopTypes.none;
-                const atStart = ch.trigger
-                    ? ch.sampleOffset === 0
-                    : ch.samplePosition === 0;
+                const atStart =
+                    (ch.trigger ? ch.sampleOffset : ch.samplePosition) === 0;
                 ch.reverse = true;
-                if (atStart && (isNote(ch.rowNote) || !looped)) {
+                if (atStart && (!looped || isNote(ch.rowNote))) {
                     ch.preset = this.sampleBank.getPreset(
                         ch.sampleIndex,
                         TrackerSampleVariants.reverse
@@ -4015,8 +4033,8 @@ export class ImpulseTrackerModule extends TrackerModule {
         const effect = ch.rowEffect;
         const smooth = effect === ImpulseTrackerEffects.smoothMidiMacro;
         if (!(
-            (effect === ImpulseTrackerEffects.midiMacro && this.tick === 0) ||
-            smooth
+            smooth ||
+            (effect === ImpulseTrackerEffects.midiMacro && this.tick === 0)
         )) {
             return;
         }
@@ -4059,7 +4077,7 @@ export class ImpulseTrackerModule extends TrackerModule {
         }
         for (let i = 0; i < bytes.length; i++) {
             const byte = bytes[i];
-            if (byte === 0xfa || byte === 0xfc || byte === 0xff) {
+            if ([0xfa, 0xfc, 0xff].includes(byte)) {
                 // Song start, song stop and reset the filters
                 for (const channel of this
                     .channels as ImpulseTrackerChannel[]) {

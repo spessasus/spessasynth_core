@@ -50,9 +50,9 @@ export class BankSelectHacks {
         isXG: boolean
     ) {
         // Do not change XG drums (120 or 127)
-        if (this.isXGDrum(bankMSB) && isXG) return bankMSB;
-
-        return Math.min(bankMSB + bankOffset, 127);
+        return isXG && this.isXGDrum(bankMSB)
+            ? bankMSB
+            : Math.min(bankMSB + bankOffset, 127);
     }
 
     public static subtractBankOffset(
@@ -61,8 +61,8 @@ export class BankSelectHacks {
         isXG: boolean
     ) {
         // Do not change XG drums (120 or 127)
-        if (this.isXGDrum(bankMSB) && isXG) return bankMSB;
-
-        return Math.max(0, bankMSB - bankOffset);
+        return isXG && this.isXGDrum(bankMSB)
+            ? bankMSB
+            : Math.max(0, bankMSB - bankOffset);
     }
 }

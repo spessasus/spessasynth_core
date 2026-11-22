@@ -117,8 +117,8 @@ export class CustomCurve extends ModulatorCurve {
         }
         for (const [i, { x, y }] of points.entries()) {
             if (
-                !Number.isInteger(x) ||
-                !Number.isInteger(y) ||
+                !Number.isSafeInteger(x) ||
+                !Number.isSafeInteger(y) ||
                 x < 0 ||
                 x > 16_384 ||
                 y < 0 ||
@@ -180,8 +180,11 @@ export class CustomCurve extends ModulatorCurve {
      */
     public isIdentical(other: ModulatorCurve) {
         if (other === this) return true;
-        if (!(other instanceof CustomCurve)) return false;
-        if (other.points.length !== this.points.length) return false;
+        if (
+            !(other instanceof CustomCurve) ||
+            other.points.length !== this.points.length
+        )
+            return false;
         return this.points.every(
             (p, i) => p.x === other.points[i].x && p.y === other.points[i].y
         );

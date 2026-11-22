@@ -240,8 +240,8 @@ export class DownloadableSoundsInstrument
         // Override reverb and chorus with 1000 instead of 200
         // Reverb
         if (
-            !instrument.globalZone.modulators.some(
-                (m) => m.destination === GeneratorTypes.reverbEffectsSend
+            instrument.globalZone.modulators.every(
+                (m) => m.destination !== GeneratorTypes.reverbEffectsSend
             )
         ) {
             instrument.globalZone.addModulators(
@@ -250,8 +250,8 @@ export class DownloadableSoundsInstrument
         }
         // Chorus
         if (
-            !instrument.globalZone.modulators.some(
-                (m) => m.destination === GeneratorTypes.chorusEffectsSend
+            instrument.globalZone.modulators.every(
+                (m) => m.destination !== GeneratorTypes.chorusEffectsSend
             )
         ) {
             instrument.globalZone.addModulators(

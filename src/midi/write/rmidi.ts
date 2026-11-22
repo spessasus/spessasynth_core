@@ -24,6 +24,13 @@ import type { MIDISystem } from "../../soundbank/types";
 
 const DEFAULT_COPYRIGHT = "Created using SpessaSynth";
 
+// Message types that can select a bank, a program or a drum channel
+const RELEVANT_STATUSES = new Set<number>([
+    MIDIMessageTypes.controllerChange,
+    MIDIMessageTypes.programChange,
+    MIDIMessageTypes.systemExclusive
+]);
+
 interface ChannelStatus {
     program: number;
     isDrum: boolean;
@@ -79,18 +86,13 @@ function correctBankOffsetInternal(
     }
 
     mid.iterate((e, trackNum, eventIndexes) => {
-        const portOffset = mid.portChannelOffsetMap[ports[trackNum]];
         if (e.statusByte === MIDIMessageTypes.midiPort) {
             ports[trackNum] = e.data[0];
             return;
         }
         let status = e.statusByte < 0xf0 ? e.statusByte & 0xf0 : e.statusByte;
-        if (
-            status !== MIDIMessageTypes.controllerChange &&
-            status !== MIDIMessageTypes.programChange &&
-            status !== MIDIMessageTypes.systemExclusive
-        )
-            return;
+        if (!RELEVANT_STATUSES.has(status)) return;
+        const portOffset = mid.portChannelOffsetMap[ports[trackNum]];
 
         if (status === MIDIMessageTypes.systemExclusive) {
             const syxs = MIDIUtils.analyzeSysEx(e.data);
@@ -107,7 +109,7 @@ function correctBankOffsetInternal(
                             // Check for drum sysex
                             const sysexChannel = syx.channel + portOffset;
                             // Ensure check as syx.channel may be above 15
-                            if (!channels[sysexChannel]) break;
+                            if (channels[sysexChannel] === undefined) break;
                             channels[sysexChannel].isDrum = syx.value > 0;
                         }
                         break;
@@ -129,9 +131,9 @@ function correctBankOffsetInternal(
 
                     case "Controller Change": {
                         // Replace the system exclusive with a regular controller change
-                        const t = mid.tracks[trackNum];
                         // Channel number may be above 15
                         if (syx.channel >= 16) break;
+                        const t = mid.tracks[trackNum];
                         const newEvent = MIDIMessage.controllerChange(
                             e.ticks,
                             syx.channel,
@@ -253,7 +255,7 @@ function correctBankOffsetInternal(
         // Controller change
         // We only care about bank-selects
         const isLSB = e.data[0] === MIDIControllers.bankSelectLSB;
-        if (e.data[0] !== MIDIControllers.bankSelect && !isLSB) return;
+        if (!isLSB && e.data[0] !== MIDIControllers.bankSelect) return;
 
         // Bank select
         ch.hasBankSelect = true;
@@ -402,7 +404,7 @@ export function writeRMIDIInternal(
     options: RMIDIWriteOptions
 ) {
     const offset = options.bankOffset;
-    if (!Number.isInteger(offset) || offset < 0 || offset > 127) {
+    if (!Number.isSafeInteger(offset) || offset < 0 || offset > 127) {
         throw new Error(
             `Invalid bank offset: ${offset}. It must be an integer between 0 and 127.`
         );

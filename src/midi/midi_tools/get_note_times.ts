@@ -102,7 +102,8 @@ export function getNoteTimesInternal(
     if (unfinished > 0) {
         // For every channel, for every note that is unfinished (has -1 length)
         for (let channel = 0; channel < unfinishedNotes.length; channel++) {
-            for (const noteIndexes of unfinishedNotes[channel].values()) {
+            const channelNotes = unfinishedNotes[channel];
+            for (const noteIndexes of channelNotes.values()) {
                 for (const noteIndex of noteIndexes) {
                     const note = noteTimes[channel][noteIndex];
                     note.length = elapsedTime - note.start;

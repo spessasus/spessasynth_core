@@ -15,10 +15,9 @@ interface FootnoteEnvironment {
 }
 
 function getEnvironment(environment: unknown): FootnoteEnvironment {
-    if (typeof environment === "object" && environment !== null)
-        return environment;
-
-    return {};
+    return typeof environment === "object" && environment !== null
+        ? environment
+        : {};
 }
 
 export function footnotePlugin(parser: MarkdownIt) {

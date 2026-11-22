@@ -316,7 +316,7 @@ export const RegisteredParameterTypes = {
  *
  * Sources:
  * - https://cdn.roland.com/assets/media/pdf/SC-8850_OM.pdf
- * - http://hummer.stanford.edu/sig/doc/classes/MidiOutput/rpn.html
+ * - https://hummer.stanford.edu/sig/doc/classes/MidiOutput/rpn.html
  *
  * @group MIDI.Protocol
  */
@@ -339,7 +339,7 @@ export const NonRegisteredParameterTypesMSB = {
  *
  * Sources:
  * - https://cdn.roland.com/assets/media/pdf/SC-8850_OM.pdf
- * - http://hummer.stanford.edu/sig/doc/classes/MidiOutput/rpn.html
+ * - https://hummer.stanford.edu/sig/doc/classes/MidiOutput/rpn.html
  *
  * @group MIDI.Protocol
  */

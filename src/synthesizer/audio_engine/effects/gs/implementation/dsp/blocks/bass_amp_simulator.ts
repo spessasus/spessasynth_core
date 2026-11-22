@@ -26,7 +26,7 @@ interface BassAmpModel {
  */
 const BASS_AMP_MODELS: BassAmpModel[] = [
     {
-        highPass: [39.945, 0.996_08],
+        highPass: [39.945, 0.99608],
         resonantHighPass: 162.43,
         lowPass: [2000, 4],
         gain: 0.5 * (127 / 128) * 0.9375

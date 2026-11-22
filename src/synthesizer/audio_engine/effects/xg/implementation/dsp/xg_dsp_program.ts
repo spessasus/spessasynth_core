@@ -36,7 +36,7 @@ const FADE_STEP = 1 / 32;
 /**
  * The extra gain of the boosted low shelf.
  */
-const BOOST = Math.fround(1.4142);
+const BOOST = 1.414199948310852; // Math.fround(1.4142)
 
 /**
  * The first-order filter shapes of the XG DSP filter designer.
@@ -111,7 +111,16 @@ export function getMemorySize(sampleRate: number, size: number) {
 }
 
 const chopFloat = new Float32Array(1);
-const chopBits = new Int32Array(chopFloat.buffer);
+const chopBits = new Int32Array(
+    chopFloat.buffer,
+    chopFloat.byteOffset,
+    chopFloat.length
+);
+
+// Address slots the original never stores
+const SKIPPED_ADDRESSES = new Set([0x0a, 0x0f, 0x14, 0x1a]);
+// The only 0x24-0x3e address slots that category 0 stores
+const CATEGORY_0_ADDRESSES = new Set([0x28, 0x2d, 0x33, 0x38, 0x3a, 0x3b]);
 
 /**
  * Rounds toward zero to float32.
@@ -161,12 +170,10 @@ function wordToFloat(word: number, mode: number) {
         const mantissa = w & 0x7f;
         return exponent === 7
             ? mantissa / 128
-            : Math.fround(
-                  (1 << exponent) * 2.384_185_791_015_625e-7 * mantissa
-              );
+            : Math.fround((1 << exponent) * 2.384185791015625e-7 * mantissa);
     }
     const signed = w > 0x2_00 ? w - 0x4_00 : w;
-    return mode === 1 ? signed / 128 : signed / 512;
+    return signed / (mode === 1 ? 128 : 512);
 }
 
 /**
@@ -462,16 +469,11 @@ export abstract class XGDSPProgram implements DefaultXGEffectProcessor {
         for (let i = offset; i < offset + count; i++) {
             const k = list[i];
             // The original only stores some address slots, depending on the variation category
-            if (k === 0x0a || k === 0x0f || k === 0x14 || k === 0x1a) continue;
+            if (SKIPPED_ADDRESSES.has(k)) continue;
             if (k >= 0x24 && k <= 0x3e) {
                 const written =
                     this.category === 0
-                        ? k === 0x28 ||
-                          k === 0x2d ||
-                          k === 0x33 ||
-                          k === 0x38 ||
-                          k === 0x3a ||
-                          k === 0x3b
+                        ? CATEGORY_0_ADDRESSES.has(k)
                         : this.category >= 2;
                 if (!written) continue;
             }

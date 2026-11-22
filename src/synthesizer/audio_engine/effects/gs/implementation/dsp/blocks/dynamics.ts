@@ -29,7 +29,7 @@ const LIMITER_FLOOR = 1.34e-7;
 const LIMITER_FIRST_SEGMENT = [
     [15.26, 0.1624],
     [7.5402, 0.024],
-    [2.8669, 0.002_747],
+    [2.8669, 0.002747],
     [1, 0]
 ];
 const LIMITER_EXPONENTS = [0.25, 0.5, 0.75, 1];
@@ -88,7 +88,7 @@ export abstract class Dynamics {
         this.lookaheadSamples = Math.round(lookahead * sampleRate);
         this.lookahead = new DelayLine(this.lookaheadSamples);
         // A one-pole smoother of the gain, 0.672 per 32 kHz sample (78 us)
-        this.smoothing = 1 - 0.671_875 ** this.step;
+        this.smoothing = 1 - 0.671875 ** this.step;
     }
 
     /**
@@ -122,8 +122,7 @@ export abstract class Dynamics {
         // The detector sees the current input under the gain. It saturates at full scale before the last x4
         // That way a hot input can close the gain in one step
         const over =
-            3.968_75 *
-                Math.min(this.detectorGain * Math.abs(this.gain * h), 1) -
+            3.96875 * Math.min(this.detectorGain * Math.abs(this.gain * h), 1) -
             THRESHOLD;
         if (over < 0) return false;
         this.gain *= (1 - Math.min(over, 1)) ** this.step;
@@ -210,7 +209,7 @@ export class Limiter extends Dynamics {
     private release = 1;
 
     public constructor(sampleRate: number) {
-        super(sampleRate, 0.003_75);
+        super(sampleRate, 0.00375);
         this.floor = LIMITER_FLOOR * this.step;
     }
 

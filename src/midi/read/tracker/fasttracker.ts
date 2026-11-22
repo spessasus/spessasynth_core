@@ -101,7 +101,7 @@ function advanceEnvelope(
             tick = points[envelope.loopStart].tick;
         }
     }
-    if (envelope.sustainPoint >= 0 && keyOn) {
+    if (keyOn && envelope.sustainPoint >= 0) {
         if (tick === points[envelope.sustainPoint].tick + 1) {
             tick = points[envelope.sustainPoint].tick;
         }
@@ -384,7 +384,7 @@ export class FastTrackerModule extends ProTrackerModule {
                     // Unnamed samples inherit the instrument name, numbered if the instrument has more samples
                     name:
                         readBinaryString(binary, 22, offset + 18).trim() ||
-                        (sampleCount > 1 && instrumentName
+                        (instrumentName && sampleCount > 1
                             ? `${instrumentName} ${s + 1}`
                             : instrumentName),
                     data: new Float32Array(0),
@@ -463,15 +463,17 @@ export class FastTrackerModule extends ProTrackerModule {
                     length,
                     header.loopStart + header.loopLength
                 );
-                if (
+                if (!(
                     header.loopType !== TrackerLoopTypes.none &&
                     header.loopLength > 0 &&
                     header.loopStart < loopEnd
-                ) {
-                    sample.loopType = header.loopType;
-                    sample.loopStart = header.loopStart;
-                    sample.loopEnd = loopEnd;
+                )) {
+                    continue;
                 }
+
+                sample.loopType = header.loopType;
+                sample.loopStart = header.loopStart;
+                sample.loopEnd = loopEnd;
             }
         }
         const message = this.readOpenMPTExtensions(
@@ -487,20 +489,16 @@ export class FastTrackerModule extends ProTrackerModule {
 
     protected noteToPeriod(note: number, channel: TrackerChannel) {
         const n = note - 1 + (channel.sample?.relativeNote ?? 0);
-        if (this.linearFrequencies) {
-            return 7680 - n * 64 - channel.finetune / 2;
-        }
-        return (
-            MIDDLE_C_PERIOD *
-            Math.pow(2, (48 - n) / 12 - channel.finetune / (128 * 12))
-        );
+        return this.linearFrequencies
+            ? 7680 - n * 64 - channel.finetune / 2
+            : MIDDLE_C_PERIOD *
+                  Math.pow(2, (48 - n) / 12 - channel.finetune / (128 * 12));
     }
 
     protected periodToFrequency(period: number) {
-        if (this.linearFrequencies) {
-            return MIDDLE_C_RATE * Math.pow(2, (4608 - period) / 768);
-        }
-        return (MIDDLE_C_RATE * MIDDLE_C_PERIOD) / period;
+        return this.linearFrequencies
+            ? MIDDLE_C_RATE * Math.pow(2, (4608 - period) / 768)
+            : (MIDDLE_C_RATE * MIDDLE_C_PERIOD) / period;
     }
 
     protected processRow(channel: TrackerChannel) {
@@ -734,7 +732,7 @@ export class FastTrackerModule extends ProTrackerModule {
         }
 
         // An instrument number resets the volume, panning and envelopes
-        if (instrumentNumber && channel.sample && note !== NOTE_OFF) {
+        if (note !== NOTE_OFF && instrumentNumber && channel.sample) {
             channel.volume = channel.sample.volume;
             if (channel.sample.panning >= 0) {
                 channel.panning = channel.sample.panning;
@@ -852,7 +850,7 @@ export class FastTrackerModule extends ProTrackerModule {
         // Chunk IDs are printable ASCII. Anything else ends the extensions
         const readID = () => {
             const id = readBinaryString(binary, 4, offset);
-            return /^[\u0020-\u007E]{4}$/.test(id) ? id : "";
+            return /^[\u{20}-\u{7E}]{4}$/u.test(id) ? id : "";
         };
 
         let message = "";

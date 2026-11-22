@@ -130,7 +130,7 @@ export class VoiceFilter {
     /**
      * The resonance and type key that `chunks` belong to.
      */
-    private chunksKey = Number.NaN;
+    private chunksKey = NaN;
 
     /**
      * Initializes a new instance of the filter.
@@ -186,7 +186,7 @@ export class VoiceFilter {
      * @param cutoffCents The cutoff frequency in cents.
      */
     public calculateCoefficients(cutoffCents: number) {
-        cutoffCents = cutoffCents | 0; // Math.floor
+        cutoffCents |= 0; // Math.floor
         if (cutoffCents < 0 || cutoffCents >= CACHE_MAX_CENTS) {
             // Outside the cache range, compute directly
             this.computeCoefficients(cutoffCents);
@@ -212,7 +212,7 @@ export class VoiceFilter {
         let chunk = this.chunks[chunkIndex];
         if (chunk === undefined) {
             // NaN marks coefficients that were not computed yet
-            chunk = new Float64Array(5 << CHUNK_BITS).fill(Number.NaN);
+            chunk = new Float64Array(5 << CHUNK_BITS).fill(NaN);
             this.chunks[chunkIndex] = chunk;
         }
 

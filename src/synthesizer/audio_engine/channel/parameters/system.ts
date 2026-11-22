@@ -153,7 +153,7 @@ export function setSystemParameterInternal<
         }
 
         case "keyShift": {
-            if (!this._drumChannel && (prev as number) !== (value as number))
+            if ((prev as number) !== (value as number) && !this._drumChannel)
                 this.stopAllNotes(true);
         }
     }

@@ -70,16 +70,18 @@ export function controllerChange(
                     let vc = 0;
                     if (this._voiceCount > 0)
                         for (const v of this.synthCore.voices) {
-                            if (v.channel === this.channel && v.isActive) {
-                                if (
-                                    v.modulatedGenerators[
-                                        GeneratorTypes.ignoreNoteOff
-                                    ]
-                                )
-                                    v.releaseVoice(this.synthCore.currentTime);
-                                else if (!v.isInRelease) v.isHeld = true;
-                                if (++vc >= this._voiceCount) break; // We already checked all the voices
+                            if (!(v.channel === this.channel && v.isActive)) {
+                                continue;
                             }
+
+                            if (
+                                v.modulatedGenerators[
+                                    GeneratorTypes.ignoreNoteOff
+                                ] !== 0
+                            )
+                                v.releaseVoice(this.synthCore.currentTime);
+                            else if (!v.isInRelease) v.isHeld = true;
+                            if (++vc >= this._voiceCount) break; // We already checked all the voices
                         }
                 } else this.stopAllNotes();
                 // The mode changes after the notes off, so they follow the previous mode
@@ -107,11 +109,11 @@ export function controllerChange(
                 // Testcase
                 // Dave-Rodgers-D-j-Vu-Anonymous-20200419154845-nonstop2k.com.mid
                 if (
-                    this.channel % 16 === MIDI_DRUM_CHANNEL &&
-                    this.channelSystem === "xg" &&
                     value !== 120 &&
                     value !== 126 &&
-                    value !== 127
+                    value !== 127 &&
+                    this.channel % 16 === MIDI_DRUM_CHANNEL &&
+                    this.channelSystem === "xg"
                 ) {
                     break;
                 }
@@ -224,15 +226,17 @@ export function controllerChange(
                     let vc = 0;
                     if (this._voiceCount > 0)
                         for (const v of this.synthCore.voices) {
-                            if (
+                            if (!(
                                 v.channel === this.channel &&
                                 v.isActive &&
                                 v.isHeld
-                            ) {
-                                v.isHeld = false;
-                                v.releaseVoice(this.synthCore.currentTime);
-                                if (++vc >= this._voiceCount) break; // We already checked all the voices
+                            )) {
+                                continue;
                             }
+
+                            v.isHeld = false;
+                            v.releaseVoice(this.synthCore.currentTime);
+                            if (++vc >= this._voiceCount) break; // We already checked all the voices
                         }
                 }
                 // The pedal is still a modulator source (SFe 4.0, section 7.4)

@@ -51,12 +51,7 @@ export function parseRMIDIInternal(
                 4
             ).toLowerCase();
             // An SFe bank in a RIFF form is "sfen" (the tracker modules embed one)
-            if (
-                type === "sfbk" ||
-                type === "sfpk" ||
-                type === "sfen" ||
-                type === "dls "
-            ) {
+            if (["sfbk", "sfpk", "sfen", "dls "].includes(type)) {
                 SpessaLog.info(
                     "%cFound embedded soundbank!",
                     ConsoleColors.recognized
@@ -88,7 +83,6 @@ export function parseRMIDIInternal(
                 while (currentChunk.data.currentIndex < currentChunk.size) {
                     const infoChunk = RIFFChunk.read(currentChunk.data);
                     const headerTyped = infoChunk.header as RMIDInfoFourCC;
-                    const infoData = infoChunk.data;
                     if (infoChunk.size === 0) {
                         // Empty chunks are illegal, drop them
                         SpessaLog.warn(
@@ -96,6 +90,7 @@ export function parseRMIDIInternal(
                         );
                         continue;
                     }
+                    const infoData = infoChunk.data;
                     switch (headerTyped) {
                         default: {
                             SpessaLog.warn(
@@ -226,7 +221,7 @@ export function parseRMIDIInternal(
     parseSMFInternal(outputMIDI, smfFileBinary, fileName);
 
     // The DBNK chunk overrides the bank offset detected by the SMF parser
-    if (outputMIDI.embeddedSoundBank !== undefined && dbnk !== undefined) {
+    if (dbnk !== undefined && outputMIDI.embeddedSoundBank !== undefined) {
         outputMIDI.bankOffset = dbnk;
     }
 }

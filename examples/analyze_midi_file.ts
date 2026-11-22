@@ -59,7 +59,7 @@ console.group("--- Used Channels ---");
 
 for (const track of mid.tracks) {
     console.info(
-        `Track "${track.name}": ${[...track.channels.values()].map((v) => v + mid.portChannelOffsetMap[track.port]).join(", ")}`
+        `Track "${track.name}": ${[...track.channels].map((v) => v + mid.portChannelOffsetMap[track.port]).join(", ")}`
     );
 }
 

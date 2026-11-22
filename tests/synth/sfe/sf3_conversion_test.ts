@@ -61,7 +61,9 @@ const encodeVorbis = (audioData: Float32Array, sampleRate: number) =>
         ]);
         const chunks = new Array<Buffer>();
         let errors = "";
-        ffmpeg.stdout.on("data", (chunk: Buffer) => chunks.push(chunk));
+        ffmpeg.stdout.on("data", (chunk: Buffer) => {
+            chunks.push(chunk);
+        });
         ffmpeg.stderr.on(
             "data",
             (chunk: Buffer) => (errors += chunk.toString())

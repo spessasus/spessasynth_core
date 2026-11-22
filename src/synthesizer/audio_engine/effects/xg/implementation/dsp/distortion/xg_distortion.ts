@@ -89,7 +89,7 @@ export abstract class XGDistortionBase extends XGMonoVariationProgram {
         const w = this.coefficientWords;
         const gain = Math.trunc((drive * 499) / 0x7f) + 13;
         w[0x76] = w[0x7a] = gain;
-        const compensation = drive < 11 ? 169 / (gain * gain) : 169 / 2704;
+        const compensation = 169 / (drive < 11 ? gain * gain : 2704);
         let output = Math.trunc(
             Math.fround(compensation * OUTPUT_LEVEL[level] * 512)
         );

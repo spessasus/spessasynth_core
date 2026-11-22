@@ -40,13 +40,10 @@ class DocumentPathRouter extends KindDirRouter {
     }
 
     protected override getIdealBaseName(reflection: Reflection) {
-        if (reflection.isDocument()) {
-            return (
-                this.documentPaths.get(reflection) ??
-                super.getIdealBaseName(reflection)
-            );
-        }
-        return super.getIdealBaseName(reflection);
+        return reflection.isDocument()
+            ? (this.documentPaths.get(reflection) ??
+                  super.getIdealBaseName(reflection))
+            : super.getIdealBaseName(reflection);
     }
 }
 

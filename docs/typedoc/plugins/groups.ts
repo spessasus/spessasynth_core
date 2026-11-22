@@ -68,12 +68,14 @@ export function load(application: Application) {
             const categories = new Set<string>();
             for (const comment of comments) {
                 for (const tag of comment.blockTags) {
-                    if (tag.tag === "@category") {
-                        const value = Comment.combineDisplayParts(
-                            tag.content
-                        ).trim();
-                        if (value) categories.add(value);
+                    if (tag.tag !== "@category") {
+                        continue;
                     }
+
+                    const value = Comment.combineDisplayParts(
+                        tag.content
+                    ).trim();
+                    if (value) categories.add(value);
                 }
             }
 
@@ -129,14 +131,16 @@ export function load(application: Application) {
                     )
             );
             for (const category of categories) {
-                if (!homeCategories.has(category)) {
-                    home.blockTags.push(
-                        new CommentTag("@category", [
-                            { kind: "text", text: category }
-                        ])
-                    );
-                    homeCategories.add(category);
+                if (homeCategories.has(category)) {
+                    continue;
                 }
+
+                home.blockTags.push(
+                    new CommentTag("@category", [
+                        { kind: "text", text: category }
+                    ])
+                );
+                homeCategories.add(category);
             }
         }
     });
@@ -157,7 +161,8 @@ export function load(application: Application) {
             }
 
             for (const container of containers) {
-                for (const group of container.groups ?? []) {
+                const groups = container.groups ?? [];
+                for (const group of groups) {
                     if (!group.categories?.length) {
                         continue;
                     }

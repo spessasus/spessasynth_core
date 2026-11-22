@@ -124,9 +124,20 @@ for (let pass = 0; pass < PASSES; pass++) {
     for (const mode of order) {
         const { time, left } = await renderMode(mode);
         times[mode].push(time);
-        if (mode === "sf2") sf2Out = left;
-        if (mode === "custom") customOut = left;
-        if (mode === "wiggly") wigglyOut = left;
+        switch (mode) {
+            case "sf2": {
+                sf2Out = left;
+                break;
+            }
+            case "custom": {
+                customOut = left;
+                break;
+            }
+            case "wiggly": {
+                wigglyOut = left;
+                break;
+            }
+        }
     }
 }
 

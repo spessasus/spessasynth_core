@@ -35,7 +35,7 @@ export interface ChannelGenerators {
 
 /**
  * SoundBlaster AWE32 NRPN generator mappings.
- * http://archive.gamedev.net/archive/reference/articles/article445.html
+ * https://archive.gamedev.net/archive/reference/articles/article445.html
  * https://github.com/user-attachments/files/15757220/adip301.pdf
  */
 const AWE_NRPN_GENERATOR_MAPPINGS: GeneratorType[] = [

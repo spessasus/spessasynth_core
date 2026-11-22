@@ -67,3 +67,6 @@ site/
 test.ts
 out.*
 *.patch
+/tests/files/*
+!/tests/files/.gitignore
+/tests/midi_file/output

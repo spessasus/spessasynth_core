@@ -238,7 +238,7 @@ export const SWING_MS = 12.5;
  * @internal
  */
 export function modulationDepth(value: number) {
-    return (25_395 * (Math.exp(0.005_46 * value) - 1)) / 2048;
+    return (25_395 * (Math.exp(0.00546 * value) - 1)) / 2048;
 }
 
 /**

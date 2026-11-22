@@ -220,17 +220,13 @@ export class SoundBankManager {
         // The GS user drum sets exist in every map except the SC-55 map (bank LSB 1),
         // And drum parts ignore the bank MSB (measured on the SC-88 and SC-88Pro).
         // A kit of the sound banks at the same program hides them
-        if (
-            BankSelectHacks.isSystemXG(system) ||
+        return BankSelectHacks.isSystemXG(system) ||
             !patch.isGMGSDrum ||
             patch.bankLSB === 1 ||
             (preset?.isGMGSDrum && preset.program === patch.program)
-        ) {
-            return preset;
-        }
-        return (
-            this.userDrumSets.find((d) => d.program === patch.program) ?? preset
-        );
+            ? preset
+            : (this.userDrumSets.find((d) => d.program === patch.program) ??
+                  preset);
     }
 
     /**
@@ -251,7 +247,7 @@ export class SoundBankManager {
     private bankRemoved(bank: BasicSoundBank) {
         // The same bank can be added under another ID,
         // Its samples are still in use then
-        if (!this.soundBankList.some((s) => s.soundBank === bank)) {
+        if (this.soundBankList.every((s) => s.soundBank !== bank)) {
             this.bankRemovedCallback?.(bank);
         }
     }
@@ -278,10 +274,12 @@ export class SoundBankManager {
                     bankOffset
                 );
                 const key = selectablePreset.toMIDIString();
-                if (!addedPresets.has(key)) {
-                    addedPresets.add(key);
-                    presetList.push(selectablePreset);
+                if (addedPresets.has(key)) {
+                    continue;
                 }
+
+                addedPresets.add(key);
+                presetList.push(selectablePreset);
             }
         }
         presetList.sort(MIDIPatchTools.compare.bind(MIDIPatchTools));

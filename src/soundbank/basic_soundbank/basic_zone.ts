@@ -289,6 +289,13 @@ export class BasicZone {
      * @internal
      */
     public getWriteGenerators(bank: BasicSoundBank) {
+        // Instrument and preset zones use this parameter!
+        // So "use" it here to please eslint
+        if (!bank) {
+            throw new Error("No bank provided! ");
+        }
+        void bank;
+
         const generators = this.generators.filter(
             (g) =>
                 g.type !== GeneratorTypes.sampleID &&
@@ -296,13 +303,6 @@ export class BasicZone {
                 g.type !== GeneratorTypes.keyRange &&
                 g.type !== GeneratorTypes.velRange
         );
-
-        // Instrument and preset zones use this parameter!
-        // So "use" it here to please eslint
-        if (!bank) {
-            throw new Error("No bank provided! ");
-        }
-        void bank;
 
         // Unshift vel then key (to make key first)
         if (this.hasVelRange) {

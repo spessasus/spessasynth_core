@@ -255,14 +255,16 @@ export class ProTrackerModule extends TrackerModule {
             offset += header.length;
             const sample = this.samples[i];
             sample.data = data;
-            if (header.loopLength > 2 && header.loopStart < length) {
-                sample.loopType = TrackerLoopTypes.forward;
-                sample.loopStart = header.loopStart;
-                sample.loopEnd = Math.min(
-                    length,
-                    header.loopStart + header.loopLength
-                );
+            if (!(header.loopLength > 2 && header.loopStart < length)) {
+                continue;
             }
+
+            sample.loopType = TrackerLoopTypes.forward;
+            sample.loopStart = header.loopStart;
+            sample.loopEnd = Math.min(
+                length,
+                header.loopStart + header.loopLength
+            );
         }
     }
 
@@ -599,10 +601,6 @@ export class ProTrackerModule extends TrackerModule {
      * @param param The slide parameter.
      */
     protected volumeSlide(channel: TrackerChannel, param: number) {
-        if (param >> 4) {
-            channel.slideVolume(param >> 4);
-        } else {
-            channel.slideVolume(-(param & 0x0f));
-        }
+        channel.slideVolume(param >> 4 || -(param & 0x0f));
     }
 }

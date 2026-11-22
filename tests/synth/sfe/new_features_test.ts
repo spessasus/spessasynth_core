@@ -48,15 +48,17 @@ function chunksOf(file: Uint8Array, fourCC: string) {
     const name = [...fourCC].map((c) => c.charCodeAt(0));
     const found = new Array<Uint8Array>();
     for (let i = 0; i < file.length - 8; i++) {
-        if (name.every((c, k) => file[i + k] === c)) {
-            const size =
-                file[i + 4] |
-                (file[i + 5] << 8) |
-                (file[i + 6] << 16) |
-                (file[i + 7] << 24);
-            if (size >= 0 && i + 8 + size <= file.length)
-                found.push(file.subarray(i + 8, i + 8 + size));
+        if (name.some((c, k) => file[i + k] !== c)) {
+            continue;
         }
+
+        const size =
+            file[i + 4] |
+            (file[i + 5] << 8) |
+            (file[i + 6] << 16) |
+            (file[i + 7] << 24);
+        if (size >= 0 && i + 8 + size <= file.length)
+            found.push(file.subarray(i + 8, i + 8 + size));
     }
     return found;
 }
@@ -103,12 +105,12 @@ const linear = (cc: number) =>
         true,
         false
     );
-const plain = (cc: number, amount = 100) =>
+const plain = (cc: number) =>
     new Modulator(
         linear(cc),
         new ModulatorSource(),
         GeneratorTypes.pan,
-        amount,
+        100,
         0
     );
 const curveA = new CustomCurve(
@@ -125,12 +127,12 @@ const curveB = new CustomCurve(
     ],
     "B"
 );
-const curved = (cc: number, curve: CustomCurve, amount = 200) =>
+const curved = (cc: number, curve: CustomCurve) =>
     new Modulator(
         new ModulatorSource(cc as ModulatorSourceIndex, curve, true, false),
         new ModulatorSource(),
         GeneratorTypes.fineTune,
-        amount,
+        200,
         0
     );
 
@@ -1220,10 +1222,7 @@ console.info("gm.sf2 round trips:");
     let sums = 0;
     const toFile = (v: number) => Math.round(v / 0.4);
     const attenuationOf = (zone: BasicZone, parent: BasicZone) => {
-        const own = zone.getGenerator(
-            GeneratorTypes.initialAttenuation,
-            Number.NaN
-        );
+        const own = zone.getGenerator(GeneratorTypes.initialAttenuation, NaN);
         return Number.isNaN(own)
             ? parent.getGenerator(GeneratorTypes.initialAttenuation, 0)
             : own;

@@ -824,39 +824,43 @@ export class ConnectionBlock {
         ) {
             // Vibrato lfo to pitch
             return GeneratorTypes.vibLfoToPitch;
-        } else if (
+        }
+        if (
             source === DLSSources.modLfo &&
             destination === DLSDestinations.pitch
         ) {
             // Mod lfo to pitch
             return GeneratorTypes.modLfoToPitch;
-        } else if (
+        }
+        if (
             source === DLSSources.modLfo &&
             destination === DLSDestinations.filterCutoff
         ) {
             // Mod lfo to filter
             return GeneratorTypes.modLfoToFilterFc;
-        } else if (
+        }
+        if (
             source === DLSSources.modLfo &&
             destination === DLSDestinations.gain
         ) {
             // Mod lfo to volume
             return GeneratorTypes.modLfoToVolume;
-        } else if (
+        }
+        if (
             source === DLSSources.modEnv &&
             destination === DLSDestinations.filterCutoff
         ) {
             // Mod envelope to filter
             return GeneratorTypes.modEnvToFilterFc;
-        } else if (
+        }
+        if (
             source === DLSSources.modEnv &&
             destination === DLSDestinations.pitch
         ) {
             // Mod envelope to pitch
             return GeneratorTypes.modEnvToPitch;
-        } else {
-            return undefined;
         }
+        return undefined;
     }
 
     private failedConversion(msg: string) {

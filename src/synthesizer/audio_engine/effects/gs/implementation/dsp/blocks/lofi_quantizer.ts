@@ -59,7 +59,7 @@ export class LoFiQuantizer {
 
     public constructor(sampleRate: number) {
         this.step = sampleRate / HARDWARE_RATE;
-        this.latency = Number.isInteger(this.step) ? 0 : LOOKAHEAD;
+        this.latency = Number.isSafeInteger(this.step) ? 0 : LOOKAHEAD;
         this.line = new DelayLine(LOOKAHEAD + 2);
         this.dcBlocker = new FirstOrderFilter(sampleRate);
         this.dcBlocker.setHighPass(DC_BLOCKER_HZ);

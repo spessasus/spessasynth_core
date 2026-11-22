@@ -48,7 +48,7 @@ import { StbVorbis } from "stb-vorbis";
  *
  * **Specifications:**
  *
- * - [SoundFont2 Specification](http://www.synthfont.com/sfspec24.pdf)
+ * - [SoundFont2 Specification](https://www.synthfont.com/sfspec24.pdf)
  * - [SoundFont3 Description](https://www.fluidsynth.org/wiki/SoundFont3Format)
  * - [DLS Level 2 Specification](https://midi.org/dls)
  * - [SpessaSynth SFe](../../../docs/extra/sfe-format.md)
@@ -124,12 +124,13 @@ export class BasicSoundBank {
         defaultModulators = true
     ) {
         this.bankType = type;
-        if (defaultModulators) {
-            // The default modulators get their own copies of the curves, like any other curves of the bank
-            const defaults = copyDefaultModulators();
-            this.customCurves.push(...defaults.curves);
-            this.defaultModulators = defaults.modulators;
+        if (!defaultModulators) {
+            return;
         }
+        // The default modulators get their own copies of the curves, like any other curves of the bank
+        const defaults = copyDefaultModulators();
+        this.customCurves.push(...defaults.curves);
+        this.defaultModulators = defaults.modulators;
     }
 
     /**
@@ -226,8 +227,8 @@ export class BasicSoundBank {
         for (const bank of soundBanks.slice(1)) {
             for (const newPreset of bank.presets) {
                 if (
-                    !presets.some((existingPreset) =>
-                        newPreset.matches(existingPreset)
+                    presets.every(
+                        (existingPreset) => !newPreset.matches(existingPreset)
                     )
                 ) {
                     presets.push(newPreset);
@@ -749,26 +750,28 @@ export class BasicSoundBank {
                         break;
                     }
                 }
-                if (!isIZoneUsed) {
+                if (isIZoneUsed) {
+                    continue;
+                }
+
+                SpessaLog.info(
+                    `%c${iZone.sample.name}%c removed from %c${instrument.name}%c.`,
+                    ConsoleColors.recognized,
+                    ConsoleColors.info,
+                    ConsoleColors.recognized,
+                    ConsoleColors.info
+                );
+                if (instrument.deleteZone(iZoneIndex)) {
+                    trimmedIZones++;
+                    iZoneIndex--;
                     SpessaLog.info(
-                        `%c${iZone.sample.name}%c removed from %c${instrument.name}%c.`,
-                        ConsoleColors.recognized,
-                        ConsoleColors.info,
+                        `%c${iZone.sample.name}%c deleted`,
                         ConsoleColors.recognized,
                         ConsoleColors.info
                     );
-                    if (instrument.deleteZone(iZoneIndex)) {
-                        trimmedIZones++;
-                        iZoneIndex--;
-                        SpessaLog.info(
-                            `%c${iZone.sample.name}%c deleted`,
-                            ConsoleColors.recognized,
-                            ConsoleColors.info
-                        );
-                    }
-                    if (iZone.sample.useCount < 1) {
-                        this.deleteSample(iZone.sample);
-                    }
+                }
+                if (iZone.sample.useCount < 1) {
+                    this.deleteSample(iZone.sample);
                 }
             }
             return trimmedIZones;
@@ -845,14 +848,16 @@ export class BasicSoundBank {
                             break;
                         }
                     }
-                    if (!isZoneUsed) {
-                        trimmedZones++;
-                        p.deleteZone(zoneIndex);
-                        if (zone.instrument.useCount < 1) {
-                            this.deleteInstrument(zone.instrument);
-                        }
-                        zoneIndex--;
+                    if (isZoneUsed) {
+                        continue;
                     }
+
+                    trimmedZones++;
+                    p.deleteZone(zoneIndex);
+                    if (zone.instrument.useCount < 1) {
+                        this.deleteInstrument(zone.instrument);
+                    }
+                    zoneIndex--;
                 }
                 SpessaLog.info(
                     `%cTrimmed off %c${trimmedZones}%c preset zones from %c${p.name}`,
@@ -997,19 +1002,21 @@ export class BasicSoundBank {
             31, 32, 33, 40, 41, 48, 56, 57, 58, 64, 65, 66, 126, 127
         ]);
         for (const preset of this.presets) {
-            if (BankSelectHacks.isXGDrum(preset.bankMSB)) {
-                this._isXGBank = true;
-                if (!allowedPrograms.has(preset.program)) {
-                    // Not valid!
-                    this._isXGBank = false;
-                    SpessaLog.info(
-                        `%cThis bank is not valid XG. Preset %c${preset.toString()}%c is not a valid XG drum. XG mode will use presets on bank 128.`,
-                        ConsoleColors.info,
-                        ConsoleColors.value,
-                        ConsoleColors.info
-                    );
-                    break;
-                }
+            if (!BankSelectHacks.isXGDrum(preset.bankMSB)) {
+                continue;
+            }
+
+            this._isXGBank = true;
+            if (!allowedPrograms.has(preset.program)) {
+                // Not valid!
+                this._isXGBank = false;
+                SpessaLog.info(
+                    `%cThis bank is not valid XG. Preset %c${preset.toString()}%c is not a valid XG drum. XG mode will use presets on bank 128.`,
+                    ConsoleColors.info,
+                    ConsoleColors.value,
+                    ConsoleColors.info
+                );
+                break;
             }
         }
     }

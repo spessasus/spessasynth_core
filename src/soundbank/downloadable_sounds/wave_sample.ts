@@ -147,7 +147,7 @@ export class WaveSample extends DLSVerifier {
         // Change the root key here
         if (
             zone.getGenerator(GeneratorTypes.scaleTuning, 100) === 0 &&
-            zone.keyRange.max - zone.keyRange.min === 0
+            zone.keyRange.max === zone.keyRange.min
         ) {
             waveSample.unityNote = zone.keyRange.min;
         }
@@ -168,7 +168,7 @@ export class WaveSample extends DLSVerifier {
         const loopingMode = zone.getGenerator(GeneratorTypes.sampleModes, 0);
         // Don't add loops unless needed: 1 and 3 loop, 2 (start on release) and unknown values do not.
         // DLS has no alternating loop (SFe sampleModes 4), so it becomes a forward loop like in SF2 (SFe 4.0, section 9.1)
-        if (loopingMode === 1 || loopingMode === 3 || loopingMode === 4) {
+        if ([1, 3, 4].includes(loopingMode)) {
             // Make sure to get offsets
             const loopStart =
                 zone.sample.loopStart +
@@ -236,34 +236,33 @@ export class WaveSample extends DLSVerifier {
             zone.setGenerator(GeneratorTypes.overridingRootKey, this.unityNote);
         }
         // Correct loop if needed
-        if (loop) {
-            const diffStart = loop.loopStart - sample.loopStart;
-            const loopEnd = loop.loopStart + loop.loopLength;
-            const diffEnd = loopEnd - sample.loopEnd;
-            if (diffStart !== 0) {
-                const fine = diffStart % 32_768;
-                zone.setGenerator(GeneratorTypes.startloopAddrsOffset, fine);
-                // Coarse generator uses 32768 samples per step
-                const coarse = Math.trunc(diffStart / 32_768);
-                if (coarse !== 0) {
-                    zone.setGenerator(
-                        GeneratorTypes.startloopAddrsCoarseOffset,
-                        coarse
-                    );
-                }
+        if (!loop) {
+            return;
+        }
+        const diffStart = loop.loopStart - sample.loopStart;
+        const loopEnd = loop.loopStart + loop.loopLength;
+        const diffEnd = loopEnd - sample.loopEnd;
+        if (diffStart !== 0) {
+            const fine = diffStart % 32_768;
+            zone.setGenerator(GeneratorTypes.startloopAddrsOffset, fine);
+            // Coarse generator uses 32768 samples per step
+            const coarse = Math.trunc(diffStart / 32_768);
+            if (coarse !== 0) {
+                zone.setGenerator(
+                    GeneratorTypes.startloopAddrsCoarseOffset,
+                    coarse
+                );
             }
-            if (diffEnd !== 0) {
-                const fine = diffEnd % 32_768;
-                zone.setGenerator(GeneratorTypes.endloopAddrsOffset, fine);
-                // Coarse generator uses 32768 samples per step
-                const coarse = Math.trunc(diffEnd / 32_768);
-                if (coarse !== 0) {
-                    zone.setGenerator(
-                        GeneratorTypes.endloopAddrsCoarseOffset,
-                        coarse
-                    );
-                }
-            }
+        }
+        if (diffEnd === 0) {
+            return;
+        }
+        const fine = diffEnd % 32_768;
+        zone.setGenerator(GeneratorTypes.endloopAddrsOffset, fine);
+        // Coarse generator uses 32768 samples per step
+        const coarse = Math.trunc(diffEnd / 32_768);
+        if (coarse !== 0) {
+            zone.setGenerator(GeneratorTypes.endloopAddrsCoarseOffset, coarse);
         }
     }
 

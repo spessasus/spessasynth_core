@@ -109,7 +109,7 @@ export function readModulators(
 
     // The curve a source gets: its custom curve, its own built-in one, or nothing if the modulator is ignored
     const resolveCurve = (source: ModulatorSource, index: number) => {
-        if (source.curveType === ModulatorCurveTypes.custom && allowSFe) {
+        if (allowSFe && source.curveType === ModulatorCurveTypes.custom) {
             return curves[index];
         }
         // SF2 2.04 section 8.2: unknown curve types make the modulator ignored

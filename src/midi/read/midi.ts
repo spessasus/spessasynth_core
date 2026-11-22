@@ -40,9 +40,9 @@ export function parseSMFInternal(
     SpessaLog.groupCollapsed(`%cParsing MIDI File...`, ConsoleColors.info);
     outputMIDI.fileName = fileName;
 
-    const readMIDIChunk = (fileByteArray: IndexedByteArray): MIDIChunk => {
-        const type = readBinaryStringIndexed(fileByteArray, 4);
-        const size = readBigEndianIndexed(fileByteArray, 4);
+    const readMIDIChunk = (): MIDIChunk => {
+        const type = readBinaryStringIndexed(smfFileBinary, 4);
+        const size = readBigEndianIndexed(smfFileBinary, 4);
         const data = new IndexedByteArray(size);
         const chunk: MIDIChunk = {
             type,
@@ -50,16 +50,16 @@ export function parseSMFInternal(
             data
         };
 
-        const dataSlice = fileByteArray.slice(
-            fileByteArray.currentIndex,
-            fileByteArray.currentIndex + chunk.size
+        const dataSlice = smfFileBinary.slice(
+            smfFileBinary.currentIndex,
+            smfFileBinary.currentIndex + chunk.size
         );
         chunk.data.set(dataSlice, 0);
-        fileByteArray.currentIndex += chunk.size;
+        smfFileBinary.currentIndex += chunk.size;
         return chunk;
     };
 
-    const headerChunk = readMIDIChunk(smfFileBinary);
+    const headerChunk = readMIDIChunk();
     if (headerChunk.type !== "MThd") {
         SpessaLog.groupEnd();
         throw new SyntaxError(
@@ -83,7 +83,7 @@ export function parseSMFInternal(
     // Read all the tracks
     for (let i = 0; i < trackCount; i++) {
         const track = new MIDITrack();
-        const trackChunk = readMIDIChunk(smfFileBinary);
+        const trackChunk = readMIDIChunk();
 
         if (trackChunk.type !== "MTrk") {
             SpessaLog.groupEnd();
@@ -122,11 +122,10 @@ export function parseSMFInternal(
                     throw new SyntaxError(
                         `Unexpected byte with no running byte. (${statusByteCheck})`
                     );
-                } else {
-                    // If the status byte is valid, use that
-                    statusByte = statusByteCheck as MIDIMessageType;
-                    trackData.currentIndex++;
                 }
+                // If the status byte is valid, use that
+                statusByte = statusByteCheck as MIDIMessageType;
+                trackData.currentIndex++;
             }
 
             let dataSize;

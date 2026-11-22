@@ -15,10 +15,12 @@ await BasicSoundBank.ready;
 
 let failures = 0;
 const check = (ok: boolean, message: string) => {
-    if (!ok) {
-        failures++;
-        console.error("FAIL:", message);
+    if (ok) {
+        return;
     }
+
+    failures++;
+    console.error("FAIL:", message);
 };
 
 const sameArray = (a: ArrayLike<number>, b: ArrayLike<number>) => {
@@ -182,7 +184,8 @@ for (const path of process.argv.slice(2)) {
 {
     const values = [0, 1000, -1000, 32_767, -32_768, 12_345];
     const bytes = new Uint8Array(values.length * 2 + 1);
-    bytes.set(new Uint8Array(Int16Array.from(values).buffer), 1);
+    const pcm = Int16Array.from(values);
+    bytes.set(new Uint8Array(pcm.buffer, pcm.byteOffset, pcm.byteLength), 1);
     const s = new BasicSample(
         "odd",
         44_100,

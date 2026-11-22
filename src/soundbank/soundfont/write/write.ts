@@ -231,7 +231,7 @@ export function writeSF(
     // Without xdta the indices must fit 16 bits, the names are cut to 20 characters (SFe 4.0, section 9.1)
     if (
         !writeExtendedLimits &&
-        (instData.indexOverflow || presData.indexOverflow || linkOverflow)
+        (linkOverflow || instData.indexOverflow || presData.indexOverflow)
     ) {
         throw new Error(
             "The bank has more zones, generators, modulators or samples than 16-bit indices allow. Enable writeExtendedLimits to write it."

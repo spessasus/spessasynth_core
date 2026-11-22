@@ -39,7 +39,9 @@ function encodeVorbis(
         ]);
 
         const chunks: Buffer[] = [];
-        ffmpeg.stdout.on("data", (chunk: Buffer) => chunks.push(chunk));
+        ffmpeg.stdout.on("data", (chunk: Buffer) => {
+            chunks.push(chunk);
+        });
         ffmpeg.stderr.on("data", (chunk: Buffer) => {
             if (chunk.length > 0) console.error(`[ffmpeg] ${chunk.toString()}`);
         });

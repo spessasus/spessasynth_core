@@ -164,7 +164,7 @@ export abstract class XGChorusBase extends XGDSPProgram {
             dryL = c[0x5f],
             dryR = c[0x68];
         // Insertion output goes straight to the part, the system output gets the block return and pan
-        const outputGain = this.variation && isInsertion ? 1 : RETURN_GAIN;
+        const outputGain = isInsertion && this.variation ? 1 : RETURN_GAIN;
         const tReadL = t[0x09],
             tReadR = t[0x0e],
             tThirdL = t[0x13],
@@ -185,7 +185,7 @@ export abstract class XGChorusBase extends XGDSPProgram {
             eqRight,
             sampleCount,
             this.inputLevel *
-                (this.variation && isInsertion ? 1 : STEREO_SEND_LEVEL),
+                (isInsertion && this.variation ? 1 : STEREO_SEND_LEVEL),
             LIST_EQUALIZER,
             this.equalizerState
         );

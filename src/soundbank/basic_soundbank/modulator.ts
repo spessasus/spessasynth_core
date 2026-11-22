@@ -196,11 +196,10 @@ export class Modulator {
      * @internal
      */
     public static getLatestOnly(list: readonly Modulator[]) {
-        return list.filter(
-            (m, i) =>
-                !list.some(
-                    (later, j) => j > i && Modulator.isIdentical(m, later)
-                )
+        return list.filter((m, i) =>
+            list.every(
+                (later, j) => !(j > i && Modulator.isIdentical(m, later))
+            )
         );
     }
 

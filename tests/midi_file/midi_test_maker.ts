@@ -250,9 +250,8 @@ export class MIDITestMaker extends MIDIBuilder {
     ) {
         const step = Math.abs(dataStep);
 
+        let data = from;
         if (from <= to) {
-            let data = from;
-
             while (data <= to) {
                 this.text(`CC Sweep ${cc} = ${data}`);
                 this.cc(cc, data);
@@ -260,8 +259,6 @@ export class MIDITestMaker extends MIDIBuilder {
                 data += step;
             }
         } else {
-            let data = from;
-
             while (data >= to) {
                 this.text(`CC Sweep ${cc} = ${data}`);
                 this.cc(cc, data);
@@ -290,9 +287,8 @@ export class MIDITestMaker extends MIDIBuilder {
     ) {
         const step = Math.abs(dataStep);
 
+        let data = from;
         if (from <= to) {
-            let data = from;
-
             while (data <= to) {
                 this.text(`NRPN Sweep ${nrpn.toString(16)} = ${data}`);
                 this.nrpn(nrpn, data);
@@ -300,8 +296,6 @@ export class MIDITestMaker extends MIDIBuilder {
                 data += step;
             }
         } else {
-            let data = from;
-
             while (data >= to) {
                 this.text(`NRPN Sweep ${nrpn.toString(16)} = ${data}`);
                 this.nrpn(nrpn, data);
@@ -316,17 +310,14 @@ export class MIDITestMaker extends MIDIBuilder {
     public sweepPitch(from: number, to: number, tickStep = 480, dataStep = 1) {
         const step = Math.abs(dataStep);
 
+        let data = from;
         if (from <= to) {
-            let data = from;
-
             while (data <= to) {
                 this.pitch(data);
                 this.ticks += tickStep;
                 data += step;
             }
         } else {
-            let data = from;
-
             while (data >= to) {
                 this.pitch(data);
                 this.ticks += tickStep;

@@ -480,14 +480,14 @@ export class BasicMIDI {
         SpessaLog.groupCollapsed(`%cPreloading samples...`, ConsoleColors.info);
         // Smart preloading: load only samples used in the midi!
         const used = this.getUsedProgramsAndKeys(synth.soundBankManager);
-        for (const [preset, keys] of used.entries()) {
+        for (const [preset, keys] of used) {
             SpessaLog.info(
                 `%cPreloading used samples on %c${preset.name}%c...`,
                 ConsoleColors.info,
                 ConsoleColors.recognized,
                 ConsoleColors.info
             );
-            for (const [midiNote, velocities] of keys.entries()) {
+            for (const [midiNote, velocities] of keys) {
                 for (const velocity of velocities) {
                     synth.getVoicesForPreset(preset, midiNote, velocity);
                 }
@@ -731,11 +731,11 @@ export class BasicMIDI {
      * @returns The name of the song or the file name if it's not specified. Empty otherwise.
      */
     public getName(encoding = "Shift_JIS") {
-        let rawName = "";
         const n = this.getRMIDInfo("name");
         if (n) {
             return n.trim();
         }
+        let rawName = "";
         if (this.binaryName) {
             encoding = this.getRMIDInfo("midiEncoding") ?? encoding;
             try {
@@ -873,19 +873,20 @@ export class BasicMIDI {
     public getRMIDInfo<K extends keyof RMIDInfoData>(
         infoType: K
     ): RMIDInfoData[K] | undefined {
-        if (!this.rmidiInfo[infoType]) {
+        if (this.rmidiInfo[infoType] === undefined) {
             return undefined;
         }
-        const encoding = this.infoEncoding ?? "UTF-8";
 
         if (infoType === "picture") {
             return this.rmidiInfo[infoType].buffer as RMIDInfoData[K];
-        } else if (infoType === "creationDate") {
+        }
+        if (infoType === "creationDate") {
             return parseDateString(
                 readBinaryString(this.rmidiInfo[infoType])
             ) as RMIDInfoData[K] | undefined;
         }
 
+        const encoding = this.infoEncoding ?? "UTF-8";
         try {
             const decoder = new TextDecoder(encoding);
             let infoBuffer = this.rmidiInfo[infoType];
@@ -932,11 +933,15 @@ export class BasicMIDI {
             let ticks = Infinity;
             for (let i = 0; i < this.tracks.length; i++) {
                 const track = this.tracks[i].events;
-                if (eventIndexes[i] >= track.length) continue;
-                if (track[eventIndexes[i]].ticks < ticks) {
-                    trackNum = i;
-                    ticks = track[eventIndexes[i]].ticks;
+                if (
+                    eventIndexes[i] >= track.length ||
+                    !(track[eventIndexes[i]].ticks < ticks)
+                ) {
+                    continue;
                 }
+
+                trackNum = i;
+                ticks = track[eventIndexes[i]].ticks;
             }
 
             const track = this.tracks[trackNum].events;
@@ -1202,7 +1207,9 @@ export class BasicMIDI {
                         // Lyrics instead of text because why not (of course)
                         // Perform the same check for @KMIDI KARAOKE FILE
                         if (
-                            eventText.trim().startsWith("@KMIDI KARAOKE FILE")
+                            eventText
+                                .trimStart()
+                                .startsWith("@KMIDI KARAOKE FILE")
                         ) {
                             this.isKaraokeFile = true;
                             SpessaLog.info(
@@ -1267,19 +1274,21 @@ export class BasicMIDI {
             const trackName = track.events.find(
                 (e) => e.statusByte === MIDIMessageTypes.trackName
             );
-            if (trackName) {
-                track.name = readBinaryString(trackName.data);
-                // If the track has no voice messages, its "track name" event (if it has any)
-                // Is some metadata.
-                // Add it to copyright
-                // Don't add the first track's name as it's not metadata, it's the name!
-                if (
-                    trackIndex > 0 &&
-                    !trackHasVoiceMessages &&
-                    !track.name.toLowerCase().includes("setup")
-                ) {
-                    this.extraMetadata.push(trackName);
-                }
+            if (!trackName) {
+                continue;
+            }
+
+            track.name = readBinaryString(trackName.data);
+            // If the track has no voice messages, its "track name" event (if it has any)
+            // Is some metadata.
+            // Add it to copyright
+            // Don't add the first track's name as it's not metadata, it's the name!
+            if (
+                !trackHasVoiceMessages &&
+                trackIndex > 0 &&
+                !track.name.toLowerCase().includes("setup")
+            ) {
+                this.extraMetadata.push(trackName);
             }
         }
 
@@ -1355,10 +1364,12 @@ export class BasicMIDI {
                 }
                 const port = e.data[0];
                 track.port = port;
-                if (this.portChannelOffsetMap[port] === undefined) {
-                    this.portChannelOffsetMap[port] = portOffset;
-                    portOffset += 16;
+                if (this.portChannelOffsetMap[port] !== undefined) {
+                    continue;
                 }
+
+                this.portChannelOffsetMap[port] = portOffset;
+                portOffset += 16;
             }
         }
 
@@ -1385,16 +1396,18 @@ export class BasicMIDI {
                     this.portChannelOffsetMap[2] = 32;
                     continue;
                 }
-                if (n.includes("PartD") || /^D\d/.test(n)) {
-                    track.port = 3;
-                    this.portChannelOffsetMap[3] = 48;
+                if (!(n.includes("PartD") || /^D\d/.test(n))) {
+                    continue;
                 }
+
+                track.port = 3;
+                this.portChannelOffsetMap[3] = 48;
             }
         }
 
         // Fix empty port channel offsets (do a copy to turn empty slots into undefined so the map goes over them)
         this.portChannelOffsetMap = [...this.portChannelOffsetMap].map(
-            (o) => o ?? 0
+            (o = 0) => o
         );
 
         // Fix midi ports:
@@ -1477,7 +1490,7 @@ export class BasicMIDI {
         // https://github.com/spessasus/SpessaSynth/issues/145
         if (
             this.tracks.length > 0 &&
-            !this.tracks.some((t) => t.events[0]?.ticks === 0)
+            this.tracks.every((t) => t.events[0]?.ticks !== 0)
         ) {
             this.tracks[0].addEvents(
                 0,

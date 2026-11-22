@@ -62,7 +62,7 @@ const HUM_WORDS = [0x06_66, 0x07_ae];
 /**
  * The disc's click window: the click sounds while the rotation phase is this close to its wrap.
  */
-const CLICK = 0.5 / (0.500_061_035_156_25 + 1e-5);
+const CLICK = 0.5 / (0.50006103515625 + 1e-5);
 
 /**
  * The hardware program's tiny offset against denormals, added after its clamps and wraps.
@@ -132,7 +132,7 @@ export class NoiseGenerator {
      */
     private readonly disc = new Float32Array(2);
     private discTrack = 0;
-    private sawWord = 0.031_25;
+    private sawWord = 0.03125;
     private humWord = 0;
     private discWord = 0;
     private pink = false;

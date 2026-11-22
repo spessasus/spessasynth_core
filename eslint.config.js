@@ -1,11 +1,11 @@
+import { defineConfig } from "eslint/config";
 import globals from "globals";
 import tseslint from "typescript-eslint";
 import eslintPluginUnicorn from "eslint-plugin-unicorn";
 import eslintConfigPrettier from "eslint-config-prettier/flat";
 import eslint from "@eslint/js";
 
-// noinspection JSCheckFunctionSignatures
-export default tseslint.config(
+export default defineConfig(
     { ignores: ["dist", "tests/files", "tests/midi_file/output", "site"] },
     {
         files: ["**/*.{ts,tsx}"],
@@ -58,7 +58,7 @@ export default tseslint.config(
             "unicorn/no-null": "off",
             // Technical stuff like "modulators" or "envelopes" not commonly used
             // TODO add proper rules for this later
-            "unicorn/prevent-abbreviations": "off",
+            "unicorn/name-replacements": "off",
 
             // Need to pass undefined as value sometimes (for example getGenerator)
             "unicorn/no-useless-undefined": "off",
@@ -78,7 +78,30 @@ export default tseslint.config(
             "unicorn/prefer-at": "off",
 
             // Doesn't work with typed arrays
-            "unicorn/prefer-spread": "off"
+            "unicorn/prefer-spread": "off",
+
+            // What the hell unicorn
+            "unicorn/no-asterisk-prefix-in-documentation-comments": "off",
+
+            // Breaks the API
+            "unicorn/consistent-boolean-name": "off",
+            "unicorn/prefer-options-parameter": "off",
+
+            // Doesn't work for DSP
+            "unicorn/no-break-in-nested-loop": "off",
+
+            // Flags stuff like Math.max
+            "unicorn/max-nested-calls": "off",
+
+            // Nah
+            "unicorn/consistent-class-member-order": "off",
+
+            // Static methods using this break when passed around detached
+            "unicorn/class-reference-in-static-methods": "off",
+
+            // Not in ES2022
+            "unicorn/prefer-iterator-helpers": "off",
+            "unicorn/prefer-iterator-to-array": "off"
         }
     },
     {
@@ -105,7 +128,9 @@ export default tseslint.config(
             }
         },
         rules: {
-            "unicorn/no-process-exit": "off"
+            "unicorn/no-process-exit": "off",
+            // Test scripts use these
+            "unicorn/no-top-level-assignment-in-function": "off"
         }
     }
 );

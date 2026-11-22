@@ -125,7 +125,7 @@ function handleUserDrum(
 
 /**
  * Handles a Roland GS system exclusive
- * http://www.bandtrax.com.au/sysex.htm
+ * https://www.bandtrax.com.au/sysex.htm
  * https://cdn.roland.com/assets/media/pdf/SC-8850_OM.pdf
  * @param syx
  * @param channelOffset
@@ -260,13 +260,13 @@ export function rolandSystemExclusive(
                     // Part Parameter, Patch Common (Effects)
                     if (a2 === 0x01) {
                         const isReverb = a3 >= 0x30 && a3 <= 0x37;
-                        const isChorus = a3 >= 0x38 && a3 <= 0x40;
-                        const isDelay = a3 >= 0x50 && a3 <= 0x5a;
                         // Disable effect editing if locked
                         if (isReverb && this.systemParameters.gsReverbLock)
                             return;
+                        const isChorus = a3 >= 0x38 && a3 <= 0x40;
                         if (isChorus && this.systemParameters.gsChorusLock)
                             return;
+                        const isDelay = a3 >= 0x50 && a3 <= 0x5a;
                         if (isDelay && this.systemParameters.gsDelayLock)
                             return;
 
@@ -1498,14 +1498,11 @@ export function rolandSystemExclusive(
             case 0x45: {
                 // 0x45: GS Display Data
                 // Check for embedded copyright
-                // (Roland SC display sysex) http://www.bandtrax.com.au/sysex.htm
-                // Sound Canvas Display
-                if (syx[4] === 0x10) {
-                    this.callEvent("displayMessage", [...syx]);
-                }
+                // (Roland SC display sysex) https://www.bandtrax.com.au/sysex.htm
+                // 0x10: Sound Canvas Display
                 // 0x20: SC-8850 160x64 display
                 // Thanks to midi-movie-player for details on this message
-                else if (syx[4] === 0x20) {
+                if (syx[4] === 0x10 || syx[4] === 0x20) {
                     this.callEvent("displayMessage", [...syx]);
                 }
                 return;
@@ -1519,9 +1516,8 @@ export function rolandSystemExclusive(
                     this.setMIDIParameter("volume", syx[7] / 100);
                     SpessaLog.coolInfo("Roland Master Volume Control", syx[7]);
                     return;
-                } else {
-                    SpessaLog.unsupported("Roland", syx);
                 }
+                SpessaLog.unsupported("Roland", syx);
             }
         }
     } else {

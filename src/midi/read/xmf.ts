@@ -30,8 +30,6 @@ const metadataTypes = {
     ID3Metadata: 14 // RP-47 (https://amei.or.jp/midistandardcommittee/Recommended_Practice/e/rp47.pdf)
 } as const;
 
-type metadataTypes = (typeof metadataTypes)[keyof typeof metadataTypes];
-
 const referenceTypeIds = {
     inLineResource: 1,
     inFileResource: 2,
@@ -56,8 +54,6 @@ const resourceFormatIDs = {
 } as const;
 
 type resourceFormatStrings = keyof typeof resourceFormatIDs;
-type resourceFormatIDs =
-    (typeof resourceFormatIDs)[keyof typeof resourceFormatIDs];
 
 const formatTypeIDs = {
     standard: 0,
@@ -128,6 +124,7 @@ class XMFNode {
         );
         headerData.currentIndex += this.metadataLength;
 
+        type metadataTypes = (typeof metadataTypes)[keyof typeof metadataTypes];
         let fieldSpecifier: metadataTypes | string;
         let key: string;
         while (metadataChunk.currentIndex < metadataChunk.length) {
@@ -318,6 +315,8 @@ class XMFNode {
                     this.resourceFormat =
                         resourceFormat.toString() as resourceFormatStrings;
                 }
+                type resourceFormatIDs =
+                    (typeof resourceFormatIDs)[keyof typeof resourceFormatIDs];
                 const resourceFormatID = resourceFormat[1] as resourceFormatIDs;
                 if (
                     Object.values(resourceFormatIDs).includes(resourceFormatID)

@@ -111,13 +111,11 @@ export function getEnvelopeValue(envelope: TrackerEnvelope, tick: number) {
         const a = points[i];
         const b = points[i + 1];
         if (tick < b.tick) {
-            if (tick <= a.tick || b.tick === a.tick) {
-                return a.value;
-            }
-            return (
-                a.value +
-                ((b.value - a.value) * (tick - a.tick)) / (b.tick - a.tick)
-            );
+            return tick <= a.tick || b.tick === a.tick
+                ? a.value
+                : a.value +
+                      ((b.value - a.value) * (tick - a.tick)) /
+                          (b.tick - a.tick);
         }
     }
     return points[points.length - 1]?.value ?? 64;
@@ -570,7 +568,9 @@ export abstract class TrackerModule {
             "comment",
             `Converted from ${this.formatName} with SpessaSynth` +
                 // Names are padded with spaces
-                `${this.comment ? `\n${this.comment.replaceAll(/ +$/gm, "")}` : ""}`
+                (this.comment
+                    ? `\n${this.comment.replaceAll(/ +$/gm, "")}`
+                    : "")
         );
         // Module texts are stored one byte per character
         info("infoEncoding", "ISO-8859-1");
@@ -705,12 +705,13 @@ export abstract class TrackerModule {
             return;
         }
         this.backgroundVoices.splice(index, 1);
-        if (voice.output) {
-            voice.output.noteOff(this.currentTicks);
-            const outputIndex = this.outputs.indexOf(voice.output);
-            if (this.outputOwners[outputIndex] === voice) {
-                this.outputOwners[outputIndex] = undefined;
-            }
+        if (!voice.output) {
+            return;
+        }
+        voice.output.noteOff(this.currentTicks);
+        const outputIndex = this.outputs.indexOf(voice.output);
+        if (this.outputOwners[outputIndex] === voice) {
+            this.outputOwners[outputIndex] = undefined;
         }
     }
 
@@ -826,10 +827,12 @@ export abstract class TrackerModule {
      * @param rows The number of extra repetitions of the row.
      */
     protected setRowDelay(rows: number) {
-        if (!this.rowDelaySet) {
-            this.rowDelaySet = true;
-            this.patternDelay = rows;
+        if (this.rowDelaySet) {
+            return;
         }
+
+        this.rowDelaySet = true;
+        this.patternDelay = rows;
     }
 
     /**
@@ -968,7 +971,7 @@ export abstract class TrackerModule {
             this.advancePosition(channel, sample, semitones);
             return;
         }
-        if (output.activeKey === -1 || !sample) {
+        if (!sample || output.activeKey === -1) {
             return;
         }
         const semitones = this.getSemitones(channel, sample);
@@ -1011,14 +1014,11 @@ export abstract class TrackerModule {
      */
     private getSemitones(channel: TrackerChannel, sample: TrackerSample) {
         const frequency = this.getFrequency(channel);
-        if (frequency <= 0) {
-            return undefined;
-        }
-        return (
-            this.rootKey +
-            12 * Math.log2(frequency / Math.round(sample.middleCRate)) +
-            channel.arpeggio
-        );
+        return frequency <= 0
+            ? undefined
+            : this.rootKey +
+                  12 * Math.log2(frequency / Math.round(sample.middleCRate)) +
+                  channel.arpeggio;
     }
 
     private writeControllers(

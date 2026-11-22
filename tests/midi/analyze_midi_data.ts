@@ -60,9 +60,13 @@ for (const t of timeline) {
     }
     const status = e.statusByte & 0xf0;
     if (
-        status !== MIDIMessageTypes.noteOn &&
-        status !== MIDIMessageTypes.controllerChange &&
-        status !== MIDIMessageTypes.systemExclusive
+        !(
+            [
+                MIDIMessageTypes.noteOn,
+                MIDIMessageTypes.controllerChange,
+                MIDIMessageTypes.systemExclusive
+            ] as number[]
+        ).includes(status)
     ) {
         continue;
     }

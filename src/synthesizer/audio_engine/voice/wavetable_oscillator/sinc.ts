@@ -64,7 +64,7 @@ function buildKernel(halfWidth: number, bandwidth: number, beta: number) {
     const windowNorm = besselI0(beta);
     const kernel = (x: number) => {
         const w = x / halfWidth;
-        if (w <= -1 || w >= 1) return 0;
+        if (Math.abs(w) >= 1) return 0;
         const window = besselI0(beta * Math.sqrt(1 - w * w)) / windowNorm;
         const u = Math.PI * bandwidth * x;
         const sinc = u === 0 ? 1 : Math.sin(u) / u;
@@ -298,7 +298,7 @@ export class SincOscillator extends WavetableOscillator {
             let index = first;
             if (index >= loopEnd) {
                 index = loopStart + ((index - loopStart) % loopLength);
-            } else if (index < loopStart && hasLooped) {
+            } else if (hasLooped && index < loopStart) {
                 // After looping, the points before the loop start are the end of the loop
                 index = loopEnd - 1 - ((loopStart - 1 - index) % loopLength);
             }

@@ -159,8 +159,9 @@ export abstract class XGKaraokeBase extends XGFilterVariationProgram {
 
     protected override clampParameter(param: number, value: number) {
         // The density is fixed per type
-        if (param === 10) return this.params[10];
-        return super.clampParameter(param, value);
+        return param === 10
+            ? this.params[10]
+            : super.clampParameter(param, value);
     }
 
     protected convert(param: number) {

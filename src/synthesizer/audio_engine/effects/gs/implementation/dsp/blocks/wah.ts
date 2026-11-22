@@ -13,7 +13,7 @@ const SIDE_CHAIN_GAIN = (2 * 91) / 128 / (1 + 53 / 128);
 /**
  * The follower's attack per 32 kHz sample (+0.31 dB) and the step that lets it start from silence.
  */
-const ATTACK = 1.036_621_093_75;
+const ATTACK = 1.03662109375;
 const ATTACK_SEED = 2 ** -22;
 
 /**
@@ -157,10 +157,7 @@ export class Wah {
                     ? e * this.attack + this.attackSeed
                     : e * this.release;
             this.envelope = e = Math.min(e, 1);
-            y =
-                e < 0.1
-                    ? 4.960_937_5 * e
-                    : 0.555_541_992_187_5 * e + 0.444_458_007_812_5;
+            y = e < 0.1 ? 4.9609375 * e : 0.5555419921875 * e + 0.4444580078125;
         }
         const swing = this.depth * Math.abs(this.lfo.process()) + y;
         let w = this.up
@@ -169,9 +166,10 @@ export class Wah {
         w = Math.max(0, Math.min(w, 1));
         // F = 2 sin(pi fc / 32000): fc = 250 + 1500 w below about 1 kHz, 6000 w - 2000 above
         const target =
-            (127 / 128) * w < 0.5
-                ? Math.PI * ((3 * w) / 32 + 1 / 64)
-                : Math.PI * ((3 * w) / 8 - 1 / 8);
+            Math.PI *
+            ((127 / 128) * w < 0.5
+                ? (3 * w) / 32 + 1 / 64
+                : (3 * w) / 8 - 1 / 8);
         const f = (this.coefficient +=
             this.smoothing * (target - this.coefficient));
         // The band pass damps (and scales its input) by k clamp(F, 0.1, 0.4)

@@ -1,8 +1,0 @@
-**/*.d.ts
-dist/
-tests/files
-tests/midi_file/output
-.husky
-/node_modules/
-site/
-.cache

@@ -40,11 +40,11 @@ const PRE_GAIN = (2 * 37) / 128 / (1 - PRE_POLE);
  */
 const POST_FILTERS = [
     null,
-    { b0: 121, pole: 113, hz: 978.065, poleQ: 1.0018, zeroQ: 4.115_52 },
-    { b0: 110, pole: 93, hz: 978.065, poleQ: 1.0018, zeroQ: 4.115_52 },
-    { b0: 121, pole: 113, hz: 997.345, poleQ: 0.504_22, zeroQ: 1.961_36 },
-    { b0: 110, pole: 93, hz: 997.345, poleQ: 0.504_22, zeroQ: 1.961_36 },
-    { b0: 121, pole: 113, hz: 992.619, poleQ: 0.255_73, zeroQ: 1.022_92 }
+    { b0: 121, pole: 113, hz: 978.065, poleQ: 1.0018, zeroQ: 4.11552 },
+    { b0: 110, pole: 93, hz: 978.065, poleQ: 1.0018, zeroQ: 4.11552 },
+    { b0: 121, pole: 113, hz: 997.345, poleQ: 0.50422, zeroQ: 1.96136 },
+    { b0: 110, pole: 93, hz: 997.345, poleQ: 0.50422, zeroQ: 1.96136 },
+    { b0: 121, pole: 113, hz: 992.619, poleQ: 0.25573, zeroQ: 1.02292 }
 ];
 
 /**

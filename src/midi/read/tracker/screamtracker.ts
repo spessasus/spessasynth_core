@@ -74,6 +74,15 @@ const SHARED_MEMORY_EFFECTS = new Set<number>([
 ]);
 
 /**
+ * The effects that keep the vibrato offset after the row.
+ */
+const VIBRATO_EFFECTS = new Set<number>([
+    ScreamTrackerEffects.vibrato,
+    ScreamTrackerEffects.fineVibrato,
+    ScreamTrackerEffects.vibratoVolumeSlide
+]);
+
+/**
  * The middle C rates set by the fine-tuning (S2x) effect.
  */
 const FINETUNE_RATES = [
@@ -99,12 +108,10 @@ function readSamplePoint(
 ) {
     if (is16Bit) {
         const value = readLittleEndian(binary, 2, dataOffset + index * 2);
-        return signed
-            ? ((value << 16) >> 16) / 32_768
-            : (value - 32_768) / 32_768;
+        return (signed ? (value << 16) >> 16 : value - 32_768) / 32_768;
     }
     const value = binary[dataOffset + index];
-    return signed ? ((value << 24) >> 24) / 128 : (value - 128) / 128;
+    return (signed ? (value << 24) >> 24 : value - 128) / 128;
 }
 
 /**
@@ -271,11 +278,13 @@ export class ScreamTrackerModule extends TrackerModule {
                 length,
                 readLittleEndian(binary, 4, offset + 24)
             );
-            if (sampleFlags & 1 && loopStart < loopEnd) {
-                sample.loopType = TrackerLoopTypes.forward;
-                sample.loopStart = loopStart;
-                sample.loopEnd = loopEnd;
+            if (!(sampleFlags & 1 && loopStart < loopEnd)) {
+                continue;
             }
+
+            sample.loopType = TrackerLoopTypes.forward;
+            sample.loopStart = loopStart;
+            sample.loopEnd = loopEnd;
         }
         this.comment = comment.join("\n").trim();
 
@@ -474,11 +483,7 @@ export class ScreamTrackerModule extends TrackerModule {
             }
         }
 
-        if (
-            effect !== ScreamTrackerEffects.vibrato &&
-            effect !== ScreamTrackerEffects.fineVibrato &&
-            effect !== ScreamTrackerEffects.vibratoVolumeSlide
-        ) {
+        if (!VIBRATO_EFFECTS.has(effect)) {
             channel.vibratoDelta = 0;
         }
     }

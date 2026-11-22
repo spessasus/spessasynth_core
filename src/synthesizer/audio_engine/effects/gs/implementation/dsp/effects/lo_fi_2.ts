@@ -274,15 +274,14 @@ export class GSLoFi2 extends GSEffect {
      */
     private tune(x: number, modulator: number) {
         const faded = (1 - this.detune) * x;
-        if (!this.radioOn) return faded;
-        return (
-            faded +
-            this.detune *
-                saturate(
-                    4 *
-                        modulator *
-                        (faded + this.noiseLevel * this.radioNoiseValue)
-                )
-        );
+        return this.radioOn
+            ? faded +
+                  this.detune *
+                      saturate(
+                          4 *
+                              modulator *
+                              (faded + this.noiseLevel * this.radioNoiseValue)
+                      )
+            : faded;
     }
 }

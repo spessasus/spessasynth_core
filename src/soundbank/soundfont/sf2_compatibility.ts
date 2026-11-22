@@ -375,7 +375,9 @@ function roundTripChanges(
             // An ignored modulator is not written (SFe 4.0, section 9.1), it never applied, so it is not a loss
             if (isIgnoredModulator(m, preset)) return false;
             if (!sf2KeepsModulator(m, preset)) {
-                return !restored.some((r) => Modulator.isIdentical(r, m, true));
+                return restored.every(
+                    (r) => !Modulator.isIdentical(r, m, true)
+                );
             }
             // A mod wheel vibrato that reads back with another amount
             if (!isDepthRange(m.secondarySource)) return false;
@@ -383,8 +385,8 @@ function roundTripChanges(
             followModulationDepth(read);
             return !Modulator.isIdentical(read, m, true);
         }),
-        added: restored.filter(
-            (r) => !modulators.some((m) => Modulator.isIdentical(r, m, true))
+        added: restored.filter((r) =>
+            modulators.every((m) => !Modulator.isIdentical(r, m, true))
         ).length,
         changedSends: written.filter(
             (m) =>

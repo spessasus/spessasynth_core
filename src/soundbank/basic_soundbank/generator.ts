@@ -34,12 +34,13 @@ export class Generator {
         if (value === undefined) throw new Error("No value provided.");
 
         this.value = Math.round(value);
-        if (validate) {
-            const lim = GeneratorLimits[type];
-
-            if (lim !== undefined)
-                this.value = Math.max(lim.min, Math.min(lim.max, this.value));
+        if (!validate) {
+            return;
         }
+        const lim = GeneratorLimits[type];
+
+        if (lim !== undefined)
+            this.value = Math.max(lim.min, Math.min(lim.max, this.value));
     }
 
     /**

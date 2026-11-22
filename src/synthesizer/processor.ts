@@ -1157,11 +1157,9 @@ export class SpessaSynthProcessor {
         const preset = channelObject.preset;
 
         // Warning is handled in program change
-        if (!preset) {
-            return [];
-        }
-
-        return this.getVoicesForPreset(preset, midiNote, velocity);
+        return preset
+            ? this.getVoicesForPreset(preset, midiNote, velocity)
+            : [];
     }
 
     /**
@@ -1513,7 +1511,7 @@ export class SpessaSynthProcessor {
 
         // Validate
         startIndex = Math.max(startIndex, 0);
-        sampleCount = sampleCount || left.length - startIndex;
+        sampleCount ||= left.length - startIndex;
         if (sampleCount > this.maxBufferSize)
             throw new Error(
                 `Requested ${sampleCount} samples, but maxBufferSize is ${this.maxBufferSize}`
@@ -1555,11 +1553,13 @@ export class SpessaSynthProcessor {
             // And voice count
             c.clearVoiceCount();
             // Silent channels are already cleared
-            if (c.outputDirty) {
-                c.outputRight.fill(0);
-                c.outputLeft.fill(0);
-                c.outputDirty = false;
+            if (!c.outputDirty) {
+                continue;
             }
+
+            c.outputRight.fill(0);
+            c.outputLeft.fill(0);
+            c.outputDirty = false;
         }
         this._voiceCount = 0;
 
@@ -1579,11 +1579,13 @@ export class SpessaSynthProcessor {
             this._voiceCount++;
         }
         for (const c of this.midiChannels) {
-            if (c.voiceSendBufferCount > 0) {
-                for (let i = 0; i < c.voiceSendBufferCount; i++)
-                    mixVoiceSendBuffer(c, c.voiceSendBuffers[i], sampleCount);
-                c.voiceSendBufferCount = 0;
+            if (!(c.voiceSendBufferCount > 0)) {
+                continue;
             }
+
+            for (let i = 0; i < c.voiceSendBufferCount; i++)
+                mixVoiceSendBuffer(c, c.voiceSendBuffers[i], sampleCount);
+            c.voiceSendBufferCount = 0;
         }
 
         // Move the voice sends into the effect inputs
@@ -1682,7 +1684,7 @@ export class SpessaSynthProcessor {
             }
 
             // Straight into the insertion EFX, but only if it is active
-            if (midiParameters.efxAssign && fx && this.gsInsertionActive) {
+            if (fx && midiParameters.efxAssign && this.gsInsertionActive) {
                 const insertionL = this.insertionInputL;
                 const insertionR = this.insertionInputR;
                 // Index is 0-based here as it's internal
@@ -1951,9 +1953,9 @@ export class SpessaSynthProcessor {
         // Locked effects are always active.
         // Otherwise, a fresh synthesizer would keep them disabled for the entire offline render.
         // And it's just an optimization case, so always active is fine.
-        this.gsInsertionActive = this.systemParameters.gsInsertionLock
-            ? true
-            : this.midiChannels.some((c) => c.midiParameters.efxAssign);
+        this.gsInsertionActive =
+            this.systemParameters.gsInsertionLock ||
+            this.midiChannels.some((c) => c.midiParameters.efxAssign);
         // The delay only switches on here, and a reset switches it off.
         // Most GS, GM and GM2 files never use it, and once one does, stopping it would freeze its tail
         // And play the rest of it the next time something sends to it.

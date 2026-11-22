@@ -63,6 +63,5 @@ export function portamentoTimeToSeconds(
 ): number {
     // This seems to work fine for the MIDIs I have.
     // PORTAMENTO_RATES is the constant rate of the portamento, as that's how the synths work.
-    if (time < 1) return 0;
-    return (distance * 16) / PORTAMENTO_RATES[time];
+    return time < 1 ? 0 : (distance * 16) / PORTAMENTO_RATES[time];
 }

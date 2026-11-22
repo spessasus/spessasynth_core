@@ -25,7 +25,7 @@ const rate = 44_100;
 const proc = new SpessaSynthProcessor(rate);
 check(
     "no missing preset warnings before a bank is added",
-    !warnings.some((w) => w.includes("No preset found"))
+    warnings.every((w) => !w.includes("No preset found"))
 );
 check(
     "channels start without a preset",
@@ -43,14 +43,14 @@ check(
 
 const left = new Float32Array(128);
 const right = new Float32Array(128);
-const render = (quanta: number) => {
-    for (let i = 0; i < quanta; i++) proc.process(left, right, 0, 128);
+const render = () => {
+    for (let i = 0; i < 10; i++) proc.process(left, right, 0, 128);
 };
 
 // Play a note and set a controller, the refresh must keep both
 proc.controllerChange(0, 7, 50);
 proc.noteOn(0, 60, 100);
-render(10);
+render();
 const voicesBefore = proc.midiChannels[0].voiceCount;
 check("the note plays", voicesBefore > 0);
 
@@ -64,7 +64,7 @@ bank.addPresets(added);
 bank.flush();
 check(
     "the new preset is not selectable before the refresh",
-    !proc.soundBankManager.presetList.some((p) => p.program === 5)
+    proc.soundBankManager.presetList.every((p) => p.program !== 5)
 );
 
 // Replace the program 0 preset with a new object
@@ -80,7 +80,7 @@ let presetListEvents = 0;
 let programEvents = 0;
 proc.onEventCall = (e) => {
     if (e.type === "presetListChange") presetListEvents++;
-    if (e.type === "programChange") programEvents++;
+    else if (e.type === "programChange") programEvents++;
 };
 proc.refreshPresets();
 
@@ -102,7 +102,7 @@ check(
     "controllers are not reset",
     proc.midiChannels[0].midiControllers[7] >> 7 === 50
 );
-render(10);
+render();
 check("rendering continues", proc.midiChannels[0].voiceCount > 0);
 
 proc.programChange(1, 5);
@@ -130,7 +130,7 @@ check(
 
 check(
     "no missing preset warnings at all",
-    !warnings.some((w) => w.includes("No preset found"))
+    warnings.every((w) => !w.includes("No preset found"))
 );
 SpessaLog.logFunctions.warn = originalWarn;
 

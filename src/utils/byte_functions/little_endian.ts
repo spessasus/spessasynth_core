@@ -124,18 +124,12 @@ export function writeQword(dataArray: IndexedByteArray, qword: number) {
  */
 export function signedInt16(byte1: number, byte2: number): number {
     const val = (byte2 << 8) | byte1;
-    if (val > 32_767) {
-        return val - 65_536;
-    }
-    return val;
+    return val > 32_767 ? val - 65_536 : val;
 }
 
 /**
  * Reads a byte as a signed char.
  */
 export function signedInt8(byte: number): number {
-    if (byte > 127) {
-        return byte - 256;
-    }
-    return byte;
+    return byte > 127 ? byte - 256 : byte;
 }

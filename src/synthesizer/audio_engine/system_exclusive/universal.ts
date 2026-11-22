@@ -11,14 +11,14 @@ import type { SysExAcceptedArray } from "../../../midi/types";
  * @returns The MIDI note with the fraction added (in semitones), or -1 for no change.
  */
 function getTuning(byte1: number, byte2: number, byte3: number): number {
-    const midiNote = byte1;
-    const fraction = (byte2 << 7) | byte3; // Combine byte2 and byte3 into a 14-bit number
-
     // No change
     if (byte1 === 0x7f && byte2 === 0x7f && byte3 === 0x7f) {
         return -1;
     }
 
+    const midiNote = byte1;
+
+    const fraction = (byte2 << 7) | byte3; // Combine byte2 and byte3 into a 14-bit number
     // The fraction is in 1/16384 semitone units (100/16384 cents)
     return midiNote + fraction / 16_384;
 }
@@ -303,7 +303,7 @@ export function universalSystemExclusive(
                 // Single note change bank
                 case 0x02:
                 case 0x07: {
-                    if (syx[3] === 0x02 && !isRealtime) {
+                    if (!isRealtime && syx[3] === 0x02) {
                         // Non-realtime 02 is a bulk dump request
                         SpessaLog.gmFail("MIDI Tuning Standard", syx);
                         break;

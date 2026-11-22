@@ -182,7 +182,7 @@ export function renderVoice(
         if (amp !== 0) {
             if (isXGMatrix) {
                 // XG works in decibels: -100 % is -96 dB, +100 % is +6 dB
-                volumeExcursionCentibels -= amp < 0 ? amp * 960 : amp * 60;
+                volumeExcursionCentibels -= amp * (amp < 0 ? 960 : 60);
             } else {
                 // GS works on the amplitude: -100 % is silence, +100 % twice the level
                 voiceGain *= Math.max(0, 1 + amp);
@@ -410,6 +410,7 @@ export function renderVoice(
 
     // Note, we do not use &&= as it short-circuits!
     // And we don't do = either as wavetable might've marked it as inactive (end of sample)
+    // eslint-disable-next-line unicorn/logical-assignment-operators -- Kept explicit on purpose, see above
     voice.isActive = voice.isActive && envActive;
 
     // Pan
@@ -564,9 +565,9 @@ export function renderVoice(
         // Only the lowpass is neutral when open, the other types must always run
         if (
             filterType === 0 &&
-            f.currentInitialFc > 13_499 &&
+            modulatedResonance === 0 &&
             targetCutoff > 13_499 &&
-            modulatedResonance === 0
+            f.currentInitialFc > 13_499
         ) {
             f.currentInitialFc = 13_500;
             // Filter is open, apply gain

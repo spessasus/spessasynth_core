@@ -24,7 +24,7 @@ const XG_MATRIX_DESTINATIONS: MatrixDestination[] = [
 
 /**
  * Handles a Yamaha XG system exclusive
- * http://www.studio4all.de/htmle/main91.html
+ * https://www.studio4all.de/htmle/main91.html
  * @param syx
  * @param channelOffset
  */
@@ -38,8 +38,6 @@ export function yamahaSystemExclusive(
         const a1 = syx[3]; // Address 1
         const a2 = syx[4]; // Address 2
         const a3 = syx[5]; // Address 3
-        // Data = syx[6]
-        const data = syx[6];
         // GM only receives the mode messages (XG system on and all parameter reset)
         if (
             this.midiParameters.system === "gm" &&
@@ -47,6 +45,8 @@ export function yamahaSystemExclusive(
         ) {
             return;
         }
+        // Data = syx[6]
+        const data = syx[6];
         // XG system parameter
         if (a1 === 0x00 && a2 === 0x00) {
             switch (a3) {

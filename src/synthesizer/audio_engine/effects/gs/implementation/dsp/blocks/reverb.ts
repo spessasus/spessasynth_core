@@ -71,7 +71,7 @@ const L = LINES;
 const CHARACTERS: ReverbCharacter[] = [
     {
         inputGain: 0.125,
-        inputPole: 0.617_919_921_875,
+        inputPole: 0.617919921875,
         diffuser: [323, 238, 142, 1],
         left: [245, 826, 505, 1694],
         right: [266, 894, 466, 1564],
@@ -90,7 +90,7 @@ const CHARACTERS: ReverbCharacter[] = [
     },
     {
         inputGain: 0.25,
-        inputPole: 0.617_919_921_875,
+        inputPole: 0.617919921875,
         diffuser: [917, 377, 110, 76],
         left: [665, 1913, 813, 2339],
         right: [742, 2136, 781, 2248],
@@ -109,7 +109,7 @@ const CHARACTERS: ReverbCharacter[] = [
     },
     {
         inputGain: 0.125,
-        inputPole: 0.548_950_195_312_5,
+        inputPole: 0.5489501953125,
         diffuser: [523, 339, 216, 1351],
         left: [993, 1536, 635, 3338],
         right: [1228, 2948, 1545, 1352],

@@ -129,19 +129,15 @@ export class ConnectionSource {
             }
         }
         // Unable to convert into DLS
-        if (
-            sourceEnum === undefined ||
+        return sourceEnum === undefined ||
             source.curveType === ModulatorCurveTypes.custom
-        ) {
-            return undefined;
-        }
-
-        return new ConnectionSource(
-            sourceEnum,
-            source.curveType,
-            source.isBipolar,
-            source.isNegative
-        );
+            ? undefined
+            : new ConnectionSource(
+                  sourceEnum,
+                  source.curveType,
+                  source.isBipolar,
+                  source.isNegative
+              );
     }
 
     public toString() {
@@ -228,16 +224,14 @@ export class ConnectionSource {
                 break;
             }
         }
-        if (sourceEnum === undefined) {
-            return undefined;
-        }
-
-        return new ModulatorSource(
-            sourceEnum,
-            this.transform,
-            isCC,
-            this.bipolar,
-            this.invert
-        );
+        return sourceEnum === undefined
+            ? undefined
+            : new ModulatorSource(
+                  sourceEnum,
+                  this.transform,
+                  isCC,
+                  this.bipolar,
+                  this.invert
+              );
     }
 }

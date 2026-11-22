@@ -35,19 +35,13 @@ import {
 
 const SAMPLE_RATE = 44_100;
 
-const vibrato = (
-    bank: BasicSoundBank | undefined,
-    setup: (synth: SpessaSynthProcessor) => void
-) => {
+const vibrato = (setup: (synth: SpessaSynthProcessor) => void) => {
     const synth = new SpessaSynthProcessor(SAMPLE_RATE, {
         effectsEnabled: false,
         eventsEnabled: false
     });
     return (async () => {
-        synth.soundBankManager.addSoundBank(
-            bank ?? makeBank(sineSample()),
-            "main"
-        );
+        synth.soundBankManager.addSoundBank(makeBank(sineSample()), "main");
         await synth.ready;
         synth.noteOn(0, 69, 100);
         // Full mod wheel, both bytes
@@ -58,45 +52,42 @@ const vibrato = (
         const right = new Float32Array(QUANTUM);
         synth.process(left, right, 0, QUANTUM);
         const voice = synth.voices.find((v) => v.isActive);
-        return (
-            voice?.modulatedGenerators[GeneratorTypes.vibLfoToPitch] ??
-            Number.NaN
-        );
+        return voice?.modulatedGenerators[GeneratorTypes.vibLfoToPitch] ?? NaN;
     })();
 };
 
-const rpn5 = (synth: SpessaSynthProcessor, msb: number, lsb: number) => {
+const rpn5 = (synth: SpessaSynthProcessor, msb: number) => {
     synth.controllerChange(0, MIDIControllers.registeredParameterMSB, 0);
     synth.controllerChange(0, MIDIControllers.registeredParameterLSB, 5);
     synth.controllerChange(0, MIDIControllers.dataEntryMSB, msb);
-    synth.controllerChange(0, MIDIControllers.dataEntryLSB, lsb);
+    synth.controllerChange(0, MIDIControllers.dataEntryLSB, 0);
 };
 
 console.info("Modulation Depth Range source:");
-const def = await vibrato(undefined, () => undefined);
+const def = await vibrato(() => undefined);
 check(
     Math.abs(def - 50) <= 1,
     `the default range gives 50 cents at full mod wheel (${def})`
 );
-const rpn1 = await vibrato(undefined, (s) => rpn5(s, 1, 0));
+const rpn1 = await vibrato((s) => rpn5(s, 1));
 check(
     Math.abs(rpn1 - 100) <= 1,
     `RPN 5 of 1 semitone gives 100 cents (${rpn1})`
 );
-const rpn16 = await vibrato(undefined, (s) => rpn5(s, 16, 0));
+const rpn16 = await vibrato((s) => rpn5(s, 16));
 check(
     Math.abs(rpn16 - 1600) <= 2,
     `RPN 5 of 16 semitones is full, 1600 cents (${rpn16})`
 );
-const rpn24 = await vibrato(undefined, (s) => rpn5(s, 24, 0));
+const rpn24 = await vibrato((s) => rpn5(s, 24));
 check(
     Math.abs(rpn24 - 1600) <= 2,
     `RPN 5 above 16 semitones is clamped (${rpn24})`
 );
-const rpn0 = await vibrato(undefined, (s) => rpn5(s, 0, 0));
+const rpn0 = await vibrato((s) => rpn5(s, 0));
 check(rpn0 === 0, `RPN 5 of 0 gives no vibrato (${rpn0})`);
 // A sounding voice follows the change
-const live = await vibrato(undefined, () => undefined);
+const live = await vibrato(() => undefined);
 check(Math.abs(live - 50) <= 1, "sanity");
 {
     const synth = new SpessaSynthProcessor(SAMPLE_RATE, {
@@ -110,12 +101,12 @@ check(Math.abs(live - 50) <= 1, "sanity");
     const left = new Float32Array(QUANTUM);
     const right = new Float32Array(QUANTUM);
     synth.process(left, right, 0, QUANTUM);
-    rpn5(synth, 2, 0);
+    rpn5(synth, 2);
     synth.process(left, right, 0, QUANTUM);
     const v =
         synth.voices.find((x) => x.isActive)?.modulatedGenerators[
             GeneratorTypes.vibLfoToPitch
-        ] ?? Number.NaN;
+        ] ?? NaN;
     check(
         Math.abs(v - 198) <= 2,
         `a sounding voice follows RPN 5 (${v}, 200 cents at wheel 127/128)`
@@ -311,8 +302,10 @@ check(
 );
 const flat = presetBank.presets[0].toFlattenedInstrument();
 check(
-    !flat.zones.some((z) =>
-        z.modulators.some((m) => m.destination === GeneratorTypes.ignoreNoteOff)
+    flat.zones.every((z) =>
+        z.modulators.every(
+            (m) => m.destination !== GeneratorTypes.ignoreNoteOff
+        )
     ),
     "flattening a preset leaves the modulator out"
 );
@@ -416,8 +409,7 @@ console.info("Default controller values and modulators:");
         "the default CC 91 modulator has the amount 1000"
     );
     const generator = (type: GeneratorType) =>
-        synth.voices.find((v) => v.isActive)?.modulatedGenerators[type] ??
-        Number.NaN;
+        synth.voices.find((v) => v.isActive)?.modulatedGenerators[type] ?? NaN;
     const left = new Float32Array(QUANTUM);
     const right = new Float32Array(QUANTUM);
     synth.noteOn(0, 69, 100);
@@ -780,30 +772,30 @@ console.info("Part mode, bank MSB 126, system mode set and depth aliases:");
     );
 
     // Coarse tuning of an XG drum channel is a pitch shift, the fine tuning is ignored
-    const tuning = (channel: typeof ten) =>
-        (channel as unknown as { currentTuning: number }).currentTuning;
-    const rpn = (channel: typeof ten, lsb: number, msb: number, l = 0) => {
-        channel.controllerChange(MIDIControllers.registeredParameterMSB, 0);
-        channel.controllerChange(MIDIControllers.registeredParameterLSB, lsb);
-        channel.controllerChange(MIDIControllers.dataEntryMSB, msb);
-        channel.controllerChange(MIDIControllers.dataEntryLSB, l);
+    const tuning = () =>
+        (ten as unknown as { currentTuning: number }).currentTuning;
+    const rpn = (lsb: number, msb: number) => {
+        ten.controllerChange(MIDIControllers.registeredParameterMSB, 0);
+        ten.controllerChange(MIDIControllers.registeredParameterLSB, lsb);
+        ten.controllerChange(MIDIControllers.dataEntryMSB, msb);
+        ten.controllerChange(MIDIControllers.dataEntryLSB, 0);
     };
-    rpn(ten, 2, 66);
+    rpn(2, 66);
     check(
-        tuning(ten) === 200,
-        `XG drum channel plays the coarse tuning as a pitch shift (${tuning(ten)} cents)`
+        tuning() === 200,
+        `XG drum channel plays the coarse tuning as a pitch shift (${tuning()} cents)`
     );
-    rpn(ten, 2, 64);
-    rpn(ten, 1, 100, 0);
+    rpn(2, 64);
+    rpn(1, 100);
     check(
-        tuning(ten) === 0,
-        `XG drum channel ignores the fine tuning (${tuning(ten)} cents)`
+        tuning() === 0,
+        `XG drum channel ignores the fine tuning (${tuning()} cents)`
     );
     synth.systemExclusive([0x7e, 0x7f, 0x09, 0x03, 0xf7], 0);
-    rpn(ten, 2, 66);
+    rpn(2, 66);
     check(
-        tuning(ten) === 0,
-        `a GM2 drum channel ignores the coarse tuning (${tuning(ten)} cents)`
+        tuning() === 0,
+        `a GM2 drum channel ignores the coarse tuning (${tuning()} cents)`
     );
 
     // SYSTEM MODE SET
@@ -938,6 +930,7 @@ console.info(
         xg: [0x43, 0x10, 0x4c, 0x00, 0x00, 0x7e, 0x00, 0xf7]
     };
     // Part index 0 is channel 10
+    // eslint-disable-next-line unicorn/no-unnecessary-parameters -- Keeps the channel to part address mapping readable, mirrors xgPart
     const gsPart = (channel: number, value: number) => [
         0x41,
         0x10,
@@ -1241,7 +1234,7 @@ console.info(
     (channel as { setMIDIParameter: typeof original }).setMIDIParameter = (
         ...args: Parameters<typeof original>
     ) => {
-        calls.push(`${String(args[0])}=${String(args[1])}`);
+        calls.push(`${args[0]}=${String(args[1])}`);
         original.apply(channel, args);
     };
     synth.reset("gs");

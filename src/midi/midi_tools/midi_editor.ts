@@ -865,6 +865,7 @@ export class MIDIEditor {
         if ((e.statusByte & 0xf0) !== MIDIMessageTypes.controllerChange) return;
         const cc = e.data[0];
         if (
+            // eslint-disable-next-line unicorn/prefer-includes-over-repeated-comparisons -- the comparisons narrow cc to ParameterCC
             cc !== MIDIControllers.registeredParameterMSB &&
             cc !== MIDIControllers.registeredParameterLSB &&
             cc !== MIDIControllers.nonRegisteredParameterMSB &&
@@ -982,21 +983,23 @@ export class MIDIEditor {
             );
         }
 
-        if (!ch.clearedParams.selection[lsbCC]) {
-            // Delete param LSB
-            this.deleteTrackEvent(lsb.track, lsb.event);
-            ch.selectionModified[lsbCC] = true;
-
-            // Flag LSB as deleted
-            ch.clearedParams.selection[lsbCC] = true;
-
-            SpessaLog.info(
-                `%cClearing Non/Registered Parameter on %c${ch.channel}%c. (Param LSB)`,
-                ConsoleColors.info,
-                ConsoleColors.recognized,
-                ConsoleColors.info
-            );
+        if (ch.clearedParams.selection[lsbCC]) {
+            return;
         }
+
+        // Delete param LSB
+        this.deleteTrackEvent(lsb.track, lsb.event);
+        ch.selectionModified[lsbCC] = true;
+
+        // Flag LSB as deleted
+        ch.clearedParams.selection[lsbCC] = true;
+
+        SpessaLog.info(
+            `%cClearing Non/Registered Parameter on %c${ch.channel}%c. (Param LSB)`,
+            ConsoleColors.info,
+            ConsoleColors.recognized,
+            ConsoleColors.info
+        );
     }
 
     private handleEvent(
@@ -1009,8 +1012,6 @@ export class MIDIEditor {
         this.eventIndexes = eventIndexes;
         this.currentParameterChannel = -1;
 
-        const portOffset =
-            this.midiPortChannelOffsets[this.midiPorts[trackNum]] ?? 0;
         if (e.statusByte === MIDIMessageTypes.midiPort) {
             this.assignMIDIPort(trackNum, e.data[0]);
             return;
@@ -1021,6 +1022,8 @@ export class MIDIEditor {
             e.statusByte > MIDIMessageTypes.systemExclusive
         )
             return;
+        const portOffset =
+            this.midiPortChannelOffsets[this.midiPorts[trackNum]] ?? 0;
 
         const status = e.statusByte & 0xf0;
         const midiChannel = e.statusByte & 0xf;
@@ -1355,70 +1358,70 @@ export class MIDIEditor {
         }
 
         // Adjust relative tune
-        if (data.parameter === "fineTune" && channelStatus.relativeFineTune) {
-            channelStatus.currentFineTune = data.value;
-            // Add the relative fine tune to the existing one
-            const newTune = channelStatus.relativeFineTune + data.value;
+        if (data.parameter !== "fineTune" || !channelStatus.relativeFineTune)
+            return;
+        channelStatus.currentFineTune = data.value;
+        // Add the relative fine tune to the existing one
+        const newTune = channelStatus.relativeFineTune + data.value;
 
-            channelStatus.currentKeyShift = Math.trunc(newTune / 100);
-            const targetTune = newTune % 100;
+        channelStatus.currentKeyShift = Math.trunc(newTune / 100);
+        const targetTune = newTune % 100;
 
-            SpessaLog.info(
-                `%cFine tuning already present on ${channel}%c (${data.value})%c, ` +
-                    `new relative tune: %c${newTune}%c cents. Key shift: %c${channelStatus.currentKeyShift}%c semitones. ` +
-                    `Actual RPN value to set: %c${targetTune} cents.`,
-                ConsoleColors.info,
-                ConsoleColors.recognized,
-                ConsoleColors.info,
-                ConsoleColors.value,
-                ConsoleColors.info,
-                ConsoleColors.value,
-                ConsoleColors.info,
-                ConsoleColors.value
-            );
+        SpessaLog.info(
+            `%cFine tuning already present on ${channel}%c (${data.value})%c, ` +
+                `new relative tune: %c${newTune}%c cents. Key shift: %c${channelStatus.currentKeyShift}%c semitones. ` +
+                `Actual RPN value to set: %c${targetTune} cents.`,
+            ConsoleColors.info,
+            ConsoleColors.recognized,
+            ConsoleColors.info,
+            ConsoleColors.value,
+            ConsoleColors.info,
+            ConsoleColors.value,
+            ConsoleColors.info,
+            ConsoleColors.value
+        );
 
-            // And update this tuning
-            const index = this.eventIndexes[this.trackNum];
-            const e = this.midi.tracks[this.trackNum].events[index];
+        // And update this tuning
+        const index = this.eventIndexes[this.trackNum];
+        const e = this.midi.tracks[this.trackNum].events[index];
 
-            this.deleteCurrentEvent();
+        this.deleteCurrentEvent();
 
-            // Don't update tuning if no notes have played.
-            if (channelStatus.isFirstNoteOn) {
-                return;
-            }
-
-            // Build the replacement rpn
-            const newRPN = MIDIUtils.setChannelMIDIParameter(
-                e.ticks,
-                channel % 16,
-                this.system,
-                "fineTune",
-                targetTune
-            );
-            const pending = channelStatus.pendingParam;
-
-            // If we have a pending N/RPN, then this is its extra byte
-            if (pending !== undefined && isRPN) {
-                // This is the extra byte of the RPN message, update the original with the corrected value
-                SpessaLog.info(
-                    `%cSecond RPN data byte on ${channel}%c, updating inserted parameter in place.`,
-                    ConsoleColors.info,
-                    ConsoleColors.recognized
-                );
-                pending.events[2].data[1] = newRPN[2].data[1];
-                pending.events[3].data[1] = newRPN[3].data[1];
-                channelStatus.pendingParam = undefined;
-                return;
-            }
-
-            // And update this tuning
-            this.addEventsBefore(...newRPN);
-            // Track after adding, only for RPN change.
-            // A not-RPN message voids any pending pair instead:
-            // A later half belongs to a new message, not the old one.
-            channelStatus.pendingParam = isRPN ? { events: newRPN } : undefined;
+        // Don't update tuning if no notes have played.
+        if (channelStatus.isFirstNoteOn) {
+            return;
         }
+
+        // Build the replacement rpn
+        const newRPN = MIDIUtils.setChannelMIDIParameter(
+            e.ticks,
+            channel % 16,
+            this.system,
+            "fineTune",
+            targetTune
+        );
+        const pending = channelStatus.pendingParam;
+
+        // If we have a pending N/RPN, then this is its extra byte
+        if (pending !== undefined && isRPN) {
+            // This is the extra byte of the RPN message, update the original with the corrected value
+            SpessaLog.info(
+                `%cSecond RPN data byte on ${channel}%c, updating inserted parameter in place.`,
+                ConsoleColors.info,
+                ConsoleColors.recognized
+            );
+            pending.events[2].data[1] = newRPN[2].data[1];
+            pending.events[3].data[1] = newRPN[3].data[1];
+            channelStatus.pendingParam = undefined;
+            return;
+        }
+
+        // And update this tuning
+        this.addEventsBefore(...newRPN);
+        // Track after adding, only for RPN change.
+        // A not-RPN message voids any pending pair instead:
+        // A later half belongs to a new message, not the old one.
+        channelStatus.pendingParam = isRPN ? { events: newRPN } : undefined;
     }
 
     private shouldClearChannelDrum(
@@ -1431,9 +1434,11 @@ export class MIDIEditor {
         // "clear" removes all drum edits for this channel
         if (drumParams === "clear") return true;
         const noteParams = drumParams.get(key);
-        if (noteParams === undefined) return false;
         // Either "clear" or a set value removes the file's message
-        return noteParams === "clear" || noteParams[parameter] !== undefined;
+        return (
+            noteParams !== undefined &&
+            (noteParams === "clear" || noteParams[parameter] !== undefined)
+        );
     }
 
     /**
@@ -1773,9 +1778,9 @@ export class MIDIEditor {
 
             // The output event order is: drums -> msb -> lsb -> program change
             if (
+                midiChannel !== MIDI_DRUM_CHANNEL &&
                 patch.isGMGSDrum &&
-                !BankSelectHacks.isSystemXG(this.system) &&
-                midiChannel !== MIDI_DRUM_CHANNEL
+                !BankSelectHacks.isSystemXG(this.system)
             ) {
                 // Add gs drum change first
                 SpessaLog.info(
@@ -1931,38 +1936,36 @@ export class MIDIEditor {
         }
 
         // Add drum setup parameters
-        if (channelChange.drumParams && channelChange.drumParams !== "clear") {
-            // Match the synthesizer's drum pitch resolution:
-            // XG and the SC-55 map (bank LSB 1) use 100 cents, otherwise 50 cents
-            const drumPitchStep =
-                this.system === "xg" ||
-                (patch !== undefined &&
-                    patch !== "clear" &&
-                    patch.bankLSB === 1)
-                    ? 1
-                    : 0.5;
-            for (const [key, noteParams] of channelChange.drumParams) {
-                // Note cleared
-                if (noteParams === "clear") continue;
-                for (const [param, value] of Object.entries(noteParams) as {
-                    [P in keyof DrumParameter]: [
-                        P,
-                        ClearableParameter<DrumParameter[P]>
-                    ];
-                }[keyof DrumParameter][]) {
-                    // Parameter cleared
-                    if (value === "clear" || value === undefined) continue;
-                    this.addEventsBefore(
-                        ...MIDIUtils.setDrumChannelParameter(
-                            ticks,
-                            midiChannel,
-                            key,
-                            param,
-                            value,
-                            drumPitchStep
-                        )
-                    );
-                }
+        if (!channelChange.drumParams || channelChange.drumParams === "clear")
+            return;
+        // Match the synthesizer's drum pitch resolution:
+        // XG and the SC-55 map (bank LSB 1) use 100 cents, otherwise 50 cents
+        const drumPitchStep =
+            this.system === "xg" ||
+            (patch !== undefined && patch !== "clear" && patch.bankLSB === 1)
+                ? 1
+                : 0.5;
+        for (const [key, noteParams] of channelChange.drumParams) {
+            // Note cleared
+            if (noteParams === "clear") continue;
+            for (const [param, value] of Object.entries(noteParams) as {
+                [P in keyof DrumParameter]: [
+                    P,
+                    ClearableParameter<DrumParameter[P]>
+                ];
+            }[keyof DrumParameter][]) {
+                // Parameter cleared
+                if (value === "clear" || value === undefined) continue;
+                this.addEventsBefore(
+                    ...MIDIUtils.setDrumChannelParameter(
+                        ticks,
+                        midiChannel,
+                        key,
+                        param,
+                        value,
+                        drumPitchStep
+                    )
+                );
             }
         }
     }
@@ -2077,9 +2080,10 @@ export class MIDIEditor {
         const output = new Array<MIDIMessage>();
 
         // Add MIDI parameters
-        for (const param of Object.keys(
+        const midiParamKeys = Object.keys(
             this.midiParams ?? {}
-        ) as (keyof GlobalMIDIParameter)[]) {
+        ) as (keyof GlobalMIDIParameter)[];
+        for (const param of midiParamKeys) {
             if (param === "system") continue;
             const value = this.midiParams?.[param];
             if (value === undefined || value === "clear") continue;

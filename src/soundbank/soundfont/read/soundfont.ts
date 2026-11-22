@@ -374,10 +374,13 @@ export class SoundFont2 extends BasicSoundBank {
                 [xChunks.shdr, shdrChunk, true]
             ];
             if (
-                !pairs.every(
+                pairs.some(
                     ([x, p, sameSize]) =>
-                        x?.header.toLowerCase() === p.header.toLowerCase() &&
-                        (!sameSize || x.size === p.size)
+                        !(
+                            x?.header.toLowerCase() ===
+                                p.header.toLowerCase() &&
+                            (!sameSize || x.size === p.size)
+                        )
                 )
             ) {
                 SpessaLog.warn(
@@ -558,29 +561,35 @@ export class SoundFont2 extends BasicSoundBank {
     }
 
     protected verifyHeader(chunk: RIFFChunk, expected: string) {
-        if (chunk.header.toLowerCase() !== expected.toLowerCase()) {
-            SpessaLog.groupEnd();
-            this.parsingError(
-                `Invalid chunk header! Expected "${expected.toLowerCase()}" got "${chunk.header.toLowerCase()}"`
-            );
+        if (chunk.header.toLowerCase() === expected.toLowerCase()) {
+            return;
         }
+
+        SpessaLog.groupEnd();
+        this.parsingError(
+            `Invalid chunk header! Expected "${expected.toLowerCase()}" got "${chunk.header.toLowerCase()}"`
+        );
     }
 
     protected verifyText(text: string, expected: string) {
-        if (text.toLowerCase() !== expected.toLowerCase()) {
-            SpessaLog.groupEnd();
-            this.parsingError(
-                `Invalid FourCC: Expected "${expected.toLowerCase()}" got "${text.toLowerCase()}"`
-            );
+        if (text.toLowerCase() === expected.toLowerCase()) {
+            return;
         }
+
+        SpessaLog.groupEnd();
+        this.parsingError(
+            `Invalid FourCC: Expected "${expected.toLowerCase()}" got "${text.toLowerCase()}"`
+        );
     }
 
     protected verifyTexts(text: string, expected: string[]) {
-        if (!expected.includes(text.toLowerCase())) {
-            SpessaLog.groupEnd();
-            this.parsingError(
-                `Invalid FourCC: Expected ${expected.map((s) => `"${s}"`).join(", ")} but got "${text.toLowerCase()}"`
-            );
+        if (expected.includes(text.toLowerCase())) {
+            return;
         }
+
+        SpessaLog.groupEnd();
+        this.parsingError(
+            `Invalid FourCC: Expected ${expected.map((s) => `"${s}"`).join(", ")} but got "${text.toLowerCase()}"`
+        );
     }
 }

@@ -224,7 +224,7 @@ export class DownloadableSoundsRegion extends DLSVerifier {
 
         this.waveSample.toSFZone(zone, sample);
         const articulation =
-            this.articulation.length > 0 || !instrumentArticulation
+            !instrumentArticulation || this.articulation.length > 0
                 ? this.articulation
                 : instrumentArticulation;
         articulation.toSFZone(zone);

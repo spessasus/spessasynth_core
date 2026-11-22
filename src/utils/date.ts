@@ -3,7 +3,7 @@
 import { SpessaLog } from "./loggin";
 
 export function toISODateString(date: Date) {
-    return date.toISOString().split(".")[0] + "Z";
+    return date.toISOString().split(".", 1)[0] + "Z";
 }
 
 // Needed because
@@ -39,9 +39,9 @@ function tryTranslate(dateString: string) {
     // Translating
     for (const translation of translations) {
         let translated = dateString;
-        for (const [pt, english] of translation.entries()) {
+        for (const [pt, english] of translation) {
             const regex = new RegExp(pt, "gi");
-            translated = translated.replace(regex, english);
+            translated = translated.replace(regex, () => english);
         }
         const date = new Date(translated);
         if (!Number.isNaN(date.getTime())) {

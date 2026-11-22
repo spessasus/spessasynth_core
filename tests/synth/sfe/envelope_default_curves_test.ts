@@ -176,11 +176,14 @@ check(
 const removed = sf2RoundTrip(bank);
 check(
     attackCount(removed.defaultModulators) === 1 &&
-        !removed.defaultModulators.some(
+        removed.defaultModulators.every(
             (m) =>
-                (m.primarySource.isCC &&
-                    m.primarySource.index === MIDIControllers.releaseTime) ||
-                m.primarySource.curve instanceof CustomCurve
+                !(
+                    (m.primarySource.isCC &&
+                        m.primarySource.index ===
+                            MIDIControllers.releaseTime) ||
+                    m.primarySource.curve instanceof CustomCurve
+                )
         ),
     "SF2: a CC 73 placeholder keeps the envelope modulators out"
 );

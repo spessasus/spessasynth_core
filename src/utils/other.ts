@@ -11,7 +11,7 @@ function splitmix32(a: number) {
         a = (a + 0x9e_37_79_b9) | 0;
         let t = a ^ (a >>> 16);
         t = Math.imul(t, 0x21_f0_aa_ad);
-        t = t ^ (t >>> 15);
+        t ^= t >>> 15;
         t = Math.imul(t, 0x73_5a_2d_97);
         return ((t ^ (t >>> 15)) >>> 0) / 4_294_967_296;
     };

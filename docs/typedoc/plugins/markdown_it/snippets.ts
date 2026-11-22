@@ -21,8 +21,8 @@ export function snippetsPlugin(parser: MarkdownIt) {
                 snippetPath
             );
             if (
-                path.isAbsolute(pathFromExamples) ||
                 pathFromExamples === ".." ||
+                path.isAbsolute(pathFromExamples) ||
                 pathFromExamples.startsWith(`..${path.sep}`)
             ) {
                 throw new Error(`Invalid snippet path: ${requestedPath}`);

@@ -53,7 +53,7 @@ export function getVorbisLength(data: Uint8Array): number | undefined {
         if (low !== 0xff_ff_ff_ff || high !== 0xff_ff_ff_ff) {
             const granule = high * 0x1_00_00_00_00 + low;
             // Header pages have a granule of 0
-            if (granule > 0 && firstAudioEnd === -1) {
+            if (firstAudioEnd === -1 && granule > 0) {
                 firstAudioEnd = i + size;
                 firstGranule = granule;
                 pageCount = 0;
@@ -320,7 +320,7 @@ export class BasicSample {
      * @return either s16le or vorbis data.
      */
     public getRawData(allowVorbis: boolean): Uint8Array {
-        if (this.compressedData && allowVorbis && !this.dataOverridden) {
+        if (allowVorbis && this.compressedData && !this.dataOverridden) {
             return this.compressedData;
         }
         if (this.s16leData && !this.dataOverridden) {
@@ -488,15 +488,17 @@ export class BasicSample {
             throw new Error("ROM samples are not supported.");
         }
         this.sampleType = type;
-        if (!this.isLinked) {
-            // Unlink the other sample
-            if (this.linkedSample) {
-                this.linkedSample.linkedSample = undefined;
-                this.linkedSample.sampleType = type;
-            }
-
-            this.linkedSample = undefined;
+        if (this.isLinked) {
+            return;
         }
+
+        // Unlink the other sample
+        if (this.linkedSample) {
+            this.linkedSample.linkedSample = undefined;
+            this.linkedSample.sampleType = type;
+        }
+
+        this.linkedSample = undefined;
     }
 
     // noinspection JSUnusedGlobalSymbols
@@ -709,7 +711,8 @@ export class BasicSample {
                 );
                 // Do not error out, fill with silence
                 return new Float32Array(this.loopEnd);
-            } else if (vorbis.channels.length > 1) {
+            }
+            if (vorbis.channels.length > 1) {
                 SpessaLog.warn(
                     `Sample ${this.name}: Returned ${vorbis.channels.length} channels instead of mono.`
                 );
@@ -722,7 +725,7 @@ export class BasicSample {
                 // Magic number is 32,767 / 32,768
                 decoded[i] = Math.max(
                     -1,
-                    Math.min(decoded[i], 0.999_969_482_421_875)
+                    Math.min(decoded[i], 0.999969482421875)
                 );
             }
             return decoded;

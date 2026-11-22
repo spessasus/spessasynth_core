@@ -80,7 +80,7 @@ export function writeMIDIInternal(midi: BasicMIDI): ArrayBuffer {
     }
 
     // Write the file
-    let binaryData: number[] = [];
+    const binaryData = new Array<number>();
     // Write header
     writeText("MThd", binaryData); // MThd
     binaryData.push(
@@ -95,7 +95,11 @@ export function writeMIDIInternal(midi: BasicMIDI): ArrayBuffer {
     for (const track of binaryTrackData) {
         // Write track header
         writeText("MTrk", binaryData); // MTrk
-        binaryData = binaryData.concat(writeBigEndian(track.length, 4), track); // Write data
+        binaryData.push(...writeBigEndian(track.length, 4));
+        // Write data. Spreading a long track could overflow the call stack
+        for (const byte of track) {
+            binaryData.push(byte);
+        }
     }
     return new Uint8Array(binaryData).buffer;
 }

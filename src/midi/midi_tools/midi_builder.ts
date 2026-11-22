@@ -154,17 +154,17 @@ export class MIDIBuilder extends BasicMIDI {
         statusByte: MIDIMessageType,
         eventData: ArrayLike<number>
     ) {
-        if (!this.tracks[track]) {
+        if (this.tracks[track] === undefined) {
             throw new Error(
                 `Track ${track} does not exist. Add it via addTrack method.`
             );
         }
         if (
+            track === 0 &&
+            this.format === 1 &&
             // Voice event
             statusByte >= MIDIMessageTypes.noteOff &&
-            statusByte < MIDIMessageTypes.systemExclusive &&
-            this.format === 1 &&
-            track === 0
+            statusByte < MIDIMessageTypes.systemExclusive
         ) {
             throw new Error(
                 "Can't add voice messages to the conductor track (0) in format 1. Consider using format 0 using a different track."

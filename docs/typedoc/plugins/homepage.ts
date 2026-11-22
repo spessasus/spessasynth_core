@@ -33,7 +33,7 @@ export function load(application: Application) {
         event.contents = withoutHeader
             .replace(
                 /<title>[\s\S]*?<\/title>/,
-                `<title>${escapeHTML(title)}</title>`
+                () => `<title>${escapeHTML(title)}</title>`
             )
             .replace(
                 "</head>",

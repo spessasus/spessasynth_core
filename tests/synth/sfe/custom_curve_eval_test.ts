@@ -4,9 +4,9 @@ import { check, finish } from "./sfe_test_utils";
 
 // The evaluation before the change: binary search, then a Float32 table per transform
 function oldGetY(p: readonly CustomCurvePoint[], x: number) {
+    if (x < p[0].x) return p[0].y;
     let low = 0;
     let high = p.length - 1;
-    if (x < p[0].x) return p[0].y;
     while (low < high) {
         const mid = (low + high + 1) >> 1;
         if (p[mid].x <= x) low = mid;

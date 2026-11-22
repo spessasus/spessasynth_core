@@ -189,7 +189,7 @@ export class BasicInstrument {
     public deleteZone(index: number, force = false): boolean {
         const zone = this.zones[index];
         zone.useCount -= 1;
-        if (zone.useCount < 1 || force) {
+        if (force || zone.useCount < 1) {
             zone.unlinkChild();
             zone.unlinkCurves();
             this.zones.splice(index, 1);
@@ -275,10 +275,12 @@ export class BasicInstrument {
             for (const value of effectiveValues) {
                 const count = (occurrencesForValues.get(value) ?? 0) + 1;
                 occurrencesForValues.set(value, count);
-                if (count > targetCount) {
-                    targetValue = value;
-                    targetCount = count;
+                if (!(count > targetCount)) {
+                    continue;
                 }
+
+                targetValue = value;
+                targetCount = count;
             }
 
             // If the global value is the default value just remove it, no need to add it
@@ -310,44 +312,43 @@ export class BasicInstrument {
                     continue;
                 }
                 // Check if that zone has an existing modulator
-                const mod = zone.modulators.find((m) =>
-                    Modulator.isIdentical(m, checkedModulator)
-                );
-                if (!mod) {
+                if (
+                    zone.modulators.every(
+                        (m) => !Modulator.isIdentical(m, checkedModulator)
+                    )
+                ) {
                     // Does not exist for this zone, so it's not global.
                     existsForAllZones = false;
                 }
                 // Exists.
             }
-            if (existsForAllZones) {
-                // Every zone overrides the global one, so the existing global amount does not matter
-                const existingGlobal = globalZone.modulators.find((m) =>
+            if (!existsForAllZones) {
+                continue;
+            }
+            // Every zone overrides the global one, so the existing global amount does not matter
+            const existingGlobal = globalZone.modulators.find((m) =>
+                Modulator.isIdentical(m, checkedModulator)
+            );
+            if (existingGlobal)
+                existingGlobal.transformAmount =
+                    checkedModulator.transformAmount;
+            else globalZone.addModulators(Modulator.copyFrom(checkedModulator));
+            // Delete it from local zones.
+            for (const zone of this.zones) {
+                const modulator = zone.modulators.find((m) =>
                     Modulator.isIdentical(m, checkedModulator)
                 );
-                if (existingGlobal)
-                    existingGlobal.transformAmount =
-                        checkedModulator.transformAmount;
-                else
-                    globalZone.addModulators(
-                        Modulator.copyFrom(checkedModulator)
-                    );
-                // Delete it from local zones.
-                for (const zone of this.zones) {
-                    const modulator = zone.modulators.find((m) =>
-                        Modulator.isIdentical(m, checkedModulator)
-                    );
-                    if (!modulator) {
-                        continue;
-                    }
-                    // Check if the amount is correct.
-                    // If so, delete it since it's global.
-                    // If not, then it will simply override global as it's identical.
-                    if (
-                        modulator.transformAmount ===
-                        checkedModulator.transformAmount
-                    ) {
-                        zone.deleteModulator(modulator);
-                    }
+                if (!modulator) {
+                    continue;
+                }
+                // Check if the amount is correct.
+                // If so, delete it since it's global.
+                // If not, then it will simply override global as it's identical.
+                if (
+                    modulator.transformAmount ===
+                    checkedModulator.transformAmount
+                ) {
+                    zone.deleteModulator(modulator);
                 }
             }
         }

@@ -12,12 +12,6 @@ import { ConnectionBlock } from "./connection_block";
 import { type DLSDestination, DLSDestinations, DLSSources } from "./enums";
 import { SpessaLog } from "../../utils/loggin";
 
-type KeyToEnv =
-    | typeof GeneratorTypes.keyNumToModEnvDecay
-    | typeof GeneratorTypes.keyNumToModEnvHold
-    | typeof GeneratorTypes.keyNumToVolEnvDecay
-    | typeof GeneratorTypes.keyNumToVolEnvHold;
-
 export class DownloadableSoundsArticulation extends DLSVerifier {
     public readonly connectionBlocks = new Array<ConnectionBlock>();
     public mode: "dls1" | "dls2" = "dls2";
@@ -73,12 +67,11 @@ export class DownloadableSoundsArticulation extends DLSVerifier {
                 absoluteCounterpart,
                 undefined
             );
-            const dlsRelative = relativeGenerator.value * -128;
-
             if (absoluteValue === undefined) {
                 // There's no absolute generator here.
                 continue;
             }
+            const dlsRelative = relativeGenerator.value * -128;
             const subtraction = (60 / 128) * dlsRelative;
             const newAbsolute = absoluteValue - subtraction;
             zone.setGenerator(relativeGenerator.type, dlsRelative, false);
@@ -175,6 +168,12 @@ export class DownloadableSoundsArticulation extends DLSVerifier {
      * @param zone The zone to write to.
      */
     public toSFZone(zone: BasicZone) {
+        type KeyToEnv =
+            | typeof GeneratorTypes.keyNumToModEnvDecay
+            | typeof GeneratorTypes.keyNumToModEnvHold
+            | typeof GeneratorTypes.keyNumToVolEnvDecay
+            | typeof GeneratorTypes.keyNumToVolEnvHold;
+
         const applyKeyToCorrection = (
             value: number,
             keyToGen: KeyToEnv,
@@ -190,38 +189,39 @@ export class DownloadableSoundsArticulation extends DLSVerifier {
             const keyToGenValue = value / -128;
             zone.setGenerator(keyToGen, keyToGenValue);
             // Airfont 340 fix
-            if (keyToGenValue <= 120) {
-                // Apply correction
-                const correction = Math.round((60 / 128) * value);
+            if (keyToGenValue > 120) {
+                return;
+            }
+            // Apply correction
+            const correction = Math.round((60 / 128) * value);
 
-                const realValueConnection = this.connectionBlocks.find(
-                    (block) =>
-                        block.isStaticParameter &&
-                        block.destination === dlsDestination
+            const realValueConnection = this.connectionBlocks.find(
+                (block) =>
+                    block.isStaticParameter &&
+                    block.destination === dlsDestination
+            );
+            if (realValueConnection) {
+                // Overwrite existing
+                zone.setGenerator(
+                    realGen,
+                    correction + realValueConnection.shortScale
                 );
-                if (realValueConnection) {
-                    // Overwrite existing
-                    zone.setGenerator(
-                        realGen,
-                        correction + realValueConnection.shortScale
-                    );
-                }
             }
         };
 
         for (const connection of this.connectionBlocks) {
+            // If source and control are both zero, it's a generator
+            if (connection.isStaticParameter) {
+                connection.toSFGenerator(zone);
+                continue;
+            }
+
             // SF2 uses 16-bit amounts, DLS uses 32-bit scale.
             const amount = connection.shortScale;
 
             const source = connection.source.source;
             const control = connection.control.source;
             const destination = connection.destination;
-
-            // If source and control are both zero, it's a generator
-            if (connection.isStaticParameter) {
-                connection.toSFGenerator(zone);
-                continue;
-            }
             // A few special cases which are generators
             if (control === DLSSources.none) {
                 // The keyNum source
@@ -312,32 +312,34 @@ export class DownloadableSoundsArticulation extends DLSVerifier {
         }
 
         // Perform DLS1 corrections
-        if (this.mode === "dls1") {
-            // DLS1 only has modulation LFO.
-            // Copy the parameters to vib LFO and convert all pitch values to vibrato LFO (including mod wheel modulator)
-            // This ensures that it stays in sync when using things like GS controller matrix
+        if (this.mode !== "dls1") {
+            return;
+        }
 
-            // Copy over delay and rate to vibrato LFO
-            zone.setGenerator(
-                GeneratorTypes.delayVibLFO,
-                zone.getGenerator(GeneratorTypes.delayModLFO, null)
-            );
-            zone.setGenerator(
-                GeneratorTypes.freqVibLFO,
-                zone.getGenerator(GeneratorTypes.freqModLFO, null)
-            );
+        // DLS1 only has modulation LFO.
+        // Copy the parameters to vib LFO and convert all pitch values to vibrato LFO (including mod wheel modulator)
+        // This ensures that it stays in sync when using things like GS controller matrix
 
-            // Convert pitch excursion to vibrato LFO
-            zone.setGenerator(
-                GeneratorTypes.vibLfoToPitch,
-                zone.getGenerator(GeneratorTypes.modLfoToPitch, null)
-            );
-            zone.setGenerator(GeneratorTypes.modLfoToPitch, null);
+        // Copy over delay and rate to vibrato LFO
+        zone.setGenerator(
+            GeneratorTypes.delayVibLFO,
+            zone.getGenerator(GeneratorTypes.delayModLFO, null)
+        );
+        zone.setGenerator(
+            GeneratorTypes.freqVibLFO,
+            zone.getGenerator(GeneratorTypes.freqModLFO, null)
+        );
 
-            for (const mod of zone.modulators) {
-                if (mod.destination === GeneratorTypes.modLfoToPitch)
-                    mod.destination = GeneratorTypes.vibLfoToPitch;
-            }
+        // Convert pitch excursion to vibrato LFO
+        zone.setGenerator(
+            GeneratorTypes.vibLfoToPitch,
+            zone.getGenerator(GeneratorTypes.modLfoToPitch, null)
+        );
+        zone.setGenerator(GeneratorTypes.modLfoToPitch, null);
+
+        for (const mod of zone.modulators) {
+            if (mod.destination === GeneratorTypes.modLfoToPitch)
+                mod.destination = GeneratorTypes.vibLfoToPitch;
         }
     }
 }

@@ -572,6 +572,8 @@ export type MapDrumSetupMessage = {
  * @group MIDI.Protocol
  */
 export type AnalyzedParameter =
+    | ChannelMIDIParameterMessage
+    | ChannelDrumSetupMessage
     | {
           /**
            * An unhandled or unrecognized parameter message.
@@ -595,9 +597,7 @@ export type AnalyzedParameter =
            * The MIDI channel number (it may be above 15).
            */
           channel: number;
-      }
-    | ChannelMIDIParameterMessage
-    | ChannelDrumSetupMessage;
+      };
 /**
  * The analysis result of a System Exclusive (SysEx) or (N)RPN MIDI message.
  *
@@ -617,26 +617,6 @@ export type AnalyzedMIDIMessage =
     | XGChorusParameterMessage
     | XGVariationParameterMessage
     | XGInsertionParameterMessage
-    | {
-          /**
-           * A MIDI program change message configured via System Exclusive.
-           */
-          type: "Program Change";
-          /**
-           * The MIDI channel number.
-           */
-          channel: number;
-          /**
-           * The MIDI program number (0-127).
-           */
-          value: number;
-      }
-    | {
-          /**
-           * A System Exclusive display data message (e.g., Roland GS or Yamaha XG LCD text or graphic display data).
-           */
-          type: "Display Data";
-      }
     | GlobalMIDIParameterMessage
     | {
           [K in keyof UserDrumSetParameter]: {
@@ -663,7 +643,27 @@ export type AnalyzedMIDIMessage =
               value: UserDrumSetParameter[K];
           };
       }[keyof UserDrumSetParameter]
-    | MapDrumSetupMessage;
+    | MapDrumSetupMessage
+    | {
+          /**
+           * A MIDI program change message configured via System Exclusive.
+           */
+          type: "Program Change";
+          /**
+           * The MIDI channel number.
+           */
+          channel: number;
+          /**
+           * The MIDI program number (0-127).
+           */
+          value: number;
+      }
+    | {
+          /**
+           * A System Exclusive display data message (e.g., Roland GS or Yamaha XG LCD text or graphic display data).
+           */
+          type: "Display Data";
+      };
 /**
  * The analysis result of a System Exclusive (SysEx) MIDI message.
  *

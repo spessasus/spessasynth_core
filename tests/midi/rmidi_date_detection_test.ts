@@ -20,16 +20,15 @@ for (const entry of entries) {
     const fullPath = path.join(midPath, entry);
     const stat = await fs.stat(fullPath);
 
-    if (stat.isFile()) {
-        const bin = await fs.readFile(fullPath);
-        if (dec.decode(bin.buffer.slice(8, 12)) !== "RMID") continue;
-        const rmid = BasicMIDI.fromArrayBuffer(bin.buffer);
-        if (!rmid.rmidiInfo.creationDate) continue;
-        const date = rmid.getRMIDInfo("creationDate");
-        console.info(
-            dec.decode(rmid.rmidiInfo.creationDate),
-            "decoded as date ->",
-            date ? toISODateString(date) : "NO DATE (unparsable)"
-        );
-    }
+    if (!stat.isFile()) continue;
+    const bin = await fs.readFile(fullPath);
+    if (dec.decode(bin.buffer.slice(8, 12)) !== "RMID") continue;
+    const rmid = BasicMIDI.fromArrayBuffer(bin.buffer);
+    if (!rmid.rmidiInfo.creationDate) continue;
+    const date = rmid.getRMIDInfo("creationDate");
+    console.info(
+        dec.decode(rmid.rmidiInfo.creationDate),
+        "decoded as date ->",
+        date ? toISODateString(date) : "NO DATE (unparsable)"
+    );
 }

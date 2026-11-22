@@ -851,7 +851,7 @@ for (const [label, sourceEnum] of [
         `an instrument zone with CC 71 to Q gets the amount 0 twin (${instMods.length} modulators)`
     );
     check(
-        !loaded.presets[0].zones[0].modulators.some((m) => isTwin(m)),
+        loaded.presets[0].zones[0].modulators.every((m) => !isTwin(m)),
         "a preset zone gets no twin"
     );
     const losses = loaded.getSF2Losses();
@@ -892,7 +892,7 @@ for (const [label, sourceEnum] of [
     );
     const dmodLoaded = sf2RoundTrip(withDMOD);
     check(
-        !dmodLoaded.instruments[0].zones[0].modulators.some((m) => isTwin(m)),
+        dmodLoaded.instruments[0].zones[0].modulators.every((m) => !isTwin(m)),
         "a file with DMOD gets no twin"
     );
 }
@@ -930,8 +930,8 @@ for (const [label, sourceEnum] of [
         `only the valid zone modulator is written (${mods.map((m) => `${m.destination}:${m.transformType}`).join(", ")})`
     );
     check(
-        !loaded.defaultModulators.some(
-            (m) => m.destination === GeneratorTypes.invalid
+        loaded.defaultModulators.every(
+            (m) => m.destination !== GeneratorTypes.invalid
         ),
         "the ignored DMOD modulator is not written"
     );
@@ -1348,7 +1348,7 @@ for (const [label, sourceEnum] of [
             makeBank(sineSample(), {
                 [GeneratorTypes.releaseVolEnv]: -1234,
                 // A generator between the patched one and sampleID
-                ...(gap ? { [GeneratorTypes.coarseTune]: 5 } : {})
+                ...(gap && { [GeneratorTypes.coarseTune]: 5 })
             }).writeSFe()
         );
         // Turn the release generator of the instrument zone into an MSB generator, it comes before sampleID
@@ -1356,13 +1356,15 @@ for (const [label, sourceEnum] of [
         const view = new DataView(bytes.buffer);
         const size = view.getUint32(igen + 4, true);
         for (let i = igen + 8; i < igen + 8 + size; i += 4) {
-            if (
+            if (!(
                 view.getUint16(i, true) === GeneratorTypes.releaseVolEnv &&
                 view.getInt16(i + 2, true) === -1234
-            ) {
-                view.setUint16(i, type, true);
-                view.setInt16(i + 2, value, true);
+            )) {
+                continue;
             }
+
+            view.setUint16(i, type, true);
+            view.setInt16(i + 2, value, true);
         }
         return SoundBankLoader.fromArrayBuffer(bytes.buffer);
     };
@@ -1397,15 +1399,17 @@ for (const [label, sourceEnum] of [
         const view = new DataView(bytes.buffer);
         const size = view.getUint32(igen + 4, true);
         for (let i = igen + 8; i < igen + 8 + size - 4; i += 4) {
-            if (
+            if (!(
                 view.getUint16(i, true) === GeneratorTypes.releaseVolEnv &&
                 view.getInt16(i + 2, true) === -1234 &&
                 view.getUint16(i + 4, true) === GeneratorTypes.sampleID
-            ) {
-                const release = view.getUint32(i, true);
-                view.setUint32(i, view.getUint32(i + 4, true), true);
-                view.setUint32(i + 4, release, true);
+            )) {
+                continue;
             }
+
+            const release = view.getUint32(i, true);
+            view.setUint32(i, view.getUint32(i + 4, true), true);
+            view.setUint32(i + 4, release, true);
         }
         const after = SoundBankLoader.fromArrayBuffer(bytes.buffer)
             .instruments[0].zones;

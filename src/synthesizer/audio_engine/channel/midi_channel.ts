@@ -257,7 +257,9 @@ export class MIDIChannel {
             ) as (keyof ChannelMIDIParameter)[]
         ).map((key) => [key, false])
     ) as Record<keyof ChannelMIDIParameter, boolean>;
-    /** @internal*/
+    /**
+     * @internal
+     */
     protected readonly _midiParameters: Readonly<ChannelMIDIParameter> = {
         ...DEFAULT_CHANNEL_MIDI_PARAMETERS
     };
@@ -373,9 +375,13 @@ export class MIDIChannel {
         overrides: new Int16Array(GENERATORS_AMOUNT),
         overridesEnabled: false
     };
-    /** @internal*/
+    /**
+     * @internal
+     */
     protected readonly computeModulator = computeModulator.bind(this);
-    /** @internal*/
+    /**
+     * @internal
+     */
     protected readonly computeModulators = computeModulators.bind(this);
 
     /**
@@ -411,16 +417,18 @@ export class MIDIChannel {
         this.resetDrumParams();
         this.resetVibratoParams();
         // Drum preset
-        if (this.channel % 16 === MIDI_DRUM_CHANNEL) {
-            if (drumPreset) {
-                this.preset = drumPreset;
-                this.patch.program = drumPreset.program;
-                this.patch.bankLSB = drumPreset.bankLSB;
-                this.patch.bankMSB = drumPreset.bankMSB;
-                this.patch.isGMGSDrum = drumPreset.isGMGSDrum;
-            }
-            this.setDrumFlag(true);
+        if (this.channel % 16 !== MIDI_DRUM_CHANNEL) {
+            return;
         }
+
+        if (drumPreset) {
+            this.preset = drumPreset;
+            this.patch.program = drumPreset.program;
+            this.patch.bankLSB = drumPreset.bankLSB;
+            this.patch.bankMSB = drumPreset.bankMSB;
+            this.patch.isGMGSDrum = drumPreset.isGMGSDrum;
+        }
+        this.setDrumFlag(true);
     }
 
     /**
@@ -498,7 +506,9 @@ export class MIDIChannel {
         return this._midiParameters;
     }
 
-    /** @internal */
+    /**
+     * @internal
+     */
     public get channelSystem(): MIDISystem {
         return this._systemParameters.presetLock
             ? this.lockedSystem
@@ -747,16 +757,18 @@ export class MIDIChannel {
         // GS resets to the default kit not only when toggling drums,
         // But on any map change too.
         if (
-            !this._systemParameters.presetLock &&
-            (isDrum !== this.patch.isGMGSDrum || value !== previous)
+            this._systemParameters.presetLock ||
+            (value === previous && isDrum === this.patch.isGMGSDrum)
         ) {
-            this.patch.bankMSB = 0;
-            this.patch.bankLSB = 0;
-            this.patch.isGMGSDrum = isDrum;
-            this.programChange(0);
-            // Without any preset the drum channel state takes the request, like setDrums
-            if (!this.preset) this.setDrumFlag(isDrum);
+            return;
         }
+
+        this.patch.bankMSB = 0;
+        this.patch.bankLSB = 0;
+        this.patch.isGMGSDrum = isDrum;
+        this.programChange(0);
+        // Without any preset the drum channel state takes the request, like setDrums
+        if (!this.preset) this.setDrumFlag(isDrum);
     }
 
     /**
@@ -775,10 +787,12 @@ export class MIDIChannel {
             let vc = 0;
             if (this._voiceCount > 0)
                 for (const v of this.synthCore.voices) {
-                    if (v.channel === this.channel && v.isActive) {
-                        v.isActive = false;
-                        if (++vc >= this._voiceCount) break; // We already checked all the voices
+                    if (!(v.channel === this.channel && v.isActive)) {
+                        continue;
                     }
+
+                    v.isActive = false;
+                    if (++vc >= this._voiceCount) break; // We already checked all the voices
                 }
             this.clearVoiceCount();
         } else {
@@ -786,10 +800,12 @@ export class MIDIChannel {
             let vc = 0;
             if (this._voiceCount > 0)
                 for (const v of this.synthCore.voices) {
-                    if (v.channel === this.channel && v.isActive) {
-                        v.releaseVoice(this.synthCore.currentTime);
-                        if (++vc >= this._voiceCount) break; // We already checked all the voices
+                    if (!(v.channel === this.channel && v.isActive)) {
+                        continue;
                     }
+
+                    v.releaseVoice(this.synthCore.currentTime);
+                    if (++vc >= this._voiceCount) break; // We already checked all the voices
                 }
         }
         this.synthCore.callEvent("stopAll", {
@@ -977,16 +993,18 @@ export class MIDIChannel {
         this.noteOnID[midiNote] = 0;
         if (this._voiceCount > 0)
             for (const v of this.synthCore.voices) {
-                if (
+                if (!(
                     v.channel === this.channel &&
                     v.isActive &&
                     v.midiNote === midiNote
-                ) {
-                    v.overrideReleaseVolEnv = releaseTime; // Set release to be very short
-                    v.isInRelease = false; // Force release again
-                    v.releaseVoice(this.synthCore.currentTime);
-                    if (++vc >= this._voiceCount) break; // We already checked all the voices
+                )) {
+                    continue;
                 }
+
+                v.overrideReleaseVolEnv = releaseTime; // Set release to be very short
+                v.isInRelease = false; // Force release again
+                v.releaseVoice(this.synthCore.currentTime);
+                if (++vc >= this._voiceCount) break; // We already checked all the voices
             }
     }
 
@@ -1121,31 +1139,41 @@ export class MIDIChannel {
         }
     }
 
-    /** @internal */
+    /**
+     * @internal
+     */
     protected setBankMSB(bankMSB: number) {
         if (this._systemParameters.presetLock) return;
         this.patch.bankMSB = bankMSB;
     }
 
-    /** @internal */
+    /**
+     * @internal
+     */
     protected setBankLSB(bankLSB: number) {
         if (this._systemParameters.presetLock) return;
         this.patch.bankLSB = bankLSB;
     }
 
-    /** @internal */
+    /**
+     * @internal
+     */
     protected setIsGMGSDrum(isGMGSDrum: boolean) {
         if (this._systemParameters.presetLock) return;
         this.patch.isGMGSDrum = isGMGSDrum;
     }
 
-    /** @internal */
+    /**
+     * @internal
+     */
     protected resetGeneratorOverrides() {
         this.generators.overrides.fill(GENERATOR_OVERRIDE_NO_CHANGE_VALUE);
         this.generators.overridesEnabled = false;
     }
 
-    /** @internal */
+    /**
+     * @internal
+     */
     protected setGeneratorOverride(
         gen: GeneratorType,
         value: number,
@@ -1153,26 +1181,31 @@ export class MIDIChannel {
     ) {
         this.generators.overrides[gen] = value;
         this.generators.overridesEnabled = true;
-        if (realtime) {
-            let vc = 0;
-            if (this._voiceCount > 0)
-                for (const v of this.synthCore.voices) {
-                    if (v.channel === this.channel && v.isActive) {
-                        v.generators[gen] = value;
-                        this.computeModulators(v);
-                        if (++vc >= this._voiceCount) break; // We already checked all the voices
-                    }
+        if (!realtime) return;
+        let vc = 0;
+        if (this._voiceCount > 0)
+            for (const v of this.synthCore.voices) {
+                if (!(v.channel === this.channel && v.isActive)) {
+                    continue;
                 }
-        }
+
+                v.generators[gen] = value;
+                this.computeModulators(v);
+                if (++vc >= this._voiceCount) break; // We already checked all the voices
+            }
     }
 
-    /** @internal */
+    /**
+     * @internal
+     */
     protected resetGeneratorOffsets() {
         this.generators.offsets.fill(0);
         this.generators.offsetsEnabled = false;
     }
 
-    /** @internal */
+    /**
+     * @internal
+     */
     protected setGeneratorOffset(gen: GeneratorType, value: number) {
         // An NRPN may name a generator that does not exist
         const limit = GeneratorLimits[gen] as GeneratorLimit | undefined;
@@ -1182,14 +1215,18 @@ export class MIDIChannel {
         let vc = 0;
         if (this._voiceCount > 0)
             for (const v of this.synthCore.voices) {
-                if (v.channel === this.channel && v.isActive) {
-                    this.computeModulators(v);
-                    if (++vc >= this._voiceCount) break; // We already checked all the voices
+                if (!(v.channel === this.channel && v.isActive)) {
+                    continue;
                 }
+
+                this.computeModulators(v);
+                if (++vc >= this._voiceCount) break; // We already checked all the voices
             }
     }
 
-    /** @internal */
+    /**
+     * @internal
+     */
     protected resetDrumParams() {
         if (this.synthCore.systemParameters.drumLock || !this._drumChannel)
             return;
@@ -1206,7 +1243,9 @@ export class MIDIChannel {
         }
     }
 
-    /** @internal */
+    /**
+     * @internal
+     */
     protected resetVibratoParams() {
         if (!this.synthCore.systemParameters.customVibrato) return;
         this.customVibrato.rate = 0;
@@ -1214,17 +1253,21 @@ export class MIDIChannel {
         this.customVibrato.delay = 0;
     }
 
-    /** @internal */
+    /**
+     * @internal
+     */
     protected addDefaultVibrato() {
-        if (
+        if (!(
             this.customVibrato.delay === 0 &&
             this.customVibrato.rate === 0 &&
             this.customVibrato.depth === 0
-        ) {
-            this.customVibrato.depth = 50;
-            this.customVibrato.rate = 8;
-            this.customVibrato.delay = 0.6;
+        )) {
+            return;
         }
+
+        this.customVibrato.depth = 50;
+        this.customVibrato.rate = 8;
+        this.customVibrato.delay = 0.6;
     }
 
     /**
@@ -1242,10 +1285,12 @@ export class MIDIChannel {
         let vc = 0;
         if (this._voiceCount > 0)
             for (const v of this.synthCore.voices) {
-                if (v.channel === this.channel && v.isActive) {
-                    this.computeModulators(v, sourceUsesCC, sourceIndex);
-                    if (++vc >= this._voiceCount) break; // We already checked all the voices
+                if (!(v.channel === this.channel && v.isActive)) {
+                    continue;
                 }
+
+                this.computeModulators(v, sourceUsesCC, sourceIndex);
+                if (++vc >= this._voiceCount) break; // We already checked all the voices
             }
     }
 

@@ -56,7 +56,8 @@ function checkMid(mid: BasicMIDI, path: string) {
             ) {
                 console.info(`${path} contains a GS Display message!`);
                 return;
-            } else if (
+            }
+            if (
                 syx[0] === 0x43 &&
                 syx[2] === 0x4c &&
                 (syx[3] === 0x07 || syx[3] === 0x06)

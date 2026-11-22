@@ -4,7 +4,7 @@ import { HARDWARE_RATE } from "../hardware";
 /**
  * The speaker gain of the network, and how long the speaker/phones switch ramps (in seconds).
  */
-const SPEAKER = 0.921_875;
+const SPEAKER = 0.921875;
 const RAMP = 0.04;
 
 /**
@@ -109,10 +109,10 @@ export class OutputMode3D {
     private shuffle(ear: DelayLine, shuffled: DelayLine) {
         const { step } = this;
         return (
-            0.101_562_5 * ear.read(0) -
-            0.015_625 * ear.readLagrange(this.numerator * step) +
-            0.531_25 * shuffled.readLagrange(step - 1) +
-            0.382_812_5 * shuffled.readLagrange(7 * step - 1)
+            0.1015625 * ear.read(0) -
+            0.015625 * ear.readLagrange(this.numerator * step) +
+            0.53125 * shuffled.readLagrange(step - 1) +
+            0.3828125 * shuffled.readLagrange(7 * step - 1)
         );
     }
 }

@@ -176,21 +176,12 @@ export class SpessaLog {
         unit = ""
     ) {
         if (!this.infoEnabled) return;
-        if (unit)
-            this.info(
-                `%c${what}%c is now set to %c${value}%c ${unit}.`,
-                ConsoleColors.recognized,
-                ConsoleColors.info,
-                ConsoleColors.value,
-                ConsoleColors.info
-            );
-        else
-            this.info(
-                `%c${what}%c is now set to %c${value}%c.`,
-                ConsoleColors.recognized,
-                ConsoleColors.info,
-                ConsoleColors.value,
-                ConsoleColors.info
-            );
+        this.info(
+            `%c${what}%c is now set to %c${value}%c${unit ? ` ${unit}` : ""}.`,
+            ConsoleColors.recognized,
+            ConsoleColors.info,
+            ConsoleColors.value,
+            ConsoleColors.info
+        );
     }
 }

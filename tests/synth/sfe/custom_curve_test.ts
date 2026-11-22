@@ -91,12 +91,12 @@ check(
     "SFe DMOD keeps a custom curve (XMOD)"
 );
 check(
-    !sf2.instruments[0].zones[0].modulators.some((m) => m.usesCustomCurve),
+    sf2.instruments[0].zones[0].modulators.every((m) => !m.usesCustomCurve),
     "SF2 drops custom curve modulators"
 );
 check(
-    !sf2.defaultModulators.some((m) =>
-        m.primarySource.curve.isIdentical(halfRamp)
+    sf2.defaultModulators.every(
+        (m) => !m.primarySource.curve.isIdentical(halfRamp)
     ),
     "SF2 DMOD drops custom curve modulators"
 );
@@ -162,13 +162,13 @@ check(
         readNamed.linkedTo.every((u) => u === listRead.instruments[0]),
     "use count counts every source, linked to the instrument"
 );
-let deleteThrew = false;
+let didDeleteThrow = false;
 try {
     listRead.deleteCustomCurve(readNamed);
 } catch {
-    deleteThrew = true;
+    didDeleteThrow = true;
 }
-check(deleteThrew, "deleting a used curve throws");
+check(didDeleteThrow, "deleting a used curve throws");
 listRead.deleteCustomCurve(listRead.customCurves[2]);
 check(listRead.customCurves.length === 3, "an unused curve can be deleted");
 
@@ -223,7 +223,7 @@ const unusedOnly = BasicSoundBank.copyFrom(listBank);
 unusedOnly.removeUnusedElements();
 check(
     unusedOnly.customCurves.length === 3 &&
-        !unusedOnly.customCurves.some((c) => c.name === "Unused"),
+        unusedOnly.customCurves.every((c) => c.name !== "Unused"),
     "removeUnusedElements drops unused curves"
 );
 const orphan = new CustomCurve([
@@ -272,7 +272,7 @@ check(
 
 // Editing the curve in place reaches the modulator that uses it
 const readStep = sfeMod?.primarySource.curve;
-if (!(readStep instanceof CustomCurve)) throw new Error("No step curve");
+if (!(readStep instanceof CustomCurve)) throw new TypeError("No step curve");
 readStep.setPoints([
     { x: 0, y: 0 },
     { x: 16_383, y: 0 }

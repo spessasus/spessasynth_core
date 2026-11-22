@@ -45,24 +45,28 @@ export function noteOff(this: MIDIChannel, midiNote: number) {
     if (this._voiceCount > 0)
         for (const v of this.synthCore.voices) {
             if (
-                v.channel === this.channel &&
-                v.isActive &&
-                v.midiNote === midiNote &&
-                v.noteID === noteID &&
-                !v.isInRelease
+                !(
+                    v.channel === this.channel &&
+                    v.isActive &&
+                    v.midiNote === midiNote &&
+                    v.noteID === noteID
+                ) ||
+                v.isInRelease
             ) {
-                // Voices that ignore note off play out on their own (XG drum "Rcv Note Off")
-                // They are not held either, so the sustain pedal does not release them
-                if (!v.modulatedGenerators[GeneratorTypes.ignoreNoteOff]) {
-                    if (sustain) v.isHeld = true;
-                    else v.releaseVoice(this.synthCore.currentTime);
-                } else if (v.loopingMode === 2) {
-                    // Start on release never starts its sample here, so end the silent voice instead of leaking it
-                    v.isActive = false;
-                }
-
-                if (++vc >= this._voiceCount) break; // We already checked all the voices
+                continue;
             }
+
+            // Voices that ignore note off play out on their own (XG drum "Rcv Note Off")
+            // They are not held either, so the sustain pedal does not release them
+            if (v.modulatedGenerators[GeneratorTypes.ignoreNoteOff] === 0) {
+                if (sustain) v.isHeld = true;
+                else v.releaseVoice(this.synthCore.currentTime);
+            } else if (v.loopingMode === 2) {
+                // Start on release never starts its sample here, so end the silent voice instead of leaking it
+                v.isActive = false;
+            }
+
+            if (++vc >= this._voiceCount) break; // We already checked all the voices
         }
     this.synthCore.callEvent("noteOff", {
         midiNote,
@@ -70,20 +74,19 @@ export function noteOff(this: MIDIChannel, midiNote: number) {
     });
 
     // Mono mode, restore highest still pressed note
-    if (mono) {
-        const highest = this.playingNotes.lastIndexOf(true);
-        // With no key held, the last mono note is kept, so the next note of another key takes the voice over.
-        // That happens even while the voice is still in its release, like the Sound Canvas
-        // Testcase: Sound Canvas MIDI Collection_Nintendo_Mario_sm1_01.mid (ghost notes cut the long release)
-        if (highest !== -1 && this.lastMonoNote === midiNote) {
-            // The if condition above:
-            // Ensure that we don't retrigger note that's not this one
-            // For example notes might go like this:
-            // On 50, 60, 70
-            // Off 50 -> Jumps to 70
-            // Off 60 -> We're not the last note so no change, don't jump to 70 again
-            // The note will be set automatically below
-            this.noteOn(highest, this.lastMonoVelocity, false);
-        }
+    if (!mono) return;
+    const highest = this.playingNotes.lastIndexOf(true);
+    // With no key held, the last mono note is kept, so the next note of another key takes the voice over.
+    // That happens even while the voice is still in its release, like the Sound Canvas
+    // Testcase: Sound Canvas MIDI Collection_Nintendo_Mario_sm1_01.mid (ghost notes cut the long release)
+    if (highest !== -1 && this.lastMonoNote === midiNote) {
+        // The if condition above:
+        // Ensure that we don't retrigger note that's not this one
+        // For example notes might go like this:
+        // On 50, 60, 70
+        // Off 50 -> Jumps to 70
+        // Off 60 -> We're not the last note so no change, don't jump to 70 again
+        // The note will be set automatically below
+        this.noteOn(highest, this.lastMonoVelocity, false);
     }
 }

@@ -12,15 +12,13 @@ const midPath = args[0];
 const m = await fs.readFile(midPath);
 const mid = BasicMIDI.fromArrayBuffer(m.buffer);
 
-if (mid.loop.start === mid.firstNoteOn) {
-    console.info(`Loop start is using the first note on: ${mid.firstNoteOn}`);
-} else {
-    console.info(`Loop start detected: ${mid.loop.start}`);
-}
-if (mid.loop.end === mid.lastVoiceEventTick) {
-    console.info(
-        `Loop end is using the last voice event: ${mid.lastVoiceEventTick}`
-    );
-} else {
-    console.info(`Loop end detected: ${mid.loop.end}.`);
-}
+console.info(
+    mid.loop.start === mid.firstNoteOn
+        ? `Loop start is using the first note on: ${mid.firstNoteOn}`
+        : `Loop start detected: ${mid.loop.start}`
+);
+console.info(
+    mid.loop.end === mid.lastVoiceEventTick
+        ? `Loop end is using the last voice event: ${mid.lastVoiceEventTick}`
+        : `Loop end detected: ${mid.loop.end}.`
+);

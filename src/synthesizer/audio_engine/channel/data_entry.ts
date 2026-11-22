@@ -104,7 +104,6 @@ export function dataEntry(this: MIDIChannel) {
     }
     // GM ignores NRPN
     if (this.channelSystem === "gm") return;
-    const dataCoarse = dataValue >> 7;
     // Skip drums early
     if (
         this.synthCore.systemParameters.drumLock &&
@@ -112,6 +111,7 @@ export function dataEntry(this: MIDIChannel) {
         parameterCoarse <= NonRegisteredParameterTypesMSB.drumVariation
     )
         return;
+    const dataCoarse = dataValue >> 7;
     switch (parameterCoarse) {
         default: {
             SpessaLog.info(

@@ -72,7 +72,7 @@ function readALAW(
 
         mantissa = (mantissa << 4) + 0x8;
         if (exponent > 1) {
-            mantissa = mantissa << (exponent - 1);
+            mantissa <<= exponent - 1;
         }
 
         const s16sample = input > 127 ? mantissa : -mantissa;
@@ -127,7 +127,7 @@ export class DLSSample extends BasicSample {
         this.dataOverridden = false;
         this.wFormatTag = wFormatTag;
         this.bytesPerSample = bytesPerSample;
-        if (wFormatTag === W_FORMAT_TAG.PCM && bytesPerSample === 2) {
+        if (bytesPerSample === 2 && wFormatTag === W_FORMAT_TAG.PCM) {
             // Most common, copied back unchanged when writing
             this.s16leData = dataChunk.data;
         } else {
@@ -140,18 +140,14 @@ export class DLSSample extends BasicSample {
     }
 
     public get sampleLength() {
-        if (this.rawData && !this.audioData) {
-            return Math.floor(this.rawData.length / this.bytesPerSample);
-        }
-        return super.sampleLength;
+        return this.rawData && !this.audioData
+            ? Math.floor(this.rawData.length / this.bytesPerSample)
+            : super.sampleLength;
     }
 
     public get storedForm() {
         // Other formats than s16le are given out decoded
-        if (this.rawData && !this.audioData) {
-            return "float32";
-        }
-        return super.storedForm;
+        return this.rawData && !this.audioData ? "float32" : super.storedForm;
     }
 
     public get canRedecode() {
@@ -231,10 +227,9 @@ export class DLSSample extends BasicSample {
     }
 
     public getRawData(allowVorbis: boolean) {
-        if (this.rawData) {
-            // Not s16le, so it has to be encoded
-            return this.encodeS16LE();
-        }
-        return super.getRawData(allowVorbis);
+        // Raw data is not s16le, so it has to be encoded
+        return this.rawData
+            ? this.encodeS16LE()
+            : super.getRawData(allowVorbis);
     }
 }

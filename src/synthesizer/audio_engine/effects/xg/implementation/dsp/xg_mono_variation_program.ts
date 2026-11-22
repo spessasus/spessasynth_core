@@ -10,6 +10,9 @@ export const LIST_LOW_B = [0x73, 0x72, 0x74];
  */
 const UNWRITTEN_CATEGORY_2 = [0x75, 0x7a, 0x7d, 0x80, 0xae];
 
+// Coefficients that set 0x76 to their product
+const PRODUCT_COEFFICIENTS = new Set([0x76, 0x7a, 0x7d, 0x80]);
+
 // Mono input level push list
 const LIST_MONO_INPUT = [0x6d, 0x6e];
 
@@ -70,7 +73,7 @@ export abstract class XGMonoVariationProgram extends XGVariationProgram {
         if (!this.pushEnabled) return;
         for (let i = offset; i < offset + count; i++) {
             const k = list[i];
-            if (k === 0x76 || k === 0x7a || k === 0x7d || k === 0x80) {
+            if (PRODUCT_COEFFICIENTS.has(k)) {
                 this.coefficients[0x76] = Math.fround(
                     Math.fround(
                         Math.fround(

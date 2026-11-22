@@ -64,7 +64,7 @@ const audioStream = new Readable({
             interleaved[i * 2 + 1] = right[i];
         }
 
-        this.push(
+        audioStream.push(
             Buffer.from(
                 interleaved.buffer,
                 interleaved.byteOffset,

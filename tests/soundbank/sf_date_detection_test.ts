@@ -21,16 +21,13 @@ for (const entry of entries) {
 
     const ext = path.extname(fullPath).toLowerCase();
     if (
-        stat.isFile() &&
-        stat.size < 2_147_483_648 &&
-        (ext === ".sf2" ||
-            ext === ".sf3" ||
-            ext === ".dls" ||
-            ext === ".sfogg" ||
-            ext === ".dlp")
+        !stat.isFile() ||
+        stat.size >= 2_147_483_648 ||
+        ![".sf2", ".sf3", ".dls", ".sfogg", ".dlp"].includes(ext)
     ) {
-        const bin = await fs.readFile(fullPath);
-        if (dec.decode(bin.buffer.slice(0, 4)) !== "RIFF") continue;
-        SoundBankLoader.fromArrayBuffer(bin.buffer);
+        continue;
     }
+    const bin = await fs.readFile(fullPath);
+    if (dec.decode(bin.subarray(0, 4)) !== "RIFF") continue;
+    SoundBankLoader.fromArrayBuffer(bin.buffer);
 }

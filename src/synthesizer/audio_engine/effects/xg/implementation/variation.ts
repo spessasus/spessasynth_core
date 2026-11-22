@@ -173,13 +173,12 @@ export class DefaultXGVariation
                 reverbRight[i] += this.outputRight[i] * gain;
             }
         }
-        if (this.sendToChorus > 0) {
-            const gain = this.sendToChorus / 64;
+        if (this.sendToChorus <= 0) return;
+        const gain = this.sendToChorus / 64;
 
-            for (let i = 0; i < sampleCount; i++) {
-                chorusLeft[i] += this.outputLeft[i] * gain;
-                chorusRight[i] += this.outputRight[i] * gain;
-            }
+        for (let i = 0; i < sampleCount; i++) {
+            chorusLeft[i] += this.outputLeft[i] * gain;
+            chorusRight[i] += this.outputRight[i] * gain;
         }
     }
 

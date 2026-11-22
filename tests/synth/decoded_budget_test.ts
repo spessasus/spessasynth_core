@@ -54,7 +54,7 @@ const renderSong = (decodedSampleBudget: number) => {
     }
     const decodedNow = bank.samples.reduce(
         (sum, s) =>
-            sum + (s.storedForm === "float32" ? 0 : s.releaseDecoded() ? 1 : 0),
+            sum + (s.storedForm !== "float32" && s.releaseDecoded() ? 1 : 0),
         0
     );
     return { out, peak, decodedNow };

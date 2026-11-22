@@ -4,7 +4,7 @@ import { MIDITestMaker } from "../../midi_test_maker";
 
 const test = new MIDITestMaker("Velocity Sense Depth Bug");
 
-test.text(`Depth = ${1000}`)
+test.text(`Depth = 1000`)
     .gs(0x40, 0x11, 0x1a, [100])
     .cc(MIDIControllers.reverbDepth, 0);
 

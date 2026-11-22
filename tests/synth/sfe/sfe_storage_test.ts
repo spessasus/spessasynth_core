@@ -48,7 +48,7 @@ const values: Partial<Record<GeneratorType, number>> = {
     [GeneratorTypes.modEnv2ToFilterFc]: -3000
 };
 
-const types = Object.keys(values).map((t) => Number(t) as GeneratorType);
+const types = Object.keys(values).map(Number) as GeneratorType[];
 check(
     types.length === GeneratorTypes.ignoreNoteOff - GeneratorTypes.endOper,
     "every generator above endOper is tested"
@@ -82,20 +82,14 @@ console.info("Generators:");
 checkStorage(bank, types);
 
 console.info("Modulators:");
-const hasMod = (mods: readonly Modulator[], mod: Modulator) =>
-    mods.some((m) => Modulator.isIdentical(m, mod, true));
+const hasMod = (mods: readonly Modulator[]) =>
+    mods.some((m) => Modulator.isIdentical(m, sfeDestination, true));
 const sfe = sfeRoundTrip(bank);
 const sf2 = sf2RoundTrip(bank);
 const sfeMods = sfe.instruments[0].zones[0].modulators;
 const sf2Mods = sf2.instruments[0].zones[0].modulators;
-check(
-    hasMod(sfeMods, sfeDestination),
-    "SFe keeps a modulator to modEnv2ToPitch"
-);
-check(
-    !hasMod(sf2Mods, sfeDestination),
-    "SF2 drops a modulator to modEnv2ToPitch"
-);
+check(hasMod(sfeMods), "SFe keeps a modulator to modEnv2ToPitch");
+check(!hasMod(sf2Mods), "SF2 drops a modulator to modEnv2ToPitch");
 check(
     sfe.defaultModulators.some(
         (m) => m.destination === GeneratorTypes.maxFilterFc
@@ -104,8 +98,8 @@ check(
 );
 // Loading an SF2 bank adds the CC 71 to gain compensator back, so check the destination that was written
 check(
-    !sf2.defaultModulators.some(
-        (m) => m.destination === GeneratorTypes.maxFilterFc
+    sf2.defaultModulators.every(
+        (m) => m.destination !== GeneratorTypes.maxFilterFc
     ),
     "SF2 DMOD drops SFe destinations"
 );
@@ -122,11 +116,11 @@ sfeFile.set([0x73, 0x66, 0x62, 0x6b], typeOffset); // "sfbk"
 const relabeled = SoundBankLoader.fromArrayBuffer(sfeFile.buffer);
 const zone = relabeled.instruments[0].zones[0];
 check(
-    !zone.generators.some((g) => g.type > GeneratorTypes.endOper),
+    zone.generators.every((g) => !(g.type > GeneratorTypes.endOper)),
     "an sfbk bank ignores generators above endOper"
 );
 check(
-    !zone.generators.some((g) => g.type === GeneratorTypes.invalid),
+    zone.generators.every((g) => g.type !== GeneratorTypes.invalid),
     "the ignored generators are not added to the zone"
 );
 check(
@@ -134,7 +128,7 @@ check(
     "standard generators of the zone are still read"
 );
 check(
-    !zone.modulators.some((m) => m.destination > GeneratorTypes.endOper),
+    zone.modulators.every((m) => !(m.destination > GeneratorTypes.endOper)),
     "an sfbk bank ignores modulator destinations above endOper"
 );
 

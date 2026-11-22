@@ -184,7 +184,7 @@ export class VolumeEnvelope {
                             this.attackDuration;
                     // Calculate the gain that the attack would have, so
                     // Turn that into cB
-                    this.releaseStartCb = 200 * Math.log10(elapsed) * -1;
+                    this.releaseStartCb = -(200 * Math.log10(elapsed));
                     break;
                 }
 

@@ -144,29 +144,30 @@ export function computeModulators(
     for (let i = 0; i < modulators.length; i++) {
         const mod = modulators[i];
         // If the modulator is influenced by the change
-        if (
+        if (!(
             (mod.primarySource.isCC === sourceCC &&
                 mod.primarySource.index === sourceIndex) ||
             (mod.secondarySource.isCC === sourceCC &&
                 mod.secondarySource.index === sourceIndex)
-        ) {
-            const destination = mod.destination;
-            let outputValue = generators[destination];
-            // Compute our modulator
-            this.computeModulator(voice, pitch, i);
-
-            // Sum the values of all modulators for this destination
-            for (let j = 0; j < modulators.length; j++) {
-                if (modulators[j].destination === destination) {
-                    outputValue += voice.modulatorValues[j];
-                }
-            }
-            // Apply the limits instantly to prevent -32k overflow
-            // Testcase: gm.dls polysynth
-            modulatedGenerators[destination] = finalGeneratorValue(
-                destination,
-                outputValue
-            );
+        )) {
+            continue;
         }
+        const destination = mod.destination;
+        let outputValue = generators[destination];
+        // Compute our modulator
+        this.computeModulator(voice, pitch, i);
+
+        // Sum the values of all modulators for this destination
+        for (let j = 0; j < modulators.length; j++) {
+            if (modulators[j].destination === destination) {
+                outputValue += voice.modulatorValues[j];
+            }
+        }
+        // Apply the limits instantly to prevent -32k overflow
+        // Testcase: gm.dls polysynth
+        modulatedGenerators[destination] = finalGeneratorValue(
+            destination,
+            outputValue
+        );
     }
 }

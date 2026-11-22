@@ -37,10 +37,14 @@ export class GSThru extends GSEffect {
     }
 
     protected clear() {
-        /* Nothing to clear */
+        /*
+        Nothing to clear
+        */
     }
 
     protected update() {
-        /* Thru has no parameters */
+        /*
+        Thru has no parameters
+        */
     }
 }

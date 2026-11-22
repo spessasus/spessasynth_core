@@ -18,8 +18,8 @@ const CURVE_HEADER_SIZE = 42;
  */
 export function readCurves(curveChunk: RIFFChunk) {
     const data = curveChunk.data;
-    const curves = new Array<CustomCurve | undefined>();
     if (data.length < 4) throw new Error("The CURV chunk is too short.");
+    const curves = new Array<CustomCurve | undefined>();
     const count = readLittleEndianIndexed(data, 4);
     for (let c = 0; c < count; c++) {
         if (data.currentIndex + CURVE_HEADER_SIZE > data.length) {

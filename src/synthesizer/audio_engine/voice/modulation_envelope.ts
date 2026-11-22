@@ -134,16 +134,15 @@ export class ModulationEnvelope {
         if (this.enteredRelease) {
             // If the voice is still in the delay phase,
             // Start level will be 0 that will result in divide by zero
-            if (this.releaseStartLevel === 0) {
-                return 0;
-            }
-            return Math.max(
-                0,
-                (1 -
-                    (currentTime - voice.releaseStartTime) /
-                        this.releaseDuration) *
-                    this.releaseStartLevel
-            );
+            return this.releaseStartLevel === 0
+                ? 0
+                : Math.max(
+                      0,
+                      (1 -
+                          (currentTime - voice.releaseStartTime) /
+                              this.releaseDuration) *
+                          this.releaseStartLevel
+                  );
         }
 
         if (currentTime < this.delayEnd) {
@@ -240,7 +239,6 @@ export class ModulationEnvelope {
         // -10114 timecents is about 2.9 ms, one 128-sample block at 44.1kHz,
         // So anything at or below that is treated as instant
         // Testcase: MS_Basic-v0.2.1.sf2 Bass & Lead
-        if (timecents <= -10_114) return 0;
-        return rawTimecentsToSeconds(timecents);
+        return timecents <= -10_114 ? 0 : rawTimecentsToSeconds(timecents);
     }
 }

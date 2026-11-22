@@ -337,11 +337,13 @@ for (const amount of [
         "a range modulator with another destination is dropped"
     );
     check(
-        !left.some(
+        left.every(
             (m) =>
-                m.primarySource.index ===
-                    ModulatorControllerSources.modulationDepthRange &&
-                !m.primarySource.isCC
+                !(
+                    m.primarySource.index ===
+                        ModulatorControllerSources.modulationDepthRange &&
+                    !m.primarySource.isCC
+                )
         ),
         "a modulator with the range as its source is dropped"
     );
@@ -668,11 +670,13 @@ for (const amount of [
         );
     check(
         list.length === 15 &&
-            !list.some(
+            list.every(
                 (m) =>
-                    !m.primarySource.isCC &&
-                    m.primarySource.index ===
-                        ModulatorControllerSources.channelPressure
+                    !(
+                        !m.primarySource.isCC &&
+                        m.primarySource.index ===
+                            ModulatorControllerSources.channelPressure
+                    )
             ),
         `a new bank has 15 default modulators and no channel pressure vibrato (${list.length})`
     );

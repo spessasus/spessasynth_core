@@ -177,7 +177,7 @@ export class DownloadableSounds extends DLSVerifier {
          MobileBAE Instrument aliasing
          https://github.com/spessasus/spessasynth_core/issues/14
          https://lpcwiki.miraheze.org/wiki/MobileBAE#Proprietary_instrument_aliasing_chunk
-         http://onj3.andrelouis.com/phonetones/Software%20and%20Soundbanks/Soundbanks/Beatnik%20mobileBAE/
+         https://onj3.andrelouis.com/phonetones/Software%20and%20Soundbanks/Soundbanks/Beatnik%20mobileBAE/
         */
         const aliasingChunk = chunks.find((c) => c.header === "pgal");
         if (aliasingChunk) {

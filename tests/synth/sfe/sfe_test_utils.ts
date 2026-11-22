@@ -206,13 +206,15 @@ export function frequency(buffer: Float32Array, from: number, to: number) {
     let last = -1;
     let crossings = 0;
     for (let i = start + 1; i < end; i++) {
-        if (buffer[i - 1] <= 0 && buffer[i] > 0) {
-            // Interpolate the crossing point
-            const t = i - 1 + -buffer[i - 1] / (buffer[i] - buffer[i - 1]);
-            if (first < 0) first = t;
-            else crossings++;
-            last = t;
+        if (!(buffer[i - 1] <= 0 && buffer[i] > 0)) {
+            continue;
         }
+
+        // Interpolate the crossing point
+        const t = i - 1 + -buffer[i - 1] / (buffer[i] - buffer[i - 1]);
+        if (first < 0) first = t;
+        else crossings++;
+        last = t;
     }
     return crossings > 0 ? (crossings * SAMPLE_RATE) / (last - first) : 0;
 }

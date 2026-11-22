@@ -5,13 +5,13 @@ import { OutputMode3D } from "./output_mode_3d";
  * The fixed set: a direction tuned for 90 degrees (between the positioner's 84 and 96, with its own far taps).
  */
 const CROSSTALK: HRTFSet = {
-    a: 1.531_25,
-    b2: -0.445_312_5,
-    b4: 0.281_25,
-    f: 0.742_187_5,
-    g: 0.109_375,
+    a: 1.53125,
+    b2: -0.4453125,
+    b4: 0.28125,
+    f: 0.7421875,
+    g: 0.109375,
     d1: 22,
-    h: 0.046_875,
+    h: 0.046875,
     d2: 27
 };
 

@@ -48,7 +48,7 @@ const GUITAR_POST_GAIN = new Uint8Array([58, 58, 29, 21, 17, 15, 14]);
  * @internal
  */
 export const GUITAR_OVERDRIVE: DrivePreset = {
-    gain: 8 * 0.996_02 * 0.979_59,
+    gain: 8 * 0.99602 * 0.97959,
     postGain: GUITAR_POST_GAIN,
     postFilterGain: 127 / 128,
     design(pre1, pre2, pre3, post, peak) {
@@ -135,10 +135,10 @@ export const BASS_OVERDRIVE: DrivePreset = {
     postGain: new Uint8Array([79, 79, 41, 30, 25, 22, 21, 20]),
     postFilterGain: ((BASS_POST_SCALE * 127) / 128) * 0.125,
     design(pre1, pre2, pre3, post, peak) {
-        pre1.setHighPass(370.98, 1.004_05);
+        pre1.setHighPass(370.98, 1.00405);
         pre2.setOff();
         pre3.setOff();
-        post.setPoleZero(3519.8, 370.98, 0.101_215);
+        post.setPoleZero(3519.8, 370.98, 0.101215);
         peak.setOff();
     }
 };
@@ -157,20 +157,20 @@ export const BASS_DISTORTION: DrivePreset = {
     postGain: new Uint8Array([16, 16, 10, 9, 8]),
     postFilterGain: ((BASS_POST_SCALE * 127) / 128) * 0.125,
     design(pre1, pre2, pre3, post, peak) {
-        pre1.setHighPass(588.61, 0.991_736);
+        pre1.setHighPass(588.61, 0.991736);
         pre2.setOff();
         pre3.setOff();
-        post.setPoleZero(1968.04, 3866.21, 2.010_93);
-        peak.setPeaking(1417.1, 1.190_24, -6.0206);
+        post.setPoleZero(1968.04, 3866.21, 2.01093);
+        peak.setPeaking(1417.1, 1.19024, -6.0206);
     },
     designBass(pre, post) {
         // A second order low pass, 0.941 at DC
         const w = pre.prewarp(2109.7);
-        pre.setAnalog(0, 0, 0.941_176 * w * w, 1, w / 0.735_465, w * w);
+        pre.setAnalog(0, 0, 0.941176 * w * w, 1, w / 0.735465, w * w);
         // Unity at Nyquist, 3 (+9.5 dB) at DC
         const wp = post.prewarp(28.1846);
         const wz = post.prewarp(48.8166);
-        post.setAnalog(1, wz / 0.135_549, wz * wz, 1, wp / 0.782_248, wp * wp);
+        post.setAnalog(1, wz / 0.135549, wz * wz, 1, wp / 0.782248, wp * wp);
     }
 };
 
@@ -222,9 +222,7 @@ export class Drive {
      */
     private static shape(x: number) {
         const c = Math.max(-1, Math.min(1, x));
-        return (
-            c * (0.875 - 0.5 * Math.max(0, 0.992_187_5 * Math.abs(c) - 0.25))
-        );
+        return c * (0.875 - 0.5 * Math.max(0, 0.9921875 * Math.abs(c) - 0.25));
     }
 
     public setPreset(preset: DrivePreset) {

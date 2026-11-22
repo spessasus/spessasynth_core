@@ -10,9 +10,9 @@ import { HARDWARE_RATE } from "../hardware";
  * (the inverse bilinear transform): a second order high pass at 2000 Hz with a Q of 5 (+14 dB at 2 kHz). The
  * SC-88Pro has the resonance too.
  */
-const HORN_B0 = 0.926_483_154_296_875;
-const HORN_A1 = 1.779_663_085_937_5;
-const HORN_A2 = -0.926_269_531_25;
+const HORN_B0 = 0.926483154296875;
+const HORN_A1 = 1.7796630859375;
+const HORN_A2 = -0.92626953125;
 const HORN_D2 = 1 + HORN_A1 - HORN_A2;
 const HORN_D1 = 2 + 2 * HORN_A2;
 const HORN_D0 = 1 - HORN_A1 - HORN_A2;
@@ -24,7 +24,7 @@ const HORN_GAIN = (4 * HORN_B0) / HORN_D2;
 /**
  * The drum crossover: the hardware's one-pole low pass (pole 0.668, unity at DC), its corner is 2000 Hz too.
  */
-const DRUM_POLE = 0.668_151_855_468_75;
+const DRUM_POLE = 0.66815185546875;
 const DRUM_HZ =
     (HARDWARE_RATE / Math.PI) * Math.atan((1 - DRUM_POLE) / (1 + DRUM_POLE));
 
