@@ -6,7 +6,7 @@ import {
     GS_USER_DRUM_2,
     MIDI_DRUM_CHANNEL
 } from "../../synthesizer/audio_engine/synth_constants";
-import { MIDIUtils } from "./midi_utils";
+import * as MIDIUtils from "./midi_utils";
 import type { BasicMIDI } from "../basic_midi";
 import {
     type MIDIController,

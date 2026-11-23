@@ -2,7 +2,7 @@ import { MIDIMessage } from "../midi/midi_message";
 import { ConsoleColors } from "../utils/other";
 import { SpessaLog } from "../utils/loggin";
 import { readBigEndian } from "../utils/byte_functions/big_endian";
-import { MIDIUtils } from "../midi/midi_tools/midi_utils";
+import * as MIDIUtils from "../midi/midi_tools/midi_utils";
 import type { SpessaSynthSequencer } from "./sequencer";
 import {
     type MIDIController,

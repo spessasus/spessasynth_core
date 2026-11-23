@@ -3,7 +3,7 @@ import {
     DEFAULT_RPN
 } from "../../synthesizer/audio_engine/synth_constants";
 import { type MIDIController, MIDIControllers } from "../enums";
-import { MIDIUtils } from "./midi_utils";
+import * as MIDIUtils from "./midi_utils";
 
 export type ParameterCC =
     | typeof MIDIControllers.registeredParameterMSB

@@ -2,7 +2,7 @@ import { MIDITrack } from "../../midi_track";
 import { MIDIMessage } from "../../midi_message";
 import { IndexedByteArray } from "../../../utils/indexed_array";
 import { getStringBytes } from "../../../utils/byte_functions/string";
-import { MIDIUtils } from "../../midi_tools/midi_utils";
+import * as MIDIUtils from "../../midi_tools/midi_utils";
 import { MELODIC_MAP } from "../../midi_tools/sysex_data";
 import { MIDI_DRUM_CHANNEL } from "../../../synthesizer/audio_engine/synth_constants";
 import {

@@ -3,7 +3,7 @@ import { type MIDIController, MIDIControllers } from "../../../midi/enums";
 import type { MatrixDestination, MatrixSource } from "../channel/enums";
 import { readBinaryString } from "../../../utils/byte_functions/string";
 import type { SpessaSynthProcessor } from "../../processor";
-import { MIDIUtils } from "../../../midi/midi_tools/midi_utils";
+import * as MIDIUtils from "../../../midi/midi_tools/midi_utils";
 import type { SysExAcceptedArray } from "../../../midi/types";
 import { ConsoleColors } from "../../../utils/other";
 import {

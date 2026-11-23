@@ -11,7 +11,7 @@ import {
 } from "../midi/enums";
 import type { SpessaSynthSequencer } from "./sequencer";
 import { readBigEndian } from "../utils/byte_functions/big_endian";
-import { MIDIUtils } from "../midi/midi_tools/midi_utils";
+import * as MIDIUtils from "../midi/midi_tools/midi_utils";
 import { ParameterTracker } from "../midi/midi_tools/parameter_tracker";
 import { CONTROLLER_TABLE_SIZE } from "../synthesizer/audio_engine/synth_constants";
 

@@ -10,7 +10,7 @@ import { IndexedByteArray } from "../../../utils/indexed_array";
 import { getStringBytes } from "../../../utils/byte_functions/string";
 import { SpessaLog } from "../../../utils/loggin";
 import { ConsoleColors } from "../../../utils/other";
-import { MIDIUtils } from "../../midi_tools/midi_utils";
+import * as MIDIUtils from "../../midi_tools/midi_utils";
 import { TrackerChannel } from "./tracker_channel";
 import {
     FILTER_CUTOFF_CC,

@@ -17,7 +17,7 @@ import type { RMIDInfoData, RMIDInfoFourCC, RMIDIWriteOptions } from "../types";
 import type { BasicMIDI } from "../basic_midi";
 import type { MIDIPatch } from "../../soundbank/basic_soundbank/midi_patch";
 import * as MIDIPatchTools from "../../soundbank/basic_soundbank/midi_patch_tools";
-import { MIDIUtils } from "../midi_tools/midi_utils";
+import * as MIDIUtils from "../midi_tools/midi_utils";
 import { SpessaLog } from "../../utils/loggin";
 import type { MIDISystem } from "../../soundbank/types";
 

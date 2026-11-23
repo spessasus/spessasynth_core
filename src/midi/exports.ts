@@ -14,6 +14,6 @@ export { BasicMIDI } from "./basic_midi";
 export type { ModifyMIDIOptions } from "./midi_tools/midi_editor";
 export * from "./midi_tools/midi_builder";
 export { MIDITrack } from "./midi_track";
-export * from "./midi_tools/midi_utils";
+export * as MIDIUtils from "./midi_tools/midi_utils";
 export * as DrumParameterUtils from "./drum_parameters";
 export * from "./midi_tools/analyzed_message";

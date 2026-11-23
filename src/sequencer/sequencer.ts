@@ -14,7 +14,7 @@ import type { SequencerEvent, SequencerEventCallback } from "./types";
 import { arrayToHexString, ConsoleColors } from "../utils/other";
 import { SpessaLog } from "../utils/loggin";
 import type { SysExAcceptedArray } from "../midi/types";
-import { MIDIUtils } from "../midi/midi_tools/midi_utils";
+import * as MIDIUtils from "../midi/midi_tools/midi_utils";
 
 /**
  * This module is responsible for playing back {@link BasicMIDI} sequences to {@link SpessaSynthProcessor}.

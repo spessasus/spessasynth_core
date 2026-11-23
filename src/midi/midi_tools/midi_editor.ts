@@ -17,7 +17,7 @@ import {
     MIDIControllers,
     MIDIMessageTypes
 } from "../enums";
-import { MIDIUtils } from "./midi_utils";
+import * as MIDIUtils from "./midi_utils";
 import { PortTracker } from "./port_tracker";
 import { type ParameterCC, ParameterTracker } from "./parameter_tracker";
 import type { DrumParameter, UserDrumSetParameter } from "../types";
