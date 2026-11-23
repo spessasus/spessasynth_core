@@ -2,38 +2,7 @@ import { ConsoleColors, formatTime } from "../utils/other";
 import { SpessaLog } from "../utils/loggin";
 import { BasicMIDI } from "../midi/basic_midi";
 import type { SpessaSynthSequencer } from "./sequencer";
-
-/**
- * Assigns a MIDI port channel offset to a track.
- * @param trackNum The track number to assign the port to.
- * @param port The MIDI port number to assign.
- */
-export function assignMIDIPortInternal(
-    this: SpessaSynthSequencer,
-    trackNum: number,
-    port: number
-) {
-    // Do not assign ports to empty tracks
-    if (this._midiData!.tracks[trackNum].channels.size === 0) {
-        return;
-    }
-
-    // Assign new 16 channels if the port is not occupied yet
-    if (this.midiPortChannelOffset === 0) {
-        this.midiPortChannelOffset += 16;
-        this.midiPortChannelOffsets[port] = 0;
-    }
-
-    if (this.midiPortChannelOffsets[port] === undefined) {
-        if (this.synth.midiChannels.length < this.midiPortChannelOffset + 15) {
-            this.addNewMIDIPort();
-        }
-        this.midiPortChannelOffsets[port] = this.midiPortChannelOffset;
-        this.midiPortChannelOffset += 16;
-    }
-
-    this.currentMIDIPorts[trackNum] = port;
-}
+import { PortTracker } from "../midi/midi_tools/port_tracker";
 
 /**
  * Loads a new sequence internally.
@@ -68,15 +37,10 @@ export function loadNewSequenceInternal(
     }
 
     // Copy over the port data
-    this.currentMIDIPorts = this._midiData.tracks.map((t) => t.port);
-
-    // Clear last port data
-    this.midiPortChannelOffset = 0;
-    this.midiPortChannelOffsets = {};
-    // Assign port offsets
-    for (const [trackIndex, track] of this._midiData.tracks.entries()) {
-        this.assignMIDIPort(trackIndex, track.port);
-    }
+    this.ports = new PortTracker(this._midiData);
+    // Add channels for every port that plays notes
+    const channelCount = 16 + Math.max(...this._midiData.portChannelOffsetMap);
+    while (this.synth.midiChannels.length < channelCount) this.addNewMIDIPort();
     this.firstNoteTime = this._midiData.midiTicksToSeconds(
         this._midiData.firstNoteOn
     );

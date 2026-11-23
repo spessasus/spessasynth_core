@@ -17,6 +17,7 @@ import { SpessaLog } from "../utils/loggin";
 import { ConsoleColors, formatTime } from "../utils/other";
 import { MIDIControllers, MIDIMessageTypes } from "./enums";
 import { MIDIMessage } from "./midi_message";
+import { PortTracker } from "./midi_tools/port_tracker";
 import { applySnapshotInternal } from "./midi_tools/apply_snapshot";
 import { getNoteTimesInternal } from "./midi_tools/get_note_times";
 import { MIDIEditor, type ModifyMIDIOptions } from "./midi_tools/midi_editor";
@@ -38,6 +39,14 @@ import type {
 } from "./types";
 import { writeMIDIInternal } from "./write/midi";
 import { DEFAULT_RMIDI_WRITE_OPTIONS, writeRMIDIInternal } from "./write/rmidi";
+
+/**
+ * If the message is a note on with a velocity above 0.
+ * @param e The MIDI message.
+ */
+function isNoteOn(e: MIDIMessage) {
+    return (e.statusByte & 0xf0) === MIDIMessageTypes.noteOn && e.data[1] > 0;
+}
 
 /**
  * BasicMIDI is the base of a complete MIDI file.
@@ -157,6 +166,13 @@ export class BasicMIDI {
      * An array of channel offsets for each MIDI port, using the [SpessaSynth method](../../docs/extra/about-multi-port.md#spessasynth-implementation).
      * The index is the port number and the value is the channel offset.
      *
+     * Only the ports that play notes have channels, the other indexes are set to 0,
+     * and a port above the highest one with notes has no entry, so `portChannelOffsetMap[track.port]` can be `undefined`
+     * (a track can start on a port without notes). Use {@link usedChannels} for the channels that play.
+     *
+     * > **Note**
+     * >
+     * > This is computed when the file is parsed or flushed. Editing it does not add or remove ports!
      */
     public portChannelOffsetMap: number[] = [0];
 
@@ -251,7 +267,18 @@ export class BasicMIDI {
      * > If you want to avoid this behavior, make sure you set it to undefined before passing the BasicMIDI.
      */
     public embeddedSoundBank?: ArrayBuffer;
-
+    /**
+     * The synthesizer channels this file plays notes on, with the MIDI ports applied
+     * (the port's channel offset plus the MIDI channel, routed like the sequencer does).
+     * Tracks that switch ports count for every port they play on.
+     * Computed when the file is parsed or flushed (and copied with the metadata),
+     * so call {@link BasicMIDI.flush} after editing the tracks.
+     */
+    public usedChannels = new Set<number>();
+    /**
+     * The MIDI ports that play notes. Only these have channels.
+     */
+    protected notePorts = new Set<number>([0]);
     /**
      * The raw, encoded MIDI name, represented as a Uint8Array.
      * Useful when the MIDI file uses a different code page.
@@ -904,6 +931,18 @@ export class BasicMIDI {
     }
 
     /**
+     * The channel offset of a MIDI port, or undefined if nothing plays on that port.
+     * Messages for a port without notes are dropped.
+     * @param port The MIDI port.
+     * @internal
+     */
+    public getPortOffset(port: number) {
+        return this.notePorts.has(port)
+            ? (this.portChannelOffsetMap[port] ?? 0)
+            : undefined;
+    }
+
+    /**
      * Iterates over the MIDI file, ordered by the time the events happen.
      *
      * > **Tip**
@@ -990,6 +1029,8 @@ export class BasicMIDI {
                 )
         );
         this.portChannelOffsetMap = [...mid.portChannelOffsetMap];
+        this.notePorts = new Set(mid.notePorts);
+        this.usedChannels = new Set(mid.usedChannels);
         this.binaryName = mid.binaryName?.slice();
 
         // Copying objects
@@ -1027,6 +1068,8 @@ export class BasicMIDI {
         this.keyRange = { max: 0, min: 127 };
         this.lastVoiceEventTick = 0;
         this.portChannelOffsetMap = [0];
+        this.notePorts = new Set([0]);
+        this.usedChannels = new Set();
         this.loop = { start: 0, end: 0, type: "hard" };
         // Do not reset RMIDI info (parsed in MIDI loader)
         // Do not reset bank offset (parsed in MIDI loader)
@@ -1350,103 +1393,6 @@ export class BasicMIDI {
             ConsoleColors.recognized
         );
 
-        // Determine ports
-        let portOffset = 0;
-        this.portChannelOffsetMap = [];
-        for (const track of this.tracks) {
-            track.port = -1;
-            if (track.channels.size === 0) {
-                continue;
-            }
-            for (const e of track.events) {
-                if (e.statusByte !== MIDIMessageTypes.midiPort) {
-                    continue;
-                }
-                const port = e.data[0];
-                track.port = port;
-                if (this.portChannelOffsetMap[port] !== undefined) {
-                    continue;
-                }
-
-                this.portChannelOffsetMap[port] = portOffset;
-                portOffset += 16;
-            }
-        }
-
-        // Attempt to determine ports from track names:
-        // A<num> or PartA<num>
-        // B<num> or PartB<num>
-        // C<num> or PartC<num>
-        // D<num> or PartD<num>
-        if (portOffset === 0) {
-            for (const track of this.tracks) {
-                const n = track.name;
-                if (n.includes("PartA") || /^A\d/.test(n)) {
-                    track.port = 0;
-                    this.portChannelOffsetMap[0] = 0;
-                    continue;
-                }
-                if (n.includes("PartB") || /^B\d/.test(n)) {
-                    track.port = 1;
-                    this.portChannelOffsetMap[1] = 16;
-                    continue;
-                }
-                if (n.includes("PartC") || /^C\d/.test(n)) {
-                    track.port = 2;
-                    this.portChannelOffsetMap[2] = 32;
-                    continue;
-                }
-                if (!(n.includes("PartD") || /^D\d/.test(n))) {
-                    continue;
-                }
-
-                track.port = 3;
-                this.portChannelOffsetMap[3] = 48;
-            }
-        }
-
-        // Fix empty port channel offsets (do a copy to turn empty slots into undefined so the map goes over them)
-        this.portChannelOffsetMap = [...this.portChannelOffsetMap].map(
-            (o = 0) => o
-        );
-
-        // Fix midi ports:
-        // MIDI tracks without ports will have a value of -1
-        // If all ports have a value of -1, set it to 0,
-        // Otherwise take the first midi port and replace all -1 with it,
-        // Why would we do this?
-        // Some midis (for some reason) specify all channels to port 1 or else,
-        // But leave the conductor track with no port pref.
-        // This spessasynth to reserve the first 16 channels for the conductor track
-        // (which doesn't play anything) and use the additional 16 for the actual ports.
-        let defaultPort = Infinity;
-        for (const track of this.tracks) {
-            if (track.port !== -1 && defaultPort > track.port) {
-                defaultPort = track.port;
-            }
-        }
-        if (defaultPort === Infinity) {
-            defaultPort = 0;
-        }
-        for (const track of this.tracks) {
-            if (track.port === -1 || track.port === undefined) {
-                track.port = defaultPort;
-            }
-        }
-        // Add fake port if empty
-        if (this.portChannelOffsetMap.length === 0) {
-            this.portChannelOffsetMap = [0];
-        }
-        if (this.portChannelOffsetMap.length < 2) {
-            SpessaLog.info(
-                `%cNo additional MIDI Ports detected.`,
-                ConsoleColors.info
-            );
-        } else {
-            this.isMultiPort = true;
-            SpessaLog.info(`%cMIDI Ports detected!`, ConsoleColors.recognized);
-        }
-
         // MIDI name
         if (!nameDetected && this.tracks.length > 0) {
             if (this.tracks.length > 1) {
@@ -1512,6 +1458,9 @@ export class BasicMIDI {
             );
         });
 
+        // After the timeline, the port detection walks it
+        this.determinePorts();
+
         // Invalidate raw name if empty
         if (this.binaryName?.length === 0) {
             this.binaryName = undefined;
@@ -1525,5 +1474,163 @@ export class BasicMIDI {
             ConsoleColors.recognized
         );
         SpessaLog.groupEnd();
+    }
+
+    /**
+     * Finds each track's starting MIDI port, the channel offsets of the ports that play notes,
+     * and if the file is multi-port.
+     */
+    private determinePorts() {
+        // Determine ports
+        // Every track starts on its first MIDI Port event, tracks without notes too.
+        // Testcase: ABBA_-_The_Winner_Takes_It_All.mid (MuseScore writes the port event
+        // After the channel setup it applies to, and puts setups for other ports on tracks without notes)
+        for (const track of this.tracks) {
+            track.port =
+                track.events.find((e) => PortTracker.isPortEvent(e))?.data[0] ??
+                -1;
+        }
+        // Note:
+        // A track without notes that names a port where nothing plays (no note track uses it)
+        // Has its voice messages and part SysEx dropped, even when it holds a setup meant for another port.
+        //
+        // (Testcase: Cueshe - Bakit 1.mid sends device NRPNs on ports 12 and 13), and before, it corrupted port A.
+        // The one file that lost setup this way had it for an external guitar synth (Testcase: buildabridge.mid).
+        //
+        // When a note track has no port event: it goes to the lowest port that plays notes,
+        // Not to the port a setup-only track names (the old code did the same, it gave such tracks no port at all).
+        // Only ports that play notes get channels, in the order the sequencer meets them:
+        // The starting ports of the tracks with notes, then the other ports in the time order of their first note.
+        // A port a track switches to without playing a note there gets nothing (a stray port event at the end)
+        let portOffset = 0;
+        this.portChannelOffsetMap = [];
+        const addPort = (port: number) => {
+            if (this.portChannelOffsetMap[port] !== undefined) return;
+            this.portChannelOffsetMap[port] = portOffset;
+            portOffset += 16;
+        };
+        // The ports each track plays notes on
+        const playedPorts = this.tracks.map((track) => {
+            const played = new Set<number>();
+            PortTracker.walkTrack(track, (e, port) => {
+                if (port !== -1 && isNoteOn(e)) played.add(port);
+                return false;
+            });
+            return played;
+        });
+        for (const [i, track] of this.tracks.entries()) {
+            if (playedPorts[i].has(track.port)) addPort(track.port);
+        }
+        const playingPorts = new Set(playedPorts.flatMap((p) => [...p]));
+        const tracker = new PortTracker(this);
+        for (const { tr: trackNum, ev } of this.timeline) {
+            const e = this.tracks[trackNum].events[ev];
+            if (tracker.update(e, trackNum) || !isNoteOn(e)) continue;
+            const port = tracker.port(trackNum);
+            if (port !== -1) addPort(port);
+        }
+
+        // Attempt to determine ports from track names:
+        // A<num> or PartA<num>
+        // B<num> or PartB<num>
+        // C<num> or PartC<num>
+        // D<num> or PartD<num>
+        // Testcase: Y4002_01.MID
+        if (portOffset === 0) {
+            for (const track of this.tracks) {
+                const n = track.name;
+                let port: number;
+                if (n.includes("PartA") || /^A\d/.test(n)) port = 0;
+                else if (n.includes("PartB") || /^B\d/.test(n)) port = 1;
+                else if (n.includes("PartC") || /^C\d/.test(n)) port = 2;
+                else if (n.includes("PartD") || /^D\d/.test(n)) port = 3;
+                else continue;
+                track.port = port;
+                // Only tracks with notes give the port its channels
+                if (!track.events.some((e) => isNoteOn(e))) continue;
+                this.portChannelOffsetMap[port] = port * 16;
+                playingPorts.add(port);
+            }
+        }
+
+        // Fix empty port channel offsets (do a copy to turn empty slots into undefined so the map goes over them)
+        this.portChannelOffsetMap = [...this.portChannelOffsetMap].map(
+            (o = 0) => o
+        );
+
+        // Fix midi ports:
+        // MIDI tracks without ports will have a value of -1
+        // If all ports have a value of -1, set it to 0,
+        // Otherwise take the first midi port and replace all -1 with it,
+        // Why would we do this?
+        // Some midis (for some reason) specify all channels to port 1 or else,
+        // But leave the conductor track with no port pref.
+        // This makes spessasynth reserve the first 16 channels for the conductor track
+        // (which doesn't play anything!) and use the additional 16 for the actual ports.
+        //
+        // Only ports with notes count, a track without notes may name a port nothing plays on.
+        // Port numbers only route when a track with notes names a port
+        const notePortsDeclared = playingPorts.size > 0;
+        // Note:
+        // Tracks without notes and without a port event use this port too,
+        // So their controllers and program changes apply there.
+        // Checked on about 68,000 MIDI files: 9 multi-port files have such tracks, their setups only reach channels
+        // That do not play, while note-less setup tracks with a port event (MuseScore) need theirs applied.
+        // The lowest port that got channels (a starting port the track switched away from before its notes did not)
+        let defaultPort = Infinity;
+        for (const port of playingPorts) {
+            if (defaultPort > port) defaultPort = port;
+        }
+        if (defaultPort === Infinity) {
+            defaultPort = 0;
+        }
+        for (const track of this.tracks) {
+            if (track.port === -1 || track.port === undefined) {
+                track.port = defaultPort;
+            }
+        }
+
+        // The ports that play notes, the rest get no channels
+        this.notePorts = playingPorts;
+        // No track with notes names a port (or there are no notes): the port numbers say nothing about routing,
+        // So every port uses the first 16 channels like before (a setup track naming port 1 still reaches the notes)
+        if (!notePortsDeclared) {
+            for (const track of this.tracks) {
+                for (const e of track.events) {
+                    if (PortTracker.isPortEvent(e))
+                        this.notePorts.add(e.data[0]);
+                }
+                this.notePorts.add(track.port);
+            }
+        }
+
+        // Add fake port if empty
+        if (this.portChannelOffsetMap.length === 0) {
+            this.portChannelOffsetMap = [0];
+        }
+        // Only the ports that play notes count (the map has fillers for the unused ones),
+        // And ports sharing the first 16 channels are one port
+        const usedOffsets = new Set(
+            [...this.notePorts].map((p) => this.portChannelOffsetMap[p] ?? 0)
+        );
+        this.isMultiPort = usedOffsets.size >= 2;
+
+        // The channels that play notes, routed like the sequencer (stored, the timeline is not always copied)
+        this.usedChannels.clear();
+        const usedTracker = new PortTracker(this);
+        for (const { tr: track, ev } of this.timeline) {
+            const e = this.tracks[track].events[ev];
+            if (usedTracker.update(e, track) || !isNoteOn(e)) continue;
+            const offset = usedTracker.offset(track);
+            if (offset !== undefined)
+                this.usedChannels.add(offset + (e.statusByte & 0xf));
+        }
+        if (this.isMultiPort)
+            SpessaLog.info(`%cMIDI Ports detected!`, ConsoleColors.recognized);
+        else
+            SpessaLog.info(
+                `%cNo additional MIDI Ports detected.`,
+                ConsoleColors.info
+            );
     }
 }

@@ -1,3 +1,4 @@
+import { PortTracker } from "../../src/midi/midi_tools/port_tracker";
 import {
     BasicMIDI,
     type MIDIController,
@@ -34,30 +35,17 @@ const channels = Array.from({ length: channelsAmount }, (_, i) => ({
     firstNoteOn: false
 }));
 
-const ports = mid.tracks.map((t) => t.port);
+// Tracks follow their port events like in the sequencer, tracks without notes too
+const ports = new PortTracker(mid);
 
 let recognized = 0;
 let unrecognized = 0;
-const offsetMap = mid.portChannelOffsetMap;
 const { timeline, tracks } = mid;
 for (const t of timeline) {
     const trackNum = t.tr;
     const event = t.ev;
     const e = tracks[trackNum].events[event];
-    if (
-        e.statusByte === MIDIMessageTypes.midiPort &&
-        mid.tracks[trackNum].channels.size > 0
-    ) {
-        let port = e.data[0];
-        if (offsetMap[port] === undefined) {
-            SpessaLog.warn(
-                `Invalid port ${port} on track ${trackNum}. (No offset found in the MIDI map.`
-            );
-            port = 0;
-        }
-        ports[trackNum] = port;
-        continue;
-    }
+    if (ports.update(e, trackNum)) continue;
     const status = e.statusByte & 0xf0;
     if (
         !(
@@ -71,7 +59,12 @@ for (const t of timeline) {
         continue;
     }
 
-    const channelOffset = offsetMap[ports[trackNum]] || 0;
+    // A port without notes plays nothing, the sequencer drops its voice messages
+    // And its SysEx only applies global parameters (past the last channel here too)
+    const portOffset = ports.offset(trackNum);
+    if (portOffset === undefined && status !== MIDIMessageTypes.systemExclusive)
+        continue;
+    const channelOffset = portOffset ?? channelsAmount;
     switch (status) {
         case MIDIMessageTypes.noteOn: {
             const channel = (e.statusByte & 0x0f) + channelOffset;

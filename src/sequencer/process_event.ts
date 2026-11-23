@@ -2,6 +2,7 @@ import { MIDIMessage } from "../midi/midi_message";
 import { ConsoleColors } from "../utils/other";
 import { SpessaLog } from "../utils/loggin";
 import { readBigEndian } from "../utils/byte_functions/big_endian";
+import { MIDIUtils } from "../midi/midi_tools/midi_utils";
 import type { SpessaSynthSequencer } from "./sequencer";
 import {
     type MIDIController,
@@ -19,26 +20,47 @@ export function processEventInternal(
     event: MIDIMessage,
     trackIndex: number
 ) {
-    const offset =
-        this.midiPortChannelOffsets[this.currentMIDIPorts[trackIndex]] ?? 0;
+    // Undefined for a port without notes: its voice messages are dropped.
+    // Its SysEx lands past the last channel, so only the global parameters (resets, master settings, etc.) apply.
+    // A reset on any port resets the whole device. Verified on 88emu.
+    // Testcase: 43551.KYC.mid (a GS reset for an unused port B resets port A's drum part too)
+    const portOffset = this.ports!.offset(trackIndex);
 
     if (
         this.externalMIDIPlayback && // Do not send meta events
         event.statusByte >= 0x80
     ) {
+        // A port without notes has no channels to send to.
+        // Only fully global SysEx (resets, master settings) still goes out, like the internal playback applies it.
+        // Unrecognized SysEx is intentionally not sent from such a port, though the internal synth gets it.
+        if (portOffset === undefined) {
+            const analyzed =
+                event.statusByte === MIDIMessageTypes.systemExclusive
+                    ? MIDIUtils.analyzeSysEx(event.data)
+                    : [];
+            // Every part must be recognized and none may target a channel
+            if (
+                analyzed.length === 0 ||
+                analyzed.some((r) => r.type === "Other" || "channel" in r)
+            )
+                return;
+        }
         this.sendMIDIMessage(
             // SysEx escape sends its bytes as-is, synth does not parse them
             event.statusByte === MIDIMessageTypes.systemExclusiveEscape
                 ? [...event.data]
                 : [event.statusByte, ...event.data],
-            offset
+            // A global SysEx from a port without notes goes to the first port, it is device-wide anyway
+            portOffset ?? 0
         );
         return;
     }
-    const track = this._midiData!.tracks[trackIndex];
+
+    const offset = portOffset ?? this.synth.midiChannels.length;
     let status: MIDIMessageType;
     let channel = 0;
     if (event.statusByte >= 0x80 && event.statusByte < 0xf0) {
+        if (portOffset === undefined) return;
         // Voice message
         status = (event.statusByte & 0xf0) as MIDIMessageType;
         channel = event.statusByte & 0x0f;
@@ -97,10 +119,6 @@ export function processEventInternal(
         }
 
         case MIDIMessageTypes.controllerChange: {
-            // Empty tracks cannot cc change
-            if (this._midiData!.isMultiPort && track.channels.size === 0) {
-                return;
-            }
             this.synth.controllerChange(
                 channel,
                 event.data[0] as MIDIController,
@@ -110,10 +128,6 @@ export function processEventInternal(
         }
 
         case MIDIMessageTypes.programChange: {
-            // Empty tracks cannot program change
-            if (this._midiData!.isMultiPort && track.channels.size === 0) {
-                return;
-            }
             this.synth.programChange(channel, event.data[0]);
             break;
         }
@@ -167,7 +181,8 @@ export function processEventInternal(
         }
 
         case MIDIMessageTypes.midiPort: {
-            this.assignMIDIPort(trackIndex, event.data[0]);
+            // Tracks without notes switch too, MuseScore puts the channel setups there
+            this.ports!.update(event, trackIndex);
             break;
         }
 

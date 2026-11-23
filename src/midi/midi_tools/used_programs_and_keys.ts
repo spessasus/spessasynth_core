@@ -1,3 +1,4 @@
+import { PortTracker } from "./port_tracker";
 import { SpessaLog } from "../../utils/loggin";
 import { ConsoleColors } from "../../utils/other";
 import {
@@ -126,37 +127,31 @@ export function getUsedProgramsAndKeys<T extends MIDIPatchFull>(
      */
     const usedProgramsAndKeys = new Map<T, Map<number, Set<number>>>();
 
-    const ports = mid.tracks.map((t) => t.port);
+    // Tracks without notes follow their port too, like the sequencer
+    const ports = new PortTracker(mid);
 
-    const offsetMap = mid.portChannelOffsetMap;
     const { timeline, tracks } = mid;
     for (const t of timeline) {
         const trackNum = t.tr;
         const event = t.ev;
         const e = tracks[trackNum].events[event];
 
-        // Do not assign ports to empty tracks
-        // Testcase Cueshe - Bakit 1.mid
-        if (
-            e.statusByte === MIDIMessageTypes.midiPort &&
-            mid.tracks[trackNum].channels.size > 0
-        ) {
-            let port = e.data[0];
-            if (offsetMap[port] === undefined) {
-                SpessaLog.warn(
-                    `Invalid port ${port} on track ${trackNum}. (No offset found in the MIDI map.`
-                );
-                port = 0;
-            }
-            ports[trackNum] = port;
-            continue;
-        }
+        if (ports.update(e, trackNum)) continue;
         const status = e.statusByte < 0xf0 ? e.statusByte & 0xf0 : e.statusByte;
         if (!RELEVANT_STATUSES.has(status)) {
             continue;
         }
 
-        const channelOffset = offsetMap[ports[trackNum]] ?? 0;
+        // A port without notes plays nothing, the sequencer drops its voice messages
+        // And its SysEx only applies global parameters (past the last channel here too)
+        // Testcase: Cueshe - Bakit 1.mid
+        const portOffset = ports.offset(trackNum);
+        if (
+            portOffset === undefined &&
+            status !== MIDIMessageTypes.systemExclusive
+        )
+            continue;
+        const channelOffset = portOffset ?? channels.length;
         switch (status) {
             case MIDIMessageTypes.programChange: {
                 const channel = (e.statusByte & 0xf) + channelOffset;

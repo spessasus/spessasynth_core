@@ -13,8 +13,10 @@ export class MIDITrack {
      */
     public name = "";
     /**
-     * The MIDI port number used by the track.
-     * Will be 0 for non-Multi-Port MIDIs.
+     * The MIDI port number the track starts on (its first MIDI Port event).
+     * MIDI Port events later in the track switch it during playback.
+     * A track without any MIDI Port event uses the lowest port that plays notes (0 if there is none).
+     * This port may play no notes itself, so it can have no entry in {@link BasicMIDI.portChannelOffsetMap}.
      */
     public port = 0;
     /**

@@ -1,3 +1,4 @@
+import { PortTracker } from "../midi_tools/port_tracker";
 import { IndexedByteArray } from "../../utils/indexed_array";
 import { RIFFChunk } from "../../utils/riff_chunk";
 import { getStringBytes } from "../../utils/byte_functions/string";
@@ -47,7 +48,11 @@ interface ChannelStatus {
      * Ensure that we track these and the loop that runs after the tracking doesn't miss them.
      */
     programChangeTrack?: number;
-    programChangeIndex?: number;
+    /**
+     * The first program change event of this channel, kept as the event itself
+     * because inserting events in the track moves the indexes.
+     */
+    programChangeEvent?: MIDIMessage;
 }
 
 /**
@@ -69,8 +74,8 @@ function correctBankOffsetInternal(
      */
     const unwantedSystems: { tNum: number; e: MIDIMessage }[] = [];
 
-    // Ports start at 0 here and are updated by the MIDI port events below
-    const ports = new Array<number>(mid.tracks.length).fill(0);
+    // Tracks follow their MIDI ports like in the sequencer
+    const ports = new PortTracker(mid);
     const channelsAmount = 16 + Math.max(...mid.portChannelOffsetMap);
     const channels: ChannelStatus[] = [];
     for (let i = 0; i < channelsAmount; i++) {
@@ -81,18 +86,23 @@ function correctBankOffsetInternal(
             lastBankLSB: undefined,
             hasBankSelect: false,
             programChangeTrack: undefined,
-            programChangeIndex: undefined
+            programChangeEvent: undefined
         });
     }
 
     mid.iterate((e, trackNum, eventIndexes) => {
-        if (e.statusByte === MIDIMessageTypes.midiPort) {
-            ports[trackNum] = e.data[0];
-            return;
-        }
+        if (ports.update(e, trackNum)) return;
         let status = e.statusByte < 0xf0 ? e.statusByte & 0xf0 : e.statusByte;
         if (!RELEVANT_STATUSES.has(status)) return;
-        const portOffset = mid.portChannelOffsetMap[ports[trackNum]];
+        // A port without notes plays nothing: its voice messages are skipped
+        // And its SysEx only counts for global parameters (past the last channel)
+        const notePortOffset = ports.offset(trackNum);
+        if (
+            notePortOffset === undefined &&
+            status !== MIDIMessageTypes.systemExclusive
+        )
+            return;
+        const portOffset = notePortOffset ?? channelsAmount;
 
         if (status === MIDIMessageTypes.systemExclusive) {
             const syxs = MIDIUtils.analyzeSysEx(e.data);
@@ -131,8 +141,9 @@ function correctBankOffsetInternal(
 
                     case "Controller Change": {
                         // Replace the system exclusive with a regular controller change
-                        // Channel number may be above 15
-                        if (syx.channel >= 16) break;
+                        // Channel number may be above 15, a port without notes is left as is
+                        if (notePortOffset === undefined || syx.channel >= 16)
+                            break;
                         const t = mid.tracks[trackNum];
                         const newEvent = MIDIMessage.controllerChange(
                             e.ticks,
@@ -156,8 +167,9 @@ function correctBankOffsetInternal(
                     }
 
                     case "Program Change": {
-                        // Channel number may be above 15
-                        if (syx.channel >= 16) break;
+                        // Channel number may be above 15, a port without notes is left as is
+                        if (notePortOffset === undefined || syx.channel >= 16)
+                            break;
                         // Replace the system exclusive with a regular program
                         const t = mid.tracks[trackNum];
                         const newEvent = MIDIMessage.programChange(
@@ -232,7 +244,7 @@ function correctBankOffsetInternal(
             // Track the trackNum for optionally adding a bank select
             // Nullish assignment so we track the first change only
             ch.programChangeTrack ??= trackNum;
-            ch.programChangeIndex ??= eventIndexes[trackNum];
+            ch.programChangeEvent ??= e;
 
             if (targetPreset.isGMGSDrum && BankSelectHacks.isSystemXG(system))
                 // GM/GS drums returned, leave as is
@@ -272,40 +284,48 @@ function correctBankOffsetInternal(
 
         // Find the first program change (for the given channel)
         const midiChannel = chNum % 16;
-        // Find track with this channel being used
         const portOffset = Math.floor(chNum / 16) * 16;
-        const port = mid.portChannelOffsetMap.indexOf(portOffset);
-        // Channel can be split across different tracks (example: shop3.mid, musescore)
-        const tracksUsedByChannel = mid.tracks.filter(
-            (t) => t.port === port && t.channels.has(midiChannel)
-        );
-        if (tracksUsedByChannel.length === 0)
+        // The first voice message of this channel, in the first track that plays it on this channel's port.
+        // A channel can be split across different tracks.
+        // Testcase: shop3.mid,
+        // And a track can use the same channel number on another port first
+        let firstTrack: (typeof mid.tracks)[number] | undefined;
+        let firstIndex = -1;
+        for (const track of mid.tracks) {
+            if (!track.channels.has(midiChannel)) continue;
+            firstIndex = PortTracker.walkTrack(
+                track,
+                (e, port) =>
+                    e.statusByte >= 0x80 &&
+                    e.statusByte < 0xf0 &&
+                    (e.statusByte & 0xf) === midiChannel &&
+                    mid.getPortOffset(port) === portOffset
+            );
+            if (firstIndex !== -1) {
+                firstTrack = track;
+                break;
+            }
+        }
+        if (!firstTrack)
             // This channel is not used at all
             continue;
 
-        // Across all tracks this channel is used in, find the index that interests us
         // Check if we tracked a program change
         let foundTrack =
             ch.programChangeTrack === undefined
                 ? undefined
                 : mid.tracks[ch.programChangeTrack];
-        let indexToAdd = ch.programChangeIndex ?? -1;
-        if (!foundTrack) {
+        let indexToAdd =
+            foundTrack && ch.programChangeEvent
+                ? foundTrack.events.indexOf(ch.programChangeEvent)
+                : -1;
+        if (!foundTrack || indexToAdd === -1) {
             // No program change...
             // Add programs if they are missing from the track
             // (need them to activate bank 1 for the embedded soundfont)
-            // Add it to the first track the program is used in
-            const programChangeTrack = tracksUsedByChannel[0];
-            const programIndex = programChangeTrack.events.findIndex(
-                (e) =>
-                    e.statusByte >= 0x80 &&
-                    e.statusByte < 0xf0 &&
-                    (e.statusByte & 0xf) === midiChannel
-            );
-            if (programIndex === -1)
-                // No voices??? skip
-                continue;
-
+            // Add it before the channel's first voice message
+            const programChangeTrack = firstTrack;
+            const programIndex = firstIndex;
             const programTicks = programChangeTrack.events[programIndex].ticks;
             const targetProgram = soundBank.getPreset(
                 {

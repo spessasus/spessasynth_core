@@ -57,11 +57,8 @@ console.info("---");
 
 console.group("--- Used Channels ---");
 
-for (const track of mid.tracks) {
-    console.info(
-        `Track "${track.name}": ${[...track.channels].map((v) => v + mid.portChannelOffsetMap[track.port]).join(", ")}`
-    );
-}
+// The synthesizer channels with the MIDI ports applied, like the sequencer routes them
+console.info([...mid.usedChannels].join(", "));
 
 console.groupEnd();
 console.info("---");

@@ -32,7 +32,7 @@ This meta-event allows for distinguishing events on different ports, effectively
 ## SpessaSynth Implementation
 
 The ports are detected when the MIDI file is parsed ({@link BasicMIDI.portChannelOffsetMap})
-and assigned to the synthesizer channels by the {@link SpessaSynthSequencer} during playback.
+and the {@link SpessaSynthSequencer} adds the synthesizer channels for them when the file is loaded.
 
 Consider reviewing the code responsible for them for details.
 
@@ -43,25 +43,29 @@ It seems to work with various multi-port files and might be helpful for others i
 >
 > This is specific to SpessaSynth’s implementation and may differ in other MIDI tools.
 
-1. During MIDI file parsing, assign the detected MIDI port to each track. Tracks without any channel messages are skipped.
-2. If no port events are found, attempt to detect the ports from the track names:
+1. During MIDI file parsing, assign each track the port of its first Port Prefix meta-message.
+   Tracks without notes get their port too, they often hold the channel setup (MuseScore writes it that way).
+2. If no track with notes has a port event, attempt to detect the ports from the track names:
    `A<num>` or `PartA` is port `0`, `B<num>` or `PartB` is port `1`, and so on up to `D`.
    **This is a different method of achieving multiple ports and MIDI files that use it do not use the meta message.**
-3. Tracks without a port use the lowest port found in the file. If no ports are found at all, default to port `0`.
-4. Assign each port a unique channel offset, incremented by 16 for each port, in the order the ports are first encountered.
+3. Tracks without a port use the lowest port that plays notes. If no ports are found at all, default to port `0`.
+   If no track with notes has a port, the port numbers say nothing about routing and every port uses the first 16 channels.
+4. Give each port that plays notes a unique channel offset, incremented by 16 for each port:
+   first the starting ports the tracks play notes on (in track order), then the other ports in the time order of their first note.
    For example, if the first detected port is `1`, it gets an offset of `0`. The next port gets an offset of `16`, and so on.
-5. During playback, add 16 more channels to the synthesizer for every new port that does not fit into the existing channels.
-6. On encountering a Port Prefix meta-message, update the track’s port to the specified value.
-   Assign an offset to this port as described in step 4 if it does not already have one.
+5. When loading the file, add 16 channels to the synthesizer for every port that does not fit into the existing channels.
+6. On encountering a Port Prefix meta-message, switch the track to the specified port.
 7. For voice and system exclusive messages, add the port offset to the channel number to determine the final channel used.
+8. A port without any notes gets no channels: its voice messages and part-specific system exclusive messages are dropped.
+   Global system exclusive messages (resets, master settings) still apply,
+   where a reset received on any port resets the whole device.
 
 > **Important**
 >
-> If the MIDI track has MIDI port events, the track starts on the declared port from its very first event,
-> even if the port event is not the first one.
-> If a track declares multiple ports, it starts on the last one, then switches when the port events are encountered.
+> If the MIDI track has MIDI port events, the track starts on its first declared port from its very first event,
+> even if the port event is not the first one, then switches when the next port events are encountered.
 >
-> This is a behavior that seems to fix most of MuseScore's MIDI files.
+> This is a behavior that fixes MuseScore's MIDI files, which write the port event after the channel setup it applies to.
 
 ### Example
 

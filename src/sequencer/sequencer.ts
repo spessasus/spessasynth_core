@@ -1,9 +1,7 @@
 import { processEventInternal } from "./process_event";
 import { processTick } from "./process_tick";
-import {
-    assignMIDIPortInternal,
-    loadNewSequenceInternal
-} from "./load_new_sequence";
+import { loadNewSequenceInternal } from "./load_new_sequence";
+import type { PortTracker } from "../midi/midi_tools/port_tracker";
 import { setTimeToInternal } from "./set_time_to";
 import { BasicMIDI } from "../midi/basic_midi";
 import type { SpessaSynthProcessor } from "../synthesizer/processor";
@@ -129,26 +127,10 @@ export class SpessaSynthSequencer {
      */
     protected readonly playingNotes: Map<number, number>[] = [];
     /**
-     * MIDI Port number for each of the MIDI tracks in the current sequence.
+     * Follows the MIDI port of each track in the current sequence.
      * @internal
      */
-    protected currentMIDIPorts: number[] = [];
-    /**
-     * This is used to assign new MIDI port offsets to new ports.
-     * @internal
-     */
-    protected midiPortChannelOffset = 0;
-    /**
-     * Channel offsets for each MIDI port.
-     * Stored as:
-     * Record<midi port, channel offset>
-     *     @internal
-     */
-    protected midiPortChannelOffsets: Record<number, number> = {};
-    /**
-     * @internal
-     */
-    protected assignMIDIPort = assignMIDIPortInternal.bind(this);
+    protected ports?: PortTracker;
     /**
      * @internal
      */
@@ -627,6 +609,13 @@ export class SpessaSynthSequencer {
         );
         // Not length - 1 since we want to mark the track as finished
         this.index = idx === -1 ? m.timeline.length : idx;
+
+        // Put the tracks on the ports they have at the loop start, the soft loop skips the seek
+        this.ports!.reset();
+        for (let i = 0; i < this.index; i++) {
+            const { tr, ev } = m.timeline[i];
+            this.ports!.update(m.tracks[tr].events[ev], tr);
+        }
 
         // Correct tempo
         // Some softy-looped files (example: th06_06.mid) have slightly mismatched tempos

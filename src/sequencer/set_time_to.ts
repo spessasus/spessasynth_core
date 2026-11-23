@@ -129,7 +129,7 @@ export function setTimeToInternal(
 
     const { timeline, tracks } = this._midiData;
     // Start with the same ports as a fresh playback, MIDI port events update them
-    this.currentMIDIPorts = tracks.map((t) => t.port);
+    this.ports!.reset();
 
     while (true) {
         // Find the next event
@@ -157,9 +157,17 @@ export function setTimeToInternal(
         }
 
         // Keep in mind midi ports to determine the channel!
-        // Use the current port, like the playback does
-        const portOffset =
-            this.midiPortChannelOffsets[this.currentMIDIPorts[trackIndex]] ?? 0;
+        // Use the current port, like the playback does.
+        // A port without notes: its voice messages go nowhere (the playback drops them too),
+        // And its SysEx lands past the last channel, so only the global parameters apply
+        const notePortOffset: number | undefined =
+            this.ports!.offset(trackIndex);
+        const dropped =
+            notePortOffset === undefined &&
+            event.statusByte >= 0x80 &&
+            event.statusByte < 0xf0;
+        const portOffset: number =
+            notePortOffset ?? this.synth.midiChannels.length;
         const channel = statusChannel + portOffset;
 
         // Ensure that the channel is always there (ports may be added during the seek)
@@ -167,7 +175,8 @@ export function setTimeToInternal(
 
         const ch = channels[channel];
 
-        switch (status) {
+        // A dropped message goes to the default case, where the playback drops it
+        switch (dropped ? undefined : status) {
             // Skip note messages
             case MIDIMessageTypes.noteOn: {
                 // Always track the last note, even if portamento isn't applied.
@@ -236,10 +245,6 @@ export function setTimeToInternal(
             }
 
             case MIDIMessageTypes.controllerChange: {
-                // Empty tracks cannot controller change
-                if (this._midiData.isMultiPort && track.channels.size === 0)
-                    break;
-
                 const controller = event.data[0] as MIDIController;
                 const value = event.data[1];
 
