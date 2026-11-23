@@ -30,7 +30,5 @@ export {
     SoundBankCloner,
     DEFAULT_SOUND_BANK_CLONE_OPTIONS
 } from "./basic_soundbank/sound_bank_cloner";
-export {
-    SoundBankLoader,
-    DEFAULT_SOUND_BANK_LOAD_OPTIONS
-} from "./sound_bank_loader";
+export * as SoundBankLoader from "./sound_bank_loader";
+export { DEFAULT_SOUND_BANK_LOAD_OPTIONS } from "./sound_bank_load_options";

@@ -3,7 +3,7 @@
 The code here is responsible for parsing the SoundFont2/DLS file and
 providing an easy way to get the data out.
 
-- `sound_bank_loader.ts` is the entry point to loading sound bank files.
+- `sound_bank_loader.ts` is the entry point to loading sound bank files (`SoundBankLoader`), its default options are in `sound_bank_load_options.ts`.
 
 - `basic_soundbank` folder contains the classes that represent a sound bank file.
 

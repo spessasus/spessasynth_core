@@ -60,7 +60,7 @@ import { yamahaSystemExclusive } from "./audio_engine/system_exclusive/yamaha";
 import { BasicSoundBank } from "../soundbank/basic_soundbank/basic_soundbank";
 import { fillWithDefaults } from "../utils/fill_with_defaults";
 import { DEFAULT_SYNTH_OPTIONS } from "./audio_engine/synth_processor_options";
-import { SoundBankLoader } from "../soundbank/sound_bank_loader";
+import * as SoundBankLoader from "../soundbank/sound_bank_loader";
 import {
     applySnapshot,
     getSynthesizerSnapshot,
