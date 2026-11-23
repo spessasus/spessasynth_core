@@ -6,7 +6,7 @@ import type {
     MIDIPatchFull
 } from "../../soundbank/basic_soundbank/midi_patch";
 import * as MIDIPatchTools from "../../soundbank/basic_soundbank/midi_patch_tools";
-import * as BankSelectHacks from "../../utils/midi_hacks";
+import * as BankSelectHacks from "../../utils/bank_select_hacks";
 import type { SoundBankManagerListEntry, SynthesizerPatch } from "../types";
 import { UserDrumSet } from "./user_drum_set";
 import { GS_USER_DRUM_1, GS_USER_DRUM_2 } from "./synth_constants";

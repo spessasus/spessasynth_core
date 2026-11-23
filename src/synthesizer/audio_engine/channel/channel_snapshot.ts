@@ -1,5 +1,5 @@
 import type { MIDIPatchFull } from "../../../soundbank/basic_soundbank/midi_patch";
-import * as DrumParameterUtils from "../../../midi/drum_parameters";
+import * as DrumParameterUtils from "../../../midi/drum_parameter_utils";
 import type { MIDIChannel } from "./midi_channel";
 import type { ChannelGenerators } from "./awe32_nrpn";
 import type { ChannelSystemParameter } from "./parameters/system";

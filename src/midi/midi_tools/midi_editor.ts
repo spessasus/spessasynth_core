@@ -10,7 +10,7 @@ import * as MIDIPatchTools from "../../soundbank/basic_soundbank/midi_patch_tool
 import type { MIDISystem } from "../../soundbank/types";
 import type { ChannelMIDIParameter } from "../../synthesizer/audio_engine/channel/parameters/midi";
 import type { GlobalMIDIParameter } from "../../synthesizer/audio_engine/parameters/midi";
-import * as BankSelectHacks from "../../utils/midi_hacks";
+import * as BankSelectHacks from "../../utils/bank_select_hacks";
 import type { BasicMIDI } from "../basic_midi";
 import {
     type MIDIController,

@@ -27,7 +27,7 @@ import {
 import type { SpessaSynthProcessor } from "../../processor";
 import { ModulatorControllerSources } from "../../../soundbank/enums";
 import type { MIDIPatch } from "../../../soundbank/basic_soundbank/midi_patch";
-import * as BankSelectHacks from "../../../utils/midi_hacks";
+import * as BankSelectHacks from "../../../utils/bank_select_hacks";
 import {
     applySnapshot,
     type ChannelSnapshot,
@@ -49,7 +49,7 @@ import type { MIDISystem } from "../../../soundbank/types";
 import type { MIDIController } from "../../../midi/enums";
 
 import type { SynthesizerPatch } from "../../types";
-import * as DrumParameterUtilities from "../../../midi/drum_parameters";
+import * as DrumParameterUtilities from "../../../midi/drum_parameter_utils";
 import type { DrumParameter } from "../../../midi/types";
 import type { CustomChannelVibrato } from "./types";
 import type { Voice } from "../voice/voice";

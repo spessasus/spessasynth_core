@@ -15,7 +15,7 @@ import { getSF2LossesInternal } from "../soundfont/sf2_compatibility";
 import { BasicSample, EmptySample } from "./basic_sample";
 import { BasicInstrument } from "./basic_instrument";
 import { BasicPreset } from "./basic_preset";
-import * as BankSelectHacks from "../../utils/midi_hacks";
+import * as BankSelectHacks from "../../utils/bank_select_hacks";
 
 import type {
     MIDISystem,

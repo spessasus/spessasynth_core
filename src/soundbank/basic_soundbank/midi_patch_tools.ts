@@ -5,7 +5,7 @@
  * @module
  */
 import type { MIDISystem } from "../types";
-import * as BankSelectHacks from "../../utils/midi_hacks";
+import * as BankSelectHacks from "../../utils/bank_select_hacks";
 import { SpessaLog } from "../../utils/loggin";
 import { ConsoleColors } from "../../utils/other";
 import type { MIDIPatch, MIDIPatchFull } from "./midi_patch";

@@ -13,7 +13,7 @@ import {
     MIDIControllers,
     MIDIMessageTypes
 } from "../enums";
-import * as BankSelectHacks from "../../utils/midi_hacks";
+import * as BankSelectHacks from "../../utils/bank_select_hacks";
 import type {
     MIDISystem,
     PresetsWithKeyCombinations
@@ -21,7 +21,7 @@ import type {
 import { ParameterTracker } from "./parameter_tracker";
 import type { MIDIPatchFull } from "../../soundbank/basic_soundbank/midi_patch";
 import type { CallableSoundBank, UserDrumSetParameter } from "../types";
-import * as DrumParameterUtils from "../drum_parameters";
+import * as DrumParameterUtils from "../drum_parameter_utils";
 
 // Message types that can change the used programs and keys
 const RELEVANT_STATUSES = new Set<number>([

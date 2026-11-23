@@ -15,5 +15,5 @@ export type { ModifyMIDIOptions } from "./midi_tools/midi_editor";
 export * from "./midi_tools/midi_builder";
 export { MIDITrack } from "./midi_track";
 export * as MIDIUtils from "./midi_tools/midi_utils";
-export * as DrumParameterUtils from "./drum_parameters";
+export * as DrumParameterUtils from "./drum_parameter_utils";
 export * from "./midi_tools/analyzed_message";

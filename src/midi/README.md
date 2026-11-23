@@ -10,7 +10,7 @@ All public symbols are exported through `exports.ts`.
 - `midi_message.ts` - `MIDIMessage`, a single MIDI event.
 - `enums.ts` - the message types, controllers and RPN/NRPN numbers.
 - `types.ts` - the shared interfaces and types.
-- `drum_parameters.ts` - `DrumParameterUtils`, the default per-note drum parameters.
+- `drum_parameter_utils.ts` - `DrumParameterUtils`, the default per-note drum parameters.
 
 ### Reading
 

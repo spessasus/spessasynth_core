@@ -22,7 +22,7 @@ import {
 } from "../../utils/byte_functions/little_endian";
 import { SpessaLog } from "../../utils/loggin";
 import { BasicSoundBank } from "../basic_soundbank/basic_soundbank";
-import * as BankSelectHacks from "../../utils/midi_hacks";
+import * as BankSelectHacks from "../../utils/bank_select_hacks";
 import { DownloadableSoundsRegion } from "./region";
 import { fillWithDefaults } from "../../utils/fill_with_defaults";
 import { ConnectionBlock } from "./connection_block";

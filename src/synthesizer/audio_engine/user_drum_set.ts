@@ -2,7 +2,7 @@ import type { MIDIPatch } from "../../soundbank/basic_soundbank/midi_patch";
 import type { VoiceParameters } from "../../soundbank/types";
 import type { SynthesizerPatch } from "../types";
 import { GeneratorTypes } from "../../soundbank/basic_soundbank/generator_types";
-import * as DrumParameterUtils from "../../midi/drum_parameters";
+import * as DrumParameterUtils from "../../midi/drum_parameter_utils";
 import type { UserDrumSetParameter } from "../../midi/types";
 
 const FALLBACK_PATCH: MIDIPatch = {
