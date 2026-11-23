@@ -1,7 +1,10 @@
 import { SpessaLog } from "../../utils/loggin";
 import { ConsoleColors } from "../../utils/other";
 import { MIDIMessage } from "../midi_message";
-import { MIDI_DRUM_CHANNEL } from "../../synthesizer/audio_engine/synth_constants";
+import {
+    DEFAULT_SYNTH_MODE,
+    MIDI_DRUM_CHANNEL
+} from "../../synthesizer/audio_engine/synth_constants";
 import {
     type MIDIPatch,
     MIDIPatchTools
@@ -17,6 +20,7 @@ import {
     MIDIMessageTypes
 } from "../enums";
 import { MIDIUtils } from "./midi_utils";
+import { PortTracker } from "./port_tracker";
 import { type ParameterCC, ParameterTracker } from "./parameter_tracker";
 import type { DrumParameter, UserDrumSetParameter } from "../types";
 import { RP_15_RESET_CC_NUMS } from "../../synthesizer/audio_engine/channel/reset";
@@ -74,6 +78,13 @@ export interface ChannelModification {
      * - {@link MIDIPatch} - clear + sets the new patch according to the MIDI system
      *     before the channel's first note-on, re-applying it after every system reset,
      *     effectively locking it to the set value.
+     *
+     * > **Important**
+     * >
+     * > Program changes include bank selects.
+     * > A {@link MIDIPatch} also replaces the file's drum mode changes
+     * > (the `drumMap` MIDI parameter, like GS Use For Rhythm Part).
+     * > Set `midiParams.drumMap` to choose a specific drum map.
      */
     patch?: ClearableParameter<MIDIPatch>;
 
@@ -218,12 +229,15 @@ export interface ModifyMIDIOptions {
      * For the `system` parameter specifically:
      * - `"clear"` - deletes every system reset. Setup is inserted
      *   before the first note on without any reset.
+     *   Without a reset, the synth stays in GS, so the setup and the locked patches are written for GS.
+     *   XG setups are not written.
      * - `specific value` - replaces every system reset with the desired one.
      *
      * > **Note**
      * >
-     * > By default, a meaningful GM reset (one with notes after it)
-     * > is replaced with a GS reset (or `fallbackReset`, if set). Set the `system` parameter to `gm`
+     * > By default, a meaningful GM reset (one with notes after it, or the last reset of a file without notes)
+     * > is replaced with a GS reset (or `fallbackReset`, if set, or XG if only XG setups are requested).
+     * > Set the `system` parameter to `gm`
      * > to keep the GM reset (and replace all others with GM).
      * > This is done to allow the bank selections and other parameters to work.
      */
@@ -299,90 +313,133 @@ export interface ModifyMIDIOptions {
     >;
 
     /**
-     * The system reset to add when the file contains no reset.
+     * The system reset to add when the file has no reset followed by notes
+     * (a file without notes keeps its last reset instead).
      * Unlike `midiParams.system`, existing resets are left untouched.
      * Ignored when `midiParams.system` is set (it takes precedence).
-     * When `midiParams.system` is `"clear"`, no reset is added,
-     * but this still selects the system the setup messages are written for.
+     * When `midiParams.system` is `"clear"`, no reset is added and this is ignored.
      * When unset, the added reset defaults to `"xg"`
      * if only XG setups are requested, otherwise to `"gs"`.
      *
-     * Also, if GM resets are replaced, they use this system if provided, otherwise `"gs"`.
+     * If GM resets are replaced, they use this system if provided,
+     * otherwise `"xg"` if only XG setups are requested, otherwise `"gs"`.
      */
     fallbackReset?: MIDISystem;
 }
 
-// Internal tracking interface
+/**
+ * Internal tracking of a channel's state while editing.
+ */
 interface ChannelStatus {
-    // True while the channel has not yet had its first note on after a reset
+    /**
+     * True while the channel has not yet had its first note on after a reset.
+     */
     isFirstNoteOn: boolean;
-    // RPN/NRPN tracking
+
+    /**
+     * RPN/NRPN tracking.
+     */
     param: ParameterTracker;
-    // If the parameters (MSB, LSB and the first data) were cleared.
-    // Some MIDIs send param MSB once and then set via LSB only, like:
-    // MSB,
-    // LSB,
-    // Data,
-    // LSB,
-    // Data,
-    // And even though it violates MIDI 1.0, it works...
+
+    /**
+     * If the parameters (MSB, LSB and the first data) were cleared.
+     * Some MIDIs send param MSB once and then set via LSB only, like:
+     * MSB,
+     * LSB,
+     * Data,
+     * LSB,
+     * Data,
+     * And even though it violates MIDI 1.0, it works...
+     */
     clearedParams: {
-        // Param selection, per controller.
-        // RPN and NRPN selections are separate,
-        // The synth remembers both (all 4, msb + lsb for both rpn and nrpn).
+        /**
+         * Param selection, per controller.
+         * RPN and NRPN selections are separate,
+         * The synth remembers both (all 4, msb + lsb for both rpn and nrpn).
+         */
         selection: Record<ParameterCC, boolean>;
-        // Data (any)
+
+        /**
+         * Data (any).
+         */
         data: boolean;
     };
 
-    // If the current N/RPN selection was changed from what the file selected, per controller.
-    // Happens when the editor deletes a file's selection (cleared data entry)
-    // Or inserts its own (locked parameters).
-    // A later kept data entry relies on the file's selection,
-    // So the modified ones get reinserted right before it, then they are unchanged again.
-    // This way, nothing is added if nothing uses the selection.
+    /**
+     * If the current N/RPN selection was changed from what the file selected, per controller.
+     * Happens when the editor deletes a file's selection (cleared data entry)
+     * Or inserts its own (locked parameters).
+     * A later kept data entry relies on the file's selection,
+     * So the modified ones get reinserted right before it, then they are unchanged again.
+     * This way, nothing is added if nothing uses the selection.
+     */
     selectionModified: Record<ParameterCC, boolean>;
 
-    // If the output's last selection was registered (RPN).
+    /**
+     * If the output's last selection was registered (RPN).
+     */
     outputRegistered: boolean;
 
-    // Channel number for logging
+    /**
+     * Channel number for logging.
+     */
     readonly channel: number;
 
-    // Currently tracked drum map of this channel
+    /**
+     * Currently tracked drum map of this channel.
+     */
     drumMap: number;
 
-    // Direct copy of channelModification.keyShift
-    // RELATIVE semitones, for easier access rather than having to do "?? 0"
+    /**
+     * The file's last bank select MSB, for the XG drum setup of a program change.
+     */
+    bankMSB: number;
+
+    /**
+     * Direct copy of channelModification.keyShift.
+     * RELATIVE semitones, for easier access rather than having to do "?? 0".
+     */
     readonly relativeKeyShift: number;
 
-    // Direct copy of channelModification.fineTune
-    // RELATIVE cents, for easier access rather than having to do "?? 0"
+    /**
+     * Direct copy of channelModification.fineTune.
+     * RELATIVE cents, for easier access rather than having to do "?? 0".
+     */
     readonly relativeFineTune: number;
 
-    // Since tuning has to be applied relatively,
-    // We need to track the currently applied tuning
+    /**
+     * Since tuning has to be applied relatively,
+     * We need to track the currently applied tuning.
+     */
     currentFineTune: number;
 
-    // Same case as with above, since total tune may exceed the RPN range.
+    /**
+     * Same case as with above, since total tune may exceed the RPN range.
+     */
     currentKeyShift: number;
 
-    // The key shift applied to each held note, indexed by the file's key number.
-    // The current shift may change while a note is held (like relative fine tune crossing 100 cents),
-    // So note offs and poly pressure must use the shift that their corresponding note on had.
-    // Testcase: midi_editor_rpn_fine_tuning.ts (Tuning change while a note is held)
+    /**
+     * The key shift applied to each held note, indexed by the file's key number.
+     * The current shift may change while a note is held (like relative fine tune crossing 100 cents),
+     * So note offs and poly pressure must use the shift that their corresponding note on had.
+     * Testcase: midi_editor_rpn_fine_tuning.ts (Tuning change while a note is held)
+     */
     readonly noteShifts: Int16Array;
 
-    // Pending N/RPN replacement, awaiting a possible second data entry.
-    //
-    // Parameter data arrives as two separate data entries (MSB and LSB, in any order).
-    // We don't know if the second data byte will come, so the first analysis (and potential insert) uses a partial value from the 3-message N/RPN.
-    // Each entry is analyzed independently, so the first insert uses a partial value.
-    // A later data entry for the same parameter updates the inserted messages.
-    // Selections, note-ons and resets all void the record (treated as a new data entry).
+    /**
+     * Pending N/RPN replacement, awaiting a possible second data entry.
+     *
+     * Parameter data arrives as two separate data entries (MSB and LSB, in any order).
+     * We don't know if the second data byte will come, so the first analysis (and potential insert) uses a partial value from the 3-message N/RPN.
+     * Each entry is analyzed independently, so the first insert uses a partial value.
+     * A later data entry for the same parameter updates the inserted messages.
+     * Selections, note-ons and resets all void the record (treated as a new data entry).
+     */
     pendingParam:
         | {
-              // The inserted [paramMSB, paramLSB, dataMSB, dataLSB] events for in-place patching
+              /**
+               * The inserted [paramMSB, paramLSB, dataMSB, dataLSB] events for in-place patching.
+               */
               events: MIDIMessage[];
           }
         | undefined;
@@ -418,15 +475,9 @@ export class MIDIEditor {
     private system;
     private readonly channelStatuses = new Array<ChannelStatus>();
     /**
-     * MIDI port number for the corresponding track
+     * Follows the MIDI port of each track, like the sequencer
      */
-    private readonly midiPorts;
-    /**
-     * MIDI port: channel offset
-     */
-    private midiPortChannelOffsets: Record<number, number> = {};
-
-    private currentPortOffset = 0;
+    private readonly ports;
     /**
      * If the current event is an N/RPN event,
      * this is set, otherwise -1.
@@ -438,11 +489,11 @@ export class MIDIEditor {
      */
     private readonly clearedChannels = new Set<number>();
 
-    private addedReset = false;
-
     /**
      * All resets which will have a setup inserted after them.
-     * A reset is defined as meaningful only if notes come after it.
+     * A reset is defined as meaningful only if:
+     * - It has notes coming after it.
+     * - It is the last reset of a file without notes (such file is defined as a setup file, the state it leaves is the one that matters).
      * For example, many MIDIs do:
      *
      * GM -> GS -> note data
@@ -451,25 +502,11 @@ export class MIDIEditor {
      * Meaningful GM ones are replaced with the fallback reset in-place
      * (unless the `system` parameter is explicitly set).
      */
-    private meaningfulResets = new Array<ResetPosition>();
+    private readonly meaningfulResets = new Array<ResetPosition>();
     /**
-     * The event of the last tracked system reset,
-     * for syncing this.system if it gets replaced later.
-     */
-    private lastReset: MIDIMessage | undefined = undefined;
-    /**
-     * Meaningful GM resets found during the main loop.
-     * A reset is defined as meaningful only if notes come after it.
-     * For example, many MIDIs do:
-     *
-     * GM -> GS -> note data
-     *
-     * That GM reset is meaningless, so it can stay unmodified as the actual reset that matters is GS.
-     * Meaningful ones are replaced with fallback in-place
-     * (unless the `system` parameter is explicitly set).
-     *
-     * Every entry gets replaced with fallback
-     * if the `system` global MIDI param has not been explicitly set.
+     * Meaningful GM resets found during the main loop (see {@link meaningfulResets}).
+     * They are replaced with the GM replacement in place, unless GM is requested,
+     * then they stay GM and only get the setup after them.
      */
     private readonly gmResets: ResetPosition[] = [];
     /**
@@ -483,6 +520,23 @@ export class MIDIEditor {
      * This is used to track meaningful GM resets for replacements
      */
     private isPendingResetGM = false;
+    /**
+     * If the main loop has seen a note on (velocity above 0) anywhere in the file so far.
+     * A file without notes (a setup file) keeps its last pending reset as meaningful after the loop.
+     */
+    private sawNote = false;
+    /**
+     * If new GS effect settings are requested.
+     */
+    private readonly hasGSEffects;
+    /**
+     * If new XG effect settings are requested.
+     */
+    private readonly hasXGEffects;
+    /**
+     * The system replacing meaningful GM resets, when GM is not requested.
+     */
+    private readonly gmReplacement;
 
     /**
      * If the current event has already been deleted.
@@ -566,30 +620,45 @@ export class MIDIEditor {
             }
         }
 
-        this.system =
-            (opts.midiParams?.system === "clear"
-                ? undefined
-                : opts.midiParams?.system) ??
-            opts.fallbackReset ??
-            "gs";
+        this.hasXGEffects =
+            (Boolean(this.xgReverbParams) && this.xgReverbParams !== "clear") ||
+            (Boolean(this.xgChorusParams) && this.xgChorusParams !== "clear") ||
+            (Boolean(this.xgVariationParams) &&
+                this.xgVariationParams !== "clear") ||
+            [...(this.xgInsertionParams?.values() ?? [])].some(
+                (p) => p !== "clear"
+            );
+        this.hasGSEffects =
+            (Boolean(this.gsReverbParams) && this.gsReverbParams !== "clear") ||
+            (Boolean(this.gsChorusParams) && this.gsChorusParams !== "clear") ||
+            (Boolean(this.gsDelayParams) && this.gsDelayParams !== "clear") ||
+            (Boolean(this.gsEqualizerParams) &&
+                this.gsEqualizerParams !== "clear") ||
+            (Boolean(this.gsInsertionParams) &&
+                this.gsInsertionParams !== "clear");
 
-        // It copies midiPorts everywhere else, but here 0 works so DO NOT CHANGE!
-        /**
-         * MIDI port number for the corresponding track
-         */
-        this.midiPorts = midi.tracks.map((t) => t.port);
+        // Are only xg changes requested?
+        const xgOnly = this.hasXGEffects && !this.hasGSEffects;
+        // A meaningful GM reset gets replaced (unless GM is requested).
+        // XG when only XG setups are requested, otherwise they would never be written
+        this.gmReplacement = this.fallbackReset ?? (xgOnly ? "xg" : "gs");
 
-        // Assign port offsets
-        for (let i = 0; i < midi.tracks.length; i++) {
-            this.assignMIDIPort(i, midi.tracks[i].port);
-        }
+        // Before the first reset, the synth is in its default mode (GS), so the editor assumes it too.
+        // A reset added by the editor comes before everything (see apply()),
+        // So this matters for notes before the file's own first reset and for a cleared system.
+        this.system = DEFAULT_SYNTH_MODE;
 
+        this.ports = new PortTracker(midi);
+
+        // The channel offsets come from the file (BasicMIDI.portChannelOffsetMap), like in the sequencer.
         // Always at least 16 channels, even if the file has no notes
-        const channelsAmount = Math.max(16, this.currentPortOffset);
-        for (let i = 0; i < channelsAmount; i++) {
+        const channelCount = 16 + Math.max(...midi.portChannelOffsetMap);
+        while (this.channelStatuses.length < channelCount) {
+            const i = this.channelStatuses.length;
             this.channelStatuses.push({
                 channel: i,
                 isFirstNoteOn: true,
+                // The default drum map before the first reset (GS, like the synth)
                 drumMap:
                     i % 16 === MIDI_DRUM_CHANNEL
                         ? DEFAULT_GS_DRUM_MAP
@@ -616,159 +685,167 @@ export class MIDIEditor {
                 currentFineTune: 0,
                 currentKeyShift: 0,
                 noteShifts: new Int16Array(128),
-                pendingParam: undefined
+                pendingParam: undefined,
+                bankMSB: 0
             });
         }
     }
 
+    /**
+     * Applies the edit to the file, in these steps:
+     * 1. Add a reset at the start if the setup needs one and the file has none that will be kept.
+     * 2. The main loop ({@link handleEvent}) edits every event and collects the meaningful resets.
+     * 3. A file without notes keeps its last reset as meaningful.
+     * 4. Meaningful GM resets are replaced (or kept if GM is requested).
+     * 5. A cleared system has no resets left, so the setup goes in once on the first track.
+     * 6. The setup goes in after every meaningful reset.
+     */
     public apply() {
-        // Go through all events one by one and perform the initial edit
-        this.midi.iterate(this.handleEvent.bind(this));
-
-        // Now the global setup
-        if (this.midiParams?.system === "gm") {
-            // Explicit GM lock: meaningful GM resets stay GM,
-            // But setups still go after them.
-            for (const gmReset of this.gmResets) {
-                this.meaningfulResets.push({
-                    event: gmReset.event,
-                    track: gmReset.track,
-                    system: "gm"
-                });
-            }
-        } else {
-            // Replace the collected meaningful GM resets with fallback, in place.
-            const replacedEvents = new Set<MIDIMessage>();
-            for (const gmReset of this.gmResets) {
-                const events = this.midi.tracks[gmReset.track].events;
-                const index = events.indexOf(gmReset.event);
-                if (index === -1) {
-                    continue;
-                }
-                const fallback = this.fallbackReset ?? "gs";
-                SpessaLog.info(
-                    `%cReplacing meaningful GM reset with ${fallback.toUpperCase()}!`,
-                    ConsoleColors.info
-                );
-                const replaced = MIDIUtils.reset(gmReset.event.ticks, fallback);
-                events[index] = replaced;
-                replacedEvents.add(gmReset.event);
-                // All GM resets here are meaningful
-                this.meaningfulResets.push({
-                    event: replaced,
-                    track: gmReset.track,
-                    system: fallback
-                });
-            }
-            // If the last reset was a replaced GM, then we are now in the fallback.
-            if (
-                this.lastReset !== undefined &&
-                replacedEvents.has(this.lastReset)
-            ) {
-                this.system = this.fallbackReset ?? "gs";
-            }
+        // A file without tracks has nothing to edit
+        if (this.midi.tracks.length === 0) {
+            SpessaLog.groupEnd();
+            return;
         }
+        const requestedSystem = this.midiParams?.system;
 
-        // Check for a reset and insert one, only if we have setups to apply after it.
-        if (
-            // Firstly there can't be another one.
-            !this.addedReset &&
+        // Step 1: add a missing reset.
+        // It goes in before the main loop, so the loop treats it like the file's own:
+        // The channel setups after it are written for its system,
+        // And the first note makes it meaningful, so the global setup goes after it.
+        const needsReset =
             // A cleared system never gets a replacement reset.
-            this.midiParams?.system !== "clear" &&
+            requestedSystem !== "clear" &&
             // An explicitly requested system always needs its reset.
-            (this.midiParams?.system !== undefined ||
+            (requestedSystem !== undefined ||
                 this.fallbackReset !== undefined ||
-                // Effects need reset too
-                (this.gsReverbParams && this.gsReverbParams !== "clear") ||
-                (this.gsChorusParams && this.gsChorusParams !== "clear") ||
-                (this.gsDelayParams && this.gsDelayParams !== "clear") ||
-                (this.gsEqualizerParams &&
-                    this.gsEqualizerParams !== "clear") ||
-                (this.gsInsertionParams &&
-                    this.gsInsertionParams !== "clear") ||
-                (this.xgReverbParams && this.xgReverbParams !== "clear") ||
-                (this.xgChorusParams && this.xgChorusParams !== "clear") ||
-                (this.xgVariationParams &&
-                    this.xgVariationParams !== "clear") ||
-                [...(this.xgInsertionParams?.values() ?? [])].some(
-                    (p) => p !== "clear"
+                // Locked global parameters are written in the setup after a reset
+                Object.entries(this.midiParams ?? {}).some(
+                    ([param, v]) =>
+                        param !== "system" && v !== undefined && v !== "clear"
                 ) ||
-                // User drum as well
-                this.userDrumSetParams?.size ||
+                // Effects need reset too
+                this.hasGSEffects ||
+                this.hasXGEffects ||
+                // User drum as well, only if something is set (removing needs no reset)
+                [...(this.userDrumSetParams?.values() ?? [])].some(
+                    (set) =>
+                        set !== "clear" &&
+                        [...set.values()].some(
+                            (note) =>
+                                note !== "clear" &&
+                                // PitchFine is not a thing in GS, it's never written
+                                Object.entries(note).some(
+                                    ([param, v]) =>
+                                        param !== "pitchFine" &&
+                                        v !== undefined &&
+                                        v !== "clear"
+                                )
+                        )
+                ) ||
                 // Add only when we have changes, removing them does not warrant the need for a gs reset.
                 [...this.channelChanges.values()].some(
                     (c) => c.patch && c.patch !== "clear"
-                ))
-        ) {
-            // There's no reset, add it on the first track at the first index after all meta messages
-            let index = 0;
-            const firstTrack = this.midi.tracks[0];
-            while (
-                index < firstTrack.events.length &&
-                firstTrack.events[index].statusByte < MIDIMessageTypes.noteOff
-            ) {
-                index++;
-            }
-            // Add the requested system or GS.
-            // Default to XG when only XG setups are requested,
-            // Otherwise the XG branch of generateSetup would never run.
-            const hasXG =
-                (this.xgReverbParams !== undefined &&
-                    this.xgReverbParams !== "clear") ||
-                (this.xgChorusParams !== undefined &&
-                    this.xgChorusParams !== "clear") ||
-                (this.xgVariationParams !== undefined &&
-                    this.xgVariationParams !== "clear") ||
-                [...(this.xgInsertionParams?.values() ?? [])].some(
-                    (p) => p !== "clear"
-                );
-            const hasGS =
-                (this.gsReverbParams !== undefined &&
-                    this.gsReverbParams !== "clear") ||
-                (this.gsChorusParams !== undefined &&
-                    this.gsChorusParams !== "clear") ||
-                (this.gsDelayParams !== undefined &&
-                    this.gsDelayParams !== "clear") ||
-                (this.gsEqualizerParams !== undefined &&
-                    this.gsEqualizerParams !== "clear") ||
-                (this.gsInsertionParams !== undefined &&
-                    this.gsInsertionParams !== "clear");
-            const targetSystem =
-                this.midiParams?.system ??
-                this.fallbackReset ??
-                (hasXG && !hasGS ? "xg" : "gs");
-            const event = MIDIUtils.reset(0, targetSystem);
-            firstTrack.addEvents(index, event);
-            // The only reset means that it is always meaningful
-            this.meaningfulResets.push({
-                track: 0,
-                event,
-                system: targetSystem
+                ));
+        if (needsReset) {
+            // Look for a reset that the main loop keeps, using the main loop's rules:
+            // - A reset followed by a note on (a meaningful reset),
+            // - Or any reset in a file without notes (a setup file keeps its last reset).
+            // Notes on cleared channels don't count, they get deleted.
+            // To know a note's channel, the track ports are followed like the main loop does.
+            const ports = new PortTracker(this.midi);
+            let sawReset = false;
+            let sawNote = false;
+            let meaningful = false;
+            // Not the timeline: the main loop iterates the live tracks, so this must too
+            this.midi.iterate((e, track) => {
+                // Done once a meaningful reset is found, port events only move their track
+                if (meaningful || ports.update(e, track)) return;
+                // The sequencer applies resets from any port, notes only play on ports that have notes
+                const portOffset = ports.offset(track);
+                if (
+                    e.statusByte === MIDIMessageTypes.systemExclusive &&
+                    MIDIUtils.analyzeSysEx(e.data).some(
+                        (r) =>
+                            r.type === "Global MIDI Param" &&
+                            r.parameter === "system"
+                    )
+                ) {
+                    sawReset = true;
+                } else if (
+                    portOffset !== undefined &&
+                    (e.statusByte & 0xf0) === MIDIMessageTypes.noteOn &&
+                    e.data[1] > 0 &&
+                    !this.clearedChannels.has((e.statusByte & 0xf) + portOffset)
+                ) {
+                    sawNote = true;
+                    // A reset followed by a note on
+                    meaningful = sawReset;
+                }
             });
-            this.system = targetSystem;
-            SpessaLog.info(
-                `%c${targetSystem} reset not detected. Adding it.`,
-                ConsoleColors.info
-            );
+            // A meaningful reset or a setup file is kept, so no reset gets added
+            const hasKeptReset = meaningful || (sawReset && !sawNote);
+            if (!hasKeptReset) {
+                // A requested system, or the GM replacement (the fallback, XG for XG-only effects, otherwise GS)
+                const system = requestedSystem ?? this.gmReplacement;
+                this.midi.tracks[0].addEvents(
+                    this.firstTrackIndexAt(0),
+                    MIDIUtils.reset(0, system)
+                );
+                SpessaLog.info(
+                    `%c${system} reset not detected. Adding it.`,
+                    ConsoleColors.info
+                );
+            }
         }
 
-        // Cleared system: every reset was deleted,
-        // So there is nothing to add the setup to.
-        // Insert the locked setup once on the first track instead.
-        if (this.midiParams?.system === "clear") {
+        // Step 2: go through all events one by one and perform the initial edit
+        this.midi.iterate(this.handleEvent.bind(this));
+
+        // Step 3: a file without notes (a setup file) gets the setup after its last reset.
+        // A GM one is handled like a meaningful GM reset,
+        // The synth ignores GS and XG setups in GM mode.
+        //
+        // Note:
+        // GM always gets replaced. Even when the setup only has things GM can carry,
+        // As this approach is simpler and GS acts like GM with no special messages.
+        if (!this.sawNote && this.pendingReset !== undefined) {
+            if (this.isPendingResetGM) this.gmResets.push(this.pendingReset);
+            else this.meaningfulResets.push(this.pendingReset);
+            this.pendingReset = undefined;
+        }
+
+        // Step 4: the meaningful GM resets.
+        // With GM requested they stay GM and only get the setup after them,
+        // Otherwise they are replaced in place with the GM replacement.
+        for (const gmReset of this.gmResets) {
+            if (requestedSystem === "gm") {
+                this.meaningfulResets.push({ ...gmReset, system: "gm" });
+                continue;
+            }
+            const events = this.midi.tracks[gmReset.track].events;
+            const index = events.indexOf(gmReset.event);
+            if (index === -1) continue;
+            const fallback = this.gmReplacement;
+            SpessaLog.info(
+                `%cReplacing meaningful GM reset with ${fallback.toUpperCase()}!`,
+                ConsoleColors.info
+            );
+            const replaced = MIDIUtils.reset(gmReset.event.ticks, fallback);
+            events[index] = replaced;
+            this.meaningfulResets.push({
+                event: replaced,
+                track: gmReset.track,
+                system: fallback
+            });
+        }
+
+        // Step 5: cleared system. Every reset was deleted, so there is nothing to add the setup to.
+        // Insert the locked setup once on the first track instead, right before the first note.
+        if (requestedSystem === "clear") {
             const targetTicks = Math.max(0, this.midi.firstNoteOn);
             const output = this.generateSetup(targetTicks, this.system);
             if (output.length > 0) {
-                let index = 0;
-                const firstTrack = this.midi.tracks[0];
-                // On the first message that is not a meta message.
-                while (
-                    index < firstTrack.events.length &&
-                    firstTrack.events[index].statusByte <
-                        MIDIMessageTypes.noteOff
-                ) {
-                    index++;
-                }
+                const index = this.firstTrackIndexAt(targetTicks);
                 SpessaLog.info(
                     `%cInserting setup without a reset on track %c0%c on index %c${index}%c!`,
                     ConsoleColors.recognized,
@@ -777,10 +854,11 @@ export class MIDIEditor {
                     ConsoleColors.value,
                     ConsoleColors.recognized
                 );
-                firstTrack.addEvents(index, ...output);
+                this.midi.tracks[0].addEvents(index, ...output);
             }
         }
 
+        // Step 6: the setup after every meaningful reset
         for (const reset of this.meaningfulResets) {
             const index = this.midi.tracks[reset.track].events.indexOf(
                 reset.event
@@ -803,23 +881,24 @@ export class MIDIEditor {
         SpessaLog.groupEnd();
     }
 
-    private assignMIDIPort(trackNum: number, port: number) {
-        // Do not assign ports to empty tracks
-
-        if (this.midi.tracks[trackNum].channels.size === 0) return;
-
-        // Assign new 16 channels if the port is not occupied yet
-        if (this.currentPortOffset === 0) {
-            this.currentPortOffset += 16;
-            this.midiPortChannelOffsets[port] = 0;
-        }
-
-        if (this.midiPortChannelOffsets[port] === undefined) {
-            this.midiPortChannelOffsets[port] = this.currentPortOffset;
-            this.currentPortOffset += 16;
-        }
-
-        this.midiPorts[trackNum] = port;
+    /**
+     * Finds where an inserted reset or setup goes on the first track:
+     * after everything before the tick and the meta events at it,
+     * so it comes before the first voice message or SysEx at that tick and the track stays sorted.
+     * @param ticks The tick of the inserted events.
+     * @returns The index to insert at.
+     */
+    private firstTrackIndexAt(ticks: number) {
+        const events = this.midi.tracks[0].events;
+        let index = 0;
+        while (
+            index < events.length &&
+            (events[index].ticks < ticks ||
+                (events[index].ticks === ticks &&
+                    events[index].statusByte < MIDIMessageTypes.noteOff))
+        )
+            index++;
+        return index;
     }
 
     /**
@@ -829,8 +908,14 @@ export class MIDIEditor {
      */
     private addEventsBefore(...events: MIDIMessage[]) {
         const track = this.trackNum;
+        // After deleting the current event, the index points at the event before it,
+        // So the current event's place is one further
+        const offset = this.currentEventDeleted ? 1 : 0;
         for (const item of events) {
-            this.midi.tracks[track].addEvents(this.eventIndexes[track], item);
+            this.midi.tracks[track].addEvents(
+                this.eventIndexes[track] + offset,
+                item
+            );
             // Update event indexes
             this.eventIndexes[track]++;
             this.trackInsertedSelection(item);
@@ -873,7 +958,7 @@ export class MIDIEditor {
         )
             return;
         const portOffset =
-            this.midiPortChannelOffsets[this.midiPorts[this.trackNum]] ?? 0;
+            this.ports.offset(this.trackNum) ?? this.channelStatuses.length;
         const ch = this.channelStatuses[(e.statusByte & 0xf) + portOffset];
         if (!ch) return;
         ch.selectionModified[cc] =
@@ -1012,18 +1097,23 @@ export class MIDIEditor {
         this.eventIndexes = eventIndexes;
         this.currentParameterChannel = -1;
 
-        if (e.statusByte === MIDIMessageTypes.midiPort) {
-            this.assignMIDIPort(trackNum, e.data[0]);
-            return;
-        }
-        // Only process voice + system exclusive messages
+        // Port events move their track (tracks without notes too, MuseScore puts the channel setups there).
+        // Otherwise only process voice + system exclusive messages
         if (
+            this.ports.update(e, trackNum) ||
             e.statusByte < MIDIMessageTypes.noteOff ||
             e.statusByte > MIDIMessageTypes.systemExclusive
         )
             return;
-        const portOffset =
-            this.midiPortChannelOffsets[this.midiPorts[trackNum]] ?? 0;
+        // A port without notes plays nothing, its voice messages are left alone (the sequencer drops them).
+        // Its SysEx lands past the last channel, so only the global parameters count, like in the sequencer
+        const notePortOffset = this.ports.offset(trackNum);
+        if (
+            notePortOffset === undefined &&
+            e.statusByte !== MIDIMessageTypes.systemExclusive
+        )
+            return;
+        const portOffset = notePortOffset ?? this.channelStatuses.length;
 
         const status = e.statusByte & 0xf0;
         const midiChannel = e.statusByte & 0xf;
@@ -1053,6 +1143,7 @@ export class MIDIEditor {
                     );
                     break;
                 }
+                this.sawNote = true;
                 // A first note after a reset makes it meaningful, track for replacement
                 if (this.pendingReset !== undefined) {
                     if (this.isPendingResetGM) {
@@ -1105,6 +1196,13 @@ export class MIDIEditor {
                     this.deleteCurrentEvent();
                     return;
                 }
+                this.addEventsAfter(
+                    ...this.trackXGDrumSetup(
+                        channel,
+                        BankSelectHacks.selectsXGDrumKit(channelStatus.bankMSB),
+                        e
+                    )
+                );
                 break;
             }
 
@@ -1137,6 +1235,46 @@ export class MIDIEditor {
 
             case MIDIMessageTypes.systemExclusive: {
                 const syxs = MIDIUtils.analyzeSysEx(e.data);
+                // A User Drum Set bulk dump sets many notes at once.
+                // Only its locked entries get removed, the rest is written back as single messages in the same order
+                // (up to 128 messages for one packet, only when something in it is locked).
+                // That is only exact when it is not the flags packet (its internal bit has no real time message)
+                // And uses the default device ID, which the single messages are written with.
+                //
+                // TODO: Other dumps are deleted whole when anything in them is locked.
+                // So their unlocked entries are lost too. Splitting them needs the device ID in the written messages.
+                if (
+                    syxs.length > 1 &&
+                    e.data[1] === 0x10 &&
+                    (e.data[5] & 0x0f) !== 0x6 &&
+                    syxs.every((s) => s.type === "User Drum Setup")
+                ) {
+                    const kept = syxs.filter(
+                        (s) =>
+                            !this.isUserDrumLocked(
+                                s.drumSet,
+                                s.midiNote,
+                                s.parameter
+                            )
+                    );
+                    if (kept.length < syxs.length) {
+                        this.deleteCurrentEvent();
+                        this.addEventsBefore(
+                            ...kept.map((s) =>
+                                MIDIUtils.setUserDrumParameter(
+                                    e.ticks,
+                                    s.drumSet,
+                                    s.midiNote,
+                                    s.parameter,
+                                    s.value as never
+                                )
+                            )
+                        );
+                    }
+                    return;
+                }
+                // Drum map locks to write again, inserted after all the results (inserting moves the current index)
+                const relock = new Array<MIDIMessage>();
                 for (const syx of syxs) {
                     if (this.currentEventDeleted) return;
                     // Clear channel sysExes too
@@ -1266,6 +1404,19 @@ export class MIDIEditor {
 
                                 return;
                             }
+                            const sysExChannel = syx.channel + portOffset;
+                            relock.push(
+                                ...this.trackXGDrumSetup(
+                                    sysExChannel,
+                                    BankSelectHacks.selectsXGDrumKit(
+                                        this.channelStatuses[sysExChannel]
+                                            .bankMSB
+                                    ),
+                                    // Intentional: a block B part (17 and up) does not get its locked drum map written again.
+                                    // The written message addresses channel % 16 on this track's port, so it would hit the wrong part
+                                    syx.channel < 16 ? e : undefined
+                                )
+                            );
                             break;
                         }
 
@@ -1303,34 +1454,20 @@ export class MIDIEditor {
                         }
 
                         case "User Drum Setup": {
-                            const params = this.userDrumSetParams?.get(
-                                syx.drumSet
-                            );
-                            if (!params) return;
-                            // Clear whole drum set?
-                            if (params === "clear") {
-                                // BEGONE!
-                                this.deleteCurrentEvent();
-                                return;
-                            }
-                            const noteParams = params.get(syx.midiNote);
-                            // Clear this note?
-                            if (noteParams === "clear") {
-                                // BEGONE!
-                                this.deleteCurrentEvent();
-                                return;
-                            }
-
-                            // Clear this parameter on this note?
-                            // Either clear or set value clears it
-                            if (noteParams?.[syx.parameter] !== undefined) {
-                                // BEGONE!
+                            if (
+                                this.isUserDrumLocked(
+                                    syx.drumSet,
+                                    syx.midiNote,
+                                    syx.parameter
+                                )
+                            ) {
                                 this.deleteCurrentEvent();
                                 return;
                             }
                         }
                     }
                 }
+                if (!this.currentEventDeleted) this.addEventsAfter(...relock);
                 return;
             }
         }
@@ -1343,22 +1480,53 @@ export class MIDIEditor {
     ) {
         const channelStatus = this.channelStatuses[channel];
         if (!channelStatus) return;
-        // Track the drum map
-        if (data.parameter === "drumMap") {
-            channelStatus.drumMap = data.value;
-        }
         const channelChange = this.channelChanges.get(channel);
-        if (!channelChange) return;
 
         // Locked, remove
         // The first note on inserts the locked value with the relative tune added, so we delete it here
-        if (channelChange.midiParams?.[data.parameter] !== undefined) {
+        if (channelChange?.midiParams?.[data.parameter] !== undefined) {
             this.deleteCurrentEvent();
             return;
         }
-
+        // A locked patch owns the drum mode too, like bank select.
+        // A cleared patch only removes program changes and bank selects, the drum mode stays
+        if (
+            data.parameter === "drumMap" &&
+            channelChange?.patch &&
+            channelChange.patch !== "clear"
+        ) {
+            this.deleteCurrentEvent();
+            return;
+        }
+        // Track the drum map, only if the message stays
+        if (data.parameter === "drumMap") {
+            // Like the synth's part mode on XG (and GM2): the bank follows the mode
+            // Before the next program change, and the XG drum part refuses to turn melodic
+            if (BankSelectHacks.isSystemXG(this.system)) {
+                const isDrum = data.value !== MELODIC_MAP;
+                if (
+                    !isDrum &&
+                    this.system === "xg" &&
+                    channel % 16 === MIDI_DRUM_CHANNEL
+                )
+                    return;
+                if (!isDrum)
+                    channelStatus.bankMSB = BankSelectHacks.getDefaultBank(
+                        this.system
+                    );
+                else if (!BankSelectHacks.isXGDrum(channelStatus.bankMSB))
+                    channelStatus.bankMSB = BankSelectHacks.getDrumBank(
+                        this.system
+                    );
+            }
+            channelStatus.drumMap = data.value;
+        }
         // Adjust relative tune
-        if (data.parameter !== "fineTune" || !channelStatus.relativeFineTune)
+        if (
+            !channelChange ||
+            data.parameter !== "fineTune" ||
+            !channelStatus.relativeFineTune
+        )
             return;
         channelStatus.currentFineTune = data.value;
         // Add the relative fine tune to the existing one
@@ -1424,6 +1592,18 @@ export class MIDIEditor {
         channelStatus.pendingParam = isRPN ? { events: newRPN } : undefined;
     }
 
+    private isUserDrumLocked(
+        drumSet: number,
+        midiNote: number,
+        parameter: keyof UserDrumSetParameter
+    ) {
+        const params = this.userDrumSetParams?.get(drumSet);
+        if (!params) return false;
+        if (params === "clear") return true;
+        const noteParams = params.get(midiNote);
+        return noteParams === "clear" || noteParams?.[parameter] !== undefined;
+    }
+
     private shouldClearChannelDrum(
         channel: number,
         key: number,
@@ -1449,6 +1629,7 @@ export class MIDIEditor {
         key: number,
         parameter: keyof DrumParameter
     ) {
+        // The synth applies map edits to the channels of every port
         for (
             let channel = 0;
             channel < this.channelStatuses.length;
@@ -1486,7 +1667,10 @@ export class MIDIEditor {
                 if (channelChange?.patch) {
                     // BEGONE!
                     this.deleteCurrentEvent();
+                    return;
                 }
+                if (ccNum === MIDIControllers.bankSelect)
+                    channelStatus.bankMSB = value;
                 return;
             }
 
@@ -1797,6 +1981,8 @@ export class MIDIEditor {
                         1
                     )
                 );
+                // Track it, so the file's drum map edits for map 1 get checked against this channel
+                channelStatus.drumMap = 1;
             } else if (
                 !patch.isGMGSDrum &&
                 !BankSelectHacks.isSystemXG(this.system) &&
@@ -1830,6 +2016,12 @@ export class MIDIEditor {
                 desiredBankMSB = BankSelectHacks.getDrumBank(this.system);
                 desiredBankLSB = 0;
             }
+            // The program change below assigns the XG drum setup like the file's own
+            this.trackXGDrumSetup(
+                channel,
+                patch.isGMGSDrum ||
+                    BankSelectHacks.selectsXGDrumKit(desiredBankMSB)
+            );
 
             // Add bank change (MSB first)
             this.addEventsBefore(
@@ -1884,6 +2076,9 @@ export class MIDIEditor {
                     value
                 );
                 this.addEventsBefore(ccChange);
+                // A locked bank select replaces the file's, the next program change uses it
+                if (cc === MIDIControllers.bankSelect)
+                    channelStatus.bankMSB = value;
             }
 
         // Add MIDI parameters
@@ -1919,6 +2114,10 @@ export class MIDIEditor {
                         value
                     )
                 );
+                // A locked drum map is tracked like the file's
+                if (param === "drumMap") {
+                    channelStatus.drumMap = value;
+                }
             }
         }
 
@@ -1970,6 +2169,43 @@ export class MIDIEditor {
         }
     }
 
+    /**
+     * Tracks the XG drum setup a program change assigns, like the synth.
+     * A part in normal mode switched to a drum kit uses Drum Setup 2, and a melodic voice brings it back to normal.
+     * Part 10 keeps Drum Setup 1. A part set to the plain drum mode (no setup) is left alone.
+     * @param channel The channel of the program change.
+     * @param isDrum If the program change selects a drum kit.
+     * @param programChange The file's program change message. A locked drum map is written again after it.
+     * @returns The messages that lock the drum map again, to insert right after the program change.
+     */
+    private trackXGDrumSetup(
+        channel: number,
+        isDrum: boolean,
+        programChange?: MIDIMessage
+    ) {
+        if (this.system !== "xg" || channel % 16 === MIDI_DRUM_CHANNEL)
+            return [];
+        const channelStatus = this.channelStatuses[channel];
+        const drumSetup2 = DEFAULT_XG_DRUM_MAP + 1;
+        let map = channelStatus.drumMap;
+        if (isDrum && map === MELODIC_MAP) map = drumSetup2;
+        else if (!isDrum && map === drumSetup2) map = MELODIC_MAP;
+        if (map === channelStatus.drumMap) return [];
+        // A locked drum map stays locked: it is written again right after the file's program change that switched it
+        const locked = this.channelChanges.get(channel)?.midiParams?.drumMap;
+        if (programChange && locked !== undefined && locked !== "clear") {
+            return MIDIUtils.setChannelMIDIParameter(
+                programChange.ticks,
+                channel % 16,
+                this.system,
+                "drumMap",
+                locked
+            );
+        }
+        channelStatus.drumMap = map;
+        return [];
+    }
+
     private handleReset(system: MIDISystem, e: MIDIMessage) {
         const requested = this.midiParams?.system;
         if (requested === "clear") {
@@ -2008,8 +2244,13 @@ export class MIDIEditor {
             `%c${system.toUpperCase()} system on detected`,
             ConsoleColors.info
         );
-        this.system = system;
-        this.addedReset = true; // Flag as true so reset won't get added
+        // A GM reset with notes after it gets replaced with the fallback after the loop
+        // (unless GM is requested), so the setups use the fallback already
+        const effectiveSystem =
+            system === "gm" && this.midiParams?.system === undefined
+                ? this.gmReplacement
+                : system;
+        this.system = effectiveSystem;
 
         // A new reset makes the previous one meaningless.
         // If it is still present, then it means that that reset had no notes,
@@ -2025,14 +2266,12 @@ export class MIDIEditor {
         // Track it here.
         this.isPendingResetGM = system === "gm";
 
-        this.lastReset =
-            this.midi.tracks[this.trackNum].events[
-                this.eventIndexes[this.trackNum]
-            ];
         // Reset NRPN (accuracy + prevent deletion before reset)
         // Reset tracked drum maps to defaults as well.
         const defaultMap =
-            system === "xg" ? DEFAULT_XG_DRUM_MAP : DEFAULT_GS_DRUM_MAP;
+            effectiveSystem === "xg"
+                ? DEFAULT_XG_DRUM_MAP
+                : DEFAULT_GS_DRUM_MAP;
         for (const ch of this.channelStatuses) {
             ch.param.reset();
             ch.pendingParam = undefined;
@@ -2062,6 +2301,7 @@ export class MIDIEditor {
             // Do not reset noteShifts here, as they will be overwritten by note on when needed
             // Reset means that new "first notes" are here to have the setups inserted
             ch.isFirstNoteOn = true;
+            ch.bankMSB = 0;
         }
     }
 

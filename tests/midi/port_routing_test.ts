@@ -333,6 +333,40 @@ const port = (m: MIDIBuilder, track: number, ticks: number, p: number) =>
     );
 }
 
+// 11. The editor follows the ports too: clearing port B's channel 4 removes the MuseScore-style setup track's
+// Program change (port event after it) and port B's notes, port A's channel 4 stays.
+{
+    const m = new MIDIBuilder({ name: "ports", format: 1 });
+    m.addTrack("A notes", 0);
+    m.programChange(0, 1, 3, 10);
+    m.noteOn(0, 1, 3, 60, 100);
+    m.noteOff(240, 1, 3, 60);
+    m.addTrack("B setup", 1);
+    m.programChange(0, 2, 3, 6);
+    const setup = m.tracks[2];
+    const portIndex = setup.events.findIndex(
+        (e) => e.statusByte === MIDIMessageTypes.midiPort
+    );
+    const portEvent = setup.events[portIndex];
+    setup.deleteEvent(portIndex);
+    setup.pushEvents(portEvent);
+    m.addTrack("B notes", 1);
+    m.noteOn(0, 3, 3, 62, 100);
+    m.noteOff(240, 3, 3, 62);
+    m.flush();
+    const parsed = BasicMIDI.fromArrayBuffer(m.writeMIDI());
+    parsed.modify({ channels: new Map([[16 + 3, "clear"]]) });
+    const voice = (t: number) =>
+        parsed.tracks[t].events.filter(
+            (e) => e.statusByte >= 0x80 && e.statusByte < 0xf0
+        ).length;
+    check(
+        "11. port B's channel is cleared everywhere, port A's channel stays",
+        voice(2) === 0 && voice(3) === 0 && voice(1) === 3,
+        `A ${voice(1)}, B setup ${voice(2)}, B notes ${voice(3)}`
+    );
+}
+
 // 12. A soft loop jump puts the tracks back on the ports they have at the loop start.
 {
     const m = new MIDIBuilder({ name: "ports", format: 1 });
