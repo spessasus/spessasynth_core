@@ -1,46 +1,46 @@
-import { SpessaLog } from "../../utils/loggin";
-import { ConsoleColors } from "../../utils/other";
-import { MIDIMessage } from "../midi_message";
+import { SpessaLog } from "../../../utils/loggin";
+import { ConsoleColors } from "../../../utils/other";
+import { MIDIMessage } from "../../midi_message";
 import {
     DEFAULT_SYNTH_MODE,
     MIDI_DRUM_CHANNEL
-} from "../../synthesizer/audio_engine/synth_constants";
-import type { MIDIPatch } from "../../soundbank/basic_soundbank/midi_patch";
-import * as MIDIPatchTools from "../../soundbank/basic_soundbank/midi_patch_tools";
-import type { MIDISystem } from "../../soundbank/types";
-import type { ChannelMIDIParameter } from "../../synthesizer/audio_engine/channel/parameters/midi";
-import type { GlobalMIDIParameter } from "../../synthesizer/audio_engine/parameters/midi";
-import * as BankSelectHacks from "../../utils/bank_select_hacks";
-import type { BasicMIDI } from "../basic_midi";
+} from "../../../synthesizer/audio_engine/synth_constants";
+import type { MIDIPatch } from "../../../soundbank/basic_soundbank/midi_patch";
+import * as MIDIPatchTools from "../../../soundbank/basic_soundbank/midi_patch_tools";
+import type { MIDISystem } from "../../../soundbank/types";
+import type { ChannelMIDIParameter } from "../../../synthesizer/audio_engine/channel/parameters/midi";
+import type { GlobalMIDIParameter } from "../../../synthesizer/audio_engine/parameters/midi";
+import * as BankSelectHacks from "../../../utils/bank_select_hacks";
+import type { BasicMIDI } from "../../basic_midi";
 import {
     type MIDIController,
     MIDIControllers,
     MIDIMessageTypes
-} from "../enums";
-import * as MIDIUtils from "./midi_utils";
-import { PortTracker } from "./port_tracker";
-import { type ParameterCC, ParameterTracker } from "./parameter_tracker";
-import type { DrumParameter, UserDrumSetParameter } from "../types";
-import { RP_15_RESET_CC_NUMS } from "../../synthesizer/audio_engine/channel/reset";
-import type { AnalyzedMIDIMessage } from "./analyzed_message";
+} from "../../enums";
+import * as MIDIUtils from "../midi_utils";
+import { PortTracker } from "../port_tracker";
+import { type ParameterCC, ParameterTracker } from "../parameter_tracker";
+import type { DrumParameter, UserDrumSetParameter } from "../../types";
+import { RP_15_RESET_CC_NUMS } from "../../../synthesizer/audio_engine/channel/reset";
+import type { AnalyzedMIDIMessage } from "../analyzed_message";
 import {
     DEFAULT_GS_DRUM_MAP,
     DEFAULT_XG_DRUM_MAP,
     GSEqualizerAddressMap,
     GSInsertionAddressMap,
     MELODIC_MAP
-} from "./sysex_data";
+} from "../sysex_data";
 import type {
     GSChorusParameter,
     GSDelayParameter,
     GSEqualizerParameter,
     GSInsertionBlockSnapshot,
     GSReverbParameter
-} from "../../synthesizer/audio_engine/effects/gs/types";
-import type { XGSystemEffectBlockSnapshot } from "../../synthesizer/audio_engine/effects/xg/interface/xg_system_effect_block";
-import type { XGChorusBlockSnapshot } from "../../synthesizer/audio_engine/effects/xg/interface/xg_chorus_block";
-import type { XGVariationBlockSnapshot } from "../../synthesizer/audio_engine/effects/xg/interface/xg_variation_block";
-import type { XGInsertionBlockSnapshot } from "../../synthesizer/audio_engine/effects/xg/interface/xg_insertion_block";
+} from "../../../synthesizer/audio_engine/effects/gs/types";
+import type { XGSystemEffectBlockSnapshot } from "../../../synthesizer/audio_engine/effects/xg/interface/xg_system_effect_block";
+import type { XGChorusBlockSnapshot } from "../../../synthesizer/audio_engine/effects/xg/interface/xg_chorus_block";
+import type { XGVariationBlockSnapshot } from "../../../synthesizer/audio_engine/effects/xg/interface/xg_variation_block";
+import type { XGInsertionBlockSnapshot } from "../../../synthesizer/audio_engine/effects/xg/interface/xg_insertion_block";
 
 /**
  * Represents a value that means "clear this parameter" instead of "replace this parameter with".
