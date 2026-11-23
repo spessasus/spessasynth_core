@@ -1,11 +1,11 @@
 import type { MIDISystem } from "../../soundbank/types";
 import type { BasicSoundBank } from "../../soundbank/basic_soundbank/basic_soundbank";
 import { BasicPreset } from "../../soundbank/basic_soundbank/basic_preset";
-import {
-    type MIDIPatch,
-    type MIDIPatchFull,
-    MIDIPatchTools
+import type {
+    MIDIPatch,
+    MIDIPatchFull
 } from "../../soundbank/basic_soundbank/midi_patch";
+import * as MIDIPatchTools from "../../soundbank/basic_soundbank/midi_patch_tools";
 import * as BankSelectHacks from "../../utils/midi_hacks";
 import type { SoundBankManagerListEntry, SynthesizerPatch } from "../types";
 import { UserDrumSet } from "./user_drum_set";

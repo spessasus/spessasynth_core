@@ -29,11 +29,8 @@ import type {
     SoundFont2WriteOptions
 } from "../types";
 import { GeneratorTypes } from "./generator_types";
-import {
-    type MIDIPatch,
-    type MIDIPatchFull,
-    MIDIPatchTools
-} from "./midi_patch";
+import type { MIDIPatch, MIDIPatchFull } from "./midi_patch";
+import * as MIDIPatchTools from "./midi_patch_tools";
 import {
     DEFAULT_DLS_OPTIONS,
     DownloadableSounds

@@ -6,11 +6,8 @@ import type { BasicSoundBank } from "./basic_soundbank";
 import { Generator } from "./generator";
 import type { GenericRange, VoiceParameters } from "../types";
 import { BasicInstrument } from "./basic_instrument";
-import {
-    type MIDIPatch,
-    type MIDIPatchFull,
-    MIDIPatchTools
-} from "./midi_patch";
+import type { MIDIPatch, MIDIPatchFull } from "./midi_patch";
+import * as MIDIPatchTools from "./midi_patch_tools";
 import {
     ENUMERATED_GENERATORS,
     GeneratorLimits,

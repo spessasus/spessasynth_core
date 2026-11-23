@@ -1,4 +1,4 @@
-import { type MIDIPatch } from "../../soundbank/basic_soundbank/midi_patch";
+import type { MIDIPatch } from "../../soundbank/basic_soundbank/midi_patch";
 import type { VoiceParameters } from "../../soundbank/types";
 import type { SynthesizerPatch } from "../types";
 import { GeneratorTypes } from "../../soundbank/basic_soundbank/generator_types";

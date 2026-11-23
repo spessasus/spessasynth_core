@@ -1,6 +1,7 @@
 export * from "./types";
 export * from "./enums";
 export * from "./basic_soundbank/midi_patch";
+export * as MIDIPatchTools from "./basic_soundbank/midi_patch_tools";
 
 export { Generator } from "./basic_soundbank/generator";
 export {

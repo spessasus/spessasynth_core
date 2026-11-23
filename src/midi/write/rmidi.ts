@@ -15,10 +15,8 @@ import { MIDIControllers, MIDIMessageTypes } from "../enums";
 import type { BasicSoundBank } from "../../soundbank/basic_soundbank/basic_soundbank";
 import type { RMIDInfoData, RMIDInfoFourCC, RMIDIWriteOptions } from "../types";
 import type { BasicMIDI } from "../basic_midi";
-import {
-    type MIDIPatch,
-    MIDIPatchTools
-} from "../../soundbank/basic_soundbank/midi_patch";
+import type { MIDIPatch } from "../../soundbank/basic_soundbank/midi_patch";
+import * as MIDIPatchTools from "../../soundbank/basic_soundbank/midi_patch_tools";
 import { MIDIUtils } from "../midi_tools/midi_utils";
 import { SpessaLog } from "../../utils/loggin";
 import type { MIDISystem } from "../../soundbank/types";

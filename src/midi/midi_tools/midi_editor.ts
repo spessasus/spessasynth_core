@@ -5,10 +5,8 @@ import {
     DEFAULT_SYNTH_MODE,
     MIDI_DRUM_CHANNEL
 } from "../../synthesizer/audio_engine/synth_constants";
-import {
-    type MIDIPatch,
-    MIDIPatchTools
-} from "../../soundbank/basic_soundbank/midi_patch";
+import type { MIDIPatch } from "../../soundbank/basic_soundbank/midi_patch";
+import * as MIDIPatchTools from "../../soundbank/basic_soundbank/midi_patch_tools";
 import type { MIDISystem } from "../../soundbank/types";
 import type { ChannelMIDIParameter } from "../../synthesizer/audio_engine/channel/parameters/midi";
 import type { GlobalMIDIParameter } from "../../synthesizer/audio_engine/parameters/midi";

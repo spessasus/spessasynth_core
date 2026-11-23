@@ -6,10 +6,8 @@ import {
     MIDIMessageTypes
 } from "../midi/enums";
 import type { BasicPreset } from "../soundbank/basic_soundbank/basic_preset";
-import {
-    type MIDIPatch,
-    MIDIPatchTools
-} from "../soundbank/basic_soundbank/midi_patch";
+import type { MIDIPatch } from "../soundbank/basic_soundbank/midi_patch";
+import * as MIDIPatchTools from "../soundbank/basic_soundbank/midi_patch_tools";
 import { IndexedByteArray } from "../utils/indexed_array";
 import { SpessaLog } from "../utils/loggin";
 import { ConsoleColors } from "../utils/other";
