@@ -1,5 +1,5 @@
 import type { MIDISystem } from "../types";
-import { BankSelectHacks } from "../../utils/midi_hacks";
+import * as BankSelectHacks from "../../utils/midi_hacks";
 import { SpessaLog } from "../../utils/loggin";
 import { ConsoleColors } from "../../utils/other";
 

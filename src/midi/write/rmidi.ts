@@ -10,7 +10,7 @@ import {
     GS_USER_DRUM_2,
     MIDI_DRUM_CHANNEL
 } from "../../synthesizer/audio_engine/synth_constants";
-import { BankSelectHacks } from "../../utils/midi_hacks";
+import * as BankSelectHacks from "../../utils/midi_hacks";
 import { MIDIControllers, MIDIMessageTypes } from "../enums";
 import type { BasicSoundBank } from "../../soundbank/basic_soundbank/basic_soundbank";
 import type { RMIDInfoData, RMIDInfoFourCC, RMIDIWriteOptions } from "../types";

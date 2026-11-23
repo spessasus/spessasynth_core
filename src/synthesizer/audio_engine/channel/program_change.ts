@@ -8,7 +8,7 @@ import { UserDrumSet } from "../user_drum_set";
 import { SpessaLog } from "../../../utils/loggin";
 import { DrumParameterUtils } from "../../../midi/drum_parameters";
 import { ConsoleColors } from "../../../utils/other";
-import { BankSelectHacks } from "../../../utils/midi_hacks";
+import * as BankSelectHacks from "../../../utils/midi_hacks";
 import {
     DEFAULT_XG_DRUM_MAP,
     MELODIC_MAP

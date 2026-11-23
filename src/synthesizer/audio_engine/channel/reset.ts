@@ -4,7 +4,7 @@ import {
     DEFAULT_RPN,
     MIDI_DRUM_CHANNEL
 } from "../synth_constants";
-import { BankSelectHacks } from "../../../utils/midi_hacks";
+import * as BankSelectHacks from "../../../utils/midi_hacks";
 import { type MIDIController, MIDIControllers } from "../../../midi/enums";
 import { ModulatorControllerSources } from "../../../soundbank/enums";
 import type { MIDIChannel } from "./midi_channel";

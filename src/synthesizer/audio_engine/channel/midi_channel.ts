@@ -27,7 +27,7 @@ import {
 import type { SpessaSynthProcessor } from "../../processor";
 import { ModulatorControllerSources } from "../../../soundbank/enums";
 import type { MIDIPatch } from "../../../soundbank/basic_soundbank/midi_patch";
-import { BankSelectHacks } from "../../../utils/midi_hacks";
+import * as BankSelectHacks from "../../../utils/midi_hacks";
 import {
     applySnapshot,
     type ChannelSnapshot,

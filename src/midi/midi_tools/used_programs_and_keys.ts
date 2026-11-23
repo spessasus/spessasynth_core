@@ -13,7 +13,7 @@ import {
     MIDIControllers,
     MIDIMessageTypes
 } from "../enums";
-import { BankSelectHacks } from "../../utils/midi_hacks";
+import * as BankSelectHacks from "../../utils/midi_hacks";
 import type {
     MIDISystem,
     PresetsWithKeyCombinations

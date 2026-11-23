@@ -1,5 +1,5 @@
 import { Modulator } from "./modulator";
-import { BankSelectHacks } from "../../utils/midi_hacks";
+import * as BankSelectHacks from "../../utils/midi_hacks";
 
 import { BasicPresetZone } from "./basic_preset_zone";
 import type { BasicSoundBank } from "./basic_soundbank";
