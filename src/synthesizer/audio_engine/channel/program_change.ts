@@ -6,7 +6,7 @@ import {
 } from "../synth_constants";
 import { UserDrumSet } from "../user_drum_set";
 import { SpessaLog } from "../../../utils/loggin";
-import { DrumParameterUtils } from "../../../midi/drum_parameters";
+import * as DrumParameterUtils from "../../../midi/drum_parameters";
 import { ConsoleColors } from "../../../utils/other";
 import * as BankSelectHacks from "../../../utils/midi_hacks";
 import {

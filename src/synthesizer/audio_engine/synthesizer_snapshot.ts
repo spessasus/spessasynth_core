@@ -3,7 +3,7 @@ import type { SpessaSynthProcessor } from "../processor";
 import type { GlobalMIDIParameter } from "./parameters/midi";
 import type { GlobalSystemParameter } from "./parameters/system";
 
-import { DrumParameterUtils } from "../../midi/drum_parameters";
+import * as DrumParameterUtils from "../../midi/drum_parameters";
 import type { UserDrumSetParameter } from "../../midi/types";
 import type {
     GSChorusParameter,

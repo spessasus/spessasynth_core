@@ -49,7 +49,7 @@ import type { MIDISystem } from "../../../soundbank/types";
 import type { MIDIController } from "../../../midi/enums";
 
 import type { SynthesizerPatch } from "../../types";
-import { DrumParameterUtils as DrumParameterUtilities } from "../../../midi/drum_parameters";
+import * as DrumParameterUtilities from "../../../midi/drum_parameters";
 import type { DrumParameter } from "../../../midi/types";
 import type { CustomChannelVibrato } from "./types";
 import type { Voice } from "../voice/voice";

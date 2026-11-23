@@ -10,7 +10,7 @@ import type {
 } from "./midi_editor";
 import type { ChannelMIDIParameter } from "../../synthesizer/audio_engine/channel/parameters/midi";
 import type { GlobalMIDIParameter } from "../../synthesizer/audio_engine/parameters/midi";
-import { DrumParameterUtils } from "../drum_parameters";
+import * as DrumParameterUtils from "../drum_parameters";
 
 /**
  * Modifies the sequence *in-place* according to the locked presets and controllers in the given snapshot.
