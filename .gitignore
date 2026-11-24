@@ -65,6 +65,9 @@ site/
 *.wav
 *.opus
 test.ts
+*.sf2
+*.sf3
+*.sf4
 out.*
 *.patch
 /tests/files/*
