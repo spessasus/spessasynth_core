@@ -3,8 +3,63 @@ import type { MIDISystem } from "../../../soundbank/types";
 import type { GlobalMIDIParameter } from "../../../synthesizer/audio_engine/parameters/midi";
 import * as MIDIUtils from "../midi_utils";
 import type { UserDrumSetParameter } from "../../types";
+import type {
+    AnalyzedSysExMessage,
+    GSInsertionParameterMessage,
+    UserDrumSetupMessage
+} from "../analyzed_message";
 import { GSEqualizerAddressMap, GSInsertionAddressMap } from "../sysex_data";
 import type { ClearableParameter, ModifyMIDIOptions } from "./types";
+import type {
+    GSChorusParameter,
+    GSDelayParameter,
+    GSReverbParameter
+} from "../../../synthesizer/audio_engine/effects/gs/types";
+
+/**
+ * The GS reverb parameters in the order the setup writes them.
+ * A record, so adding or removing a parameter in {@link GSReverbParameter} fails the build until it is listed here.
+ */
+const GS_REVERB_SETUP = {
+    level: true,
+    preLowpass: true,
+    character: true,
+    time: true,
+    delayFeedback: true,
+    preDelayTime: true
+} satisfies Record<keyof GSReverbParameter, true>;
+
+/**
+ * The GS chorus parameters in the order the setup writes them.
+ * A record, so adding or removing a parameter in {@link GSChorusParameter} fails the build until it is listed here.
+ */
+const GS_CHORUS_SETUP = {
+    level: true,
+    preLowpass: true,
+    feedback: true,
+    delay: true,
+    rate: true,
+    depth: true,
+    sendLevelToReverb: true,
+    sendLevelToDelay: true
+} satisfies Record<keyof GSChorusParameter, true>;
+
+/**
+ * The GS delay parameters in the order the setup writes them.
+ * A record, so adding or removing a parameter in {@link GSDelayParameter} fails the build until it is listed here.
+ */
+const GS_DELAY_SETUP = {
+    level: true,
+    preLowpass: true,
+    timeCenter: true,
+    timeRatioLeft: true,
+    timeRatioRight: true,
+    levelCenter: true,
+    levelLeft: true,
+    levelRight: true,
+    feedback: true,
+    sendLevelToReverb: true
+} satisfies Record<keyof GSDelayParameter, true>;
 
 /**
  * Generates a full setup after a reset is encountered.
@@ -25,6 +80,22 @@ export function generateSetup(
     ---
      */
     const output = new Array<MIDIMessage>();
+    // Note: the encoder throws for values that do not fit their message.
+    // Snapshot values come from the synth's effect processors, which clamp every parameter, so they always fit,
+    // And a hand-made out of range value is an error on purpose.
+    // The effects and User Drum Sets are always written as GS or XG,
+    // Only the global MIDI parameters follow the system (Universal for GM)
+    const add = (
+        message: AnalyzedSysExMessage,
+        messageSystem: MIDISystem = "gs"
+    ) => {
+        output.push(
+            ...MIDIUtils.fromAnalyzedMessage(message, {
+                ticks: targetTicks,
+                preferredSystem: messageSystem
+            })
+        );
+    };
 
     // Add MIDI parameters
     const midiParamKeys = Object.keys(
@@ -34,13 +105,13 @@ export function generateSetup(
         if (param === "system") continue;
         const value = options.midiParams?.[param];
         if (value === undefined || value === "clear") continue;
-        output.push(
-            ...MIDIUtils.setGlobalMIDIParameter(
-                targetTicks,
-                system,
-                param,
+        add(
+            {
+                type: "Global MIDI Param",
+                parameter: param,
                 value
-            )
+            },
+            system
         );
     }
 
@@ -48,41 +119,41 @@ export function generateSetup(
     if (system === "xg") {
         if (options.xgReverbParams && options.xgReverbParams !== "clear") {
             const p = options.xgReverbParams;
-            output.push(
-                MIDIUtils.setXGReverbParameter(targetTicks, "type", p.type),
-                MIDIUtils.setXGReverbParameter(targetTicks, "return", p.return),
-                MIDIUtils.setXGReverbParameter(targetTicks, "pan", p.pan)
-            );
+            add({ type: "XG Reverb Param", parameter: "type", value: p.type });
+            add({
+                type: "XG Reverb Param",
+                parameter: "return",
+                value: p.return
+            });
+            add({ type: "XG Reverb Param", parameter: "pan", value: p.pan });
             for (let param = 0; param < p.params.length; param++) {
-                output.push(
-                    MIDIUtils.setXGReverbParameter(
-                        targetTicks,
-                        param,
-                        p.params[param]
-                    )
-                );
+                add({
+                    type: "XG Reverb Param",
+                    parameter: param,
+                    value: p.params[param]
+                });
             }
         }
         if (options.xgChorusParams && options.xgChorusParams !== "clear") {
             const p = options.xgChorusParams;
-            output.push(
-                MIDIUtils.setXGChorusParameter(targetTicks, "type", p.type),
-                MIDIUtils.setXGChorusParameter(targetTicks, "return", p.return),
-                MIDIUtils.setXGChorusParameter(targetTicks, "pan", p.pan),
-                MIDIUtils.setXGChorusParameter(
-                    targetTicks,
-                    "sendToReverb",
-                    p.sendToReverb
-                )
-            );
+            add({ type: "XG Chorus Param", parameter: "type", value: p.type });
+            add({
+                type: "XG Chorus Param",
+                parameter: "return",
+                value: p.return
+            });
+            add({ type: "XG Chorus Param", parameter: "pan", value: p.pan });
+            add({
+                type: "XG Chorus Param",
+                parameter: "sendToReverb",
+                value: p.sendToReverb
+            });
             for (let param = 0; param < p.params.length; param++) {
-                output.push(
-                    MIDIUtils.setXGChorusParameter(
-                        targetTicks,
-                        param,
-                        p.params[param]
-                    )
-                );
+                add({
+                    type: "XG Chorus Param",
+                    parameter: param,
+                    value: p.params[param]
+                });
             }
         }
         if (
@@ -90,43 +161,43 @@ export function generateSetup(
             options.xgVariationParams !== "clear"
         ) {
             const p = options.xgVariationParams;
-            output.push(
-                MIDIUtils.setXGVariationParameter(targetTicks, "type", p.type),
-                MIDIUtils.setXGVariationParameter(
-                    targetTicks,
-                    "return",
-                    p.return
-                ),
-                MIDIUtils.setXGVariationParameter(targetTicks, "pan", p.pan),
-                MIDIUtils.setXGVariationParameter(
-                    targetTicks,
-                    "sendToReverb",
-                    p.sendToReverb
-                ),
-                MIDIUtils.setXGVariationParameter(
-                    targetTicks,
-                    "sendToChorus",
-                    p.sendToChorus
-                ),
-                MIDIUtils.setXGVariationParameter(
-                    targetTicks,
-                    "connection",
-                    p.insertionMode ? "insertion" : "system"
-                ),
-                MIDIUtils.setXGVariationParameter(
-                    targetTicks,
-                    "partNumber",
-                    p.partNumber
-                )
-            );
+            add({
+                type: "XG Variation Param",
+                parameter: "type",
+                value: p.type
+            });
+            add({
+                type: "XG Variation Param",
+                parameter: "return",
+                value: p.return
+            });
+            add({ type: "XG Variation Param", parameter: "pan", value: p.pan });
+            add({
+                type: "XG Variation Param",
+                parameter: "sendToReverb",
+                value: p.sendToReverb
+            });
+            add({
+                type: "XG Variation Param",
+                parameter: "sendToChorus",
+                value: p.sendToChorus
+            });
+            add({
+                type: "XG Variation Param",
+                parameter: "connection",
+                value: p.insertionMode ? "insertion" : "system"
+            });
+            add({
+                type: "XG Variation Param",
+                parameter: "partNumber",
+                value: p.partNumber
+            });
             for (let param = 0; param < p.params.length; param++) {
-                output.push(
-                    MIDIUtils.setXGVariationParameter(
-                        targetTicks,
-                        param,
-                        p.params[param]
-                    )
-                );
+                add({
+                    type: "XG Variation Param",
+                    parameter: param,
+                    value: p.params[param]
+                });
             }
         }
         if (options.xgInsertionParams) {
@@ -137,155 +208,78 @@ export function generateSetup(
                 if (snapshot === "clear") {
                     continue;
                 }
-                output.push(
-                    MIDIUtils.setXGInsertionParameter(
-                        targetTicks,
-                        insertionNumber,
-                        "type",
-                        snapshot.type
-                    ),
-                    MIDIUtils.setXGInsertionParameter(
-                        targetTicks,
-                        insertionNumber,
-                        "partNumber",
-                        snapshot.partNumber
-                    )
-                );
+                add({
+                    type: "XG Insertion Param",
+                    insertionNumber,
+                    parameter: "type",
+                    value: snapshot.type
+                });
+                add({
+                    type: "XG Insertion Param",
+                    insertionNumber,
+                    parameter: "partNumber",
+                    value: snapshot.partNumber
+                });
                 for (let param = 0; param < snapshot.params.length; param++) {
-                    output.push(
-                        MIDIUtils.setXGInsertionParameter(
-                            targetTicks,
-                            insertionNumber,
-                            param,
-                            snapshot.params[param]
-                        )
-                    );
+                    add({
+                        type: "XG Insertion Param",
+                        insertionNumber,
+                        parameter: param,
+                        value: snapshot.params[param]
+                    });
                 }
             }
         }
     } else {
         if (options.gsReverbParams && options.gsReverbParams !== "clear") {
             const p = options.gsReverbParams;
-            output.push(
-                MIDIUtils.setGSReverbParameter(targetTicks, "level", p.level),
-                MIDIUtils.setGSReverbParameter(
-                    targetTicks,
-                    "preLowpass",
-                    p.preLowpass
-                ),
-                MIDIUtils.setGSReverbParameter(
-                    targetTicks,
-                    "character",
-                    p.character
-                ),
-                MIDIUtils.setGSReverbParameter(targetTicks, "time", p.time),
-                MIDIUtils.setGSReverbParameter(
-                    targetTicks,
-                    "delayFeedback",
-                    p.delayFeedback
-                ),
-                MIDIUtils.setGSReverbParameter(
-                    targetTicks,
-                    "preDelayTime",
-                    p.preDelayTime
-                )
-            );
+            for (const parameter of Object.keys(
+                GS_REVERB_SETUP
+            ) as (keyof GSReverbParameter)[]) {
+                add({
+                    type: "GS Reverb Param",
+                    parameter,
+                    value: p[parameter]
+                });
+            }
         }
         if (options.gsChorusParams && options.gsChorusParams !== "clear") {
             const p = options.gsChorusParams;
-            output.push(
-                MIDIUtils.setGSChorusParameter(targetTicks, "level", p.level),
-                MIDIUtils.setGSChorusParameter(
-                    targetTicks,
-                    "preLowpass",
-                    p.preLowpass
-                ),
-                MIDIUtils.setGSChorusParameter(
-                    targetTicks,
-                    "feedback",
-                    p.feedback
-                ),
-                MIDIUtils.setGSChorusParameter(targetTicks, "delay", p.delay),
-                MIDIUtils.setGSChorusParameter(targetTicks, "rate", p.rate),
-                MIDIUtils.setGSChorusParameter(targetTicks, "depth", p.depth),
-                MIDIUtils.setGSChorusParameter(
-                    targetTicks,
-                    "sendLevelToReverb",
-                    p.sendLevelToReverb
-                ),
-                MIDIUtils.setGSChorusParameter(
-                    targetTicks,
-                    "sendLevelToDelay",
-                    p.sendLevelToDelay
-                )
-            );
+            for (const parameter of Object.keys(
+                GS_CHORUS_SETUP
+            ) as (keyof GSChorusParameter)[]) {
+                add({
+                    type: "GS Chorus Param",
+                    parameter,
+                    value: p[parameter]
+                });
+            }
         }
         if (options.gsDelayParams && options.gsDelayParams !== "clear") {
             const p = options.gsDelayParams;
-            output.push(
-                MIDIUtils.setGSDelayParameter(targetTicks, "level", p.level),
-                MIDIUtils.setGSDelayParameter(
-                    targetTicks,
-                    "preLowpass",
-                    p.preLowpass
-                ),
-                MIDIUtils.setGSDelayParameter(
-                    targetTicks,
-                    "timeCenter",
-                    p.timeCenter
-                ),
-                MIDIUtils.setGSDelayParameter(
-                    targetTicks,
-                    "timeRatioLeft",
-                    p.timeRatioLeft
-                ),
-                MIDIUtils.setGSDelayParameter(
-                    targetTicks,
-                    "timeRatioRight",
-                    p.timeRatioRight
-                ),
-                MIDIUtils.setGSDelayParameter(
-                    targetTicks,
-                    "levelCenter",
-                    p.levelCenter
-                ),
-                MIDIUtils.setGSDelayParameter(
-                    targetTicks,
-                    "levelLeft",
-                    p.levelLeft
-                ),
-                MIDIUtils.setGSDelayParameter(
-                    targetTicks,
-                    "levelRight",
-                    p.levelRight
-                ),
-                MIDIUtils.setGSDelayParameter(
-                    targetTicks,
-                    "feedback",
-                    p.feedback
-                ),
-                MIDIUtils.setGSDelayParameter(
-                    targetTicks,
-                    "sendLevelToReverb",
-                    p.sendLevelToReverb
-                )
-            );
+            for (const parameter of Object.keys(
+                GS_DELAY_SETUP
+            ) as (keyof GSDelayParameter)[]) {
+                add({
+                    type: "GS Delay Param",
+                    parameter,
+                    value: p[parameter]
+                });
+            }
         }
         if (
             options.gsEqualizerParams &&
             options.gsEqualizerParams !== "clear"
         ) {
             const p = options.gsEqualizerParams;
-            for (const name of Object.keys(
+            for (const parameter of Object.keys(
                 GSEqualizerAddressMap
             ) as (keyof typeof GSEqualizerAddressMap)[]) {
-                output.push(
-                    MIDIUtils.setGSEqualizerParameter(
-                        targetTicks,
-                        name,
-                        p[name]
-                    )
-                );
+                add({
+                    type: "GS Equalizer Param",
+                    parameter,
+                    value: p[parameter]
+                });
             }
         }
         if (
@@ -298,26 +292,24 @@ export function generateSetup(
             // Type (resets the params and sends)
             // Changed params (255 is the type default)
             // Sends and EFX control
-            output.push(
-                MIDIUtils.setGSInsertionParameter(targetTicks, "type", p.type)
-            );
+            add({
+                type: "GS Insertion Param",
+                parameter: "type",
+                value: p.type
+            });
             for (let param = 0; param < p.params.length; param++) {
                 const value = p.params[param];
                 if (value === 255) continue;
-                output.push(
-                    MIDIUtils.setGSInsertionParameter(targetTicks, param, value)
-                );
+                add({ type: "GS Insertion Param", parameter: param, value });
             }
-            for (const name of Object.keys(
+            for (const parameter of Object.keys(
                 GSInsertionAddressMap
             ) as (keyof typeof GSInsertionAddressMap)[]) {
-                output.push(
-                    MIDIUtils.setGSInsertionParameter(
-                        targetTicks,
-                        name,
-                        p[name]
-                    )
-                );
+                add({
+                    type: "GS Insertion Param",
+                    parameter,
+                    value: p[parameter]
+                } as GSInsertionParameterMessage);
             }
         }
     }
@@ -330,7 +322,9 @@ export function generateSetup(
                     // Note cleared
                     if (noteParams === "clear") continue;
 
-                    for (const [param, value] of Object.entries(noteParams) as {
+                    for (const [parameter, value] of Object.entries(
+                        noteParams
+                    ) as {
                         [K in keyof UserDrumSetParameter]: [
                             K,
                             ClearableParameter<UserDrumSetParameter[K]>
@@ -340,18 +334,16 @@ export function generateSetup(
                         if (
                             value === "clear" ||
                             value === undefined ||
-                            param === "pitchFine"
+                            parameter === "pitchFine"
                         )
                             continue;
-                        output.push(
-                            MIDIUtils.setUserDrumParameter(
-                                targetTicks,
-                                drumSet,
-                                midiNote,
-                                param,
-                                value
-                            )
-                        );
+                        add({
+                            type: "User Drum Setup",
+                            drumSet,
+                            midiNote,
+                            parameter,
+                            value
+                        } as UserDrumSetupMessage);
                     }
                 }
             }

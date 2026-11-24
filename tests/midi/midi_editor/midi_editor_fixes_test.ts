@@ -181,7 +181,16 @@ function newFile() {
     midi.noteOn(0, 1, 3, 38, 100);
     midi.noteOff(240, 1, 3, 38);
     midi.tracks[1].pushEvents(
-        MIDIUtils.setDrumMapParameter(480, 1, "gs", 38, "pitchCoarse", 5)
+        ...MIDIUtils.fromAnalyzedMessage(
+            {
+                type: "Map Drum Setup",
+                drumMap: 1,
+                key: 38,
+                parameter: "pitchCoarse",
+                value: 5
+            },
+            { ticks: 480, preferredSystem: "gs" }
+        )
     );
     midi.noteOn(960, 1, 3, 38, 100);
     midi.noteOff(1200, 1, 3, 38);
@@ -285,12 +294,29 @@ function newFile() {
 {
     const midi = newFile();
     midi.tracks[1].pushEvents(
-        ...MIDIUtils.setChannelMIDIParameter(0, 2, "gs", "drumMap", 0)
+        ...MIDIUtils.fromAnalyzedMessage(
+            {
+                type: "Channel MIDI Param",
+                channel: 2,
+                parameter: "drumMap",
+                value: 0
+            },
+            { ticks: 0, preferredSystem: "gs" }
+        )
     );
     midi.noteOn(0, 1, 2, 36, 100);
     midi.noteOff(240, 1, 2, 36);
     midi.tracks[1].pushEvents(
-        MIDIUtils.setDrumMapParameter(480, 1, "gs", 36, "level", 20)
+        ...MIDIUtils.fromAnalyzedMessage(
+            {
+                type: "Map Drum Setup",
+                drumMap: 1,
+                key: 36,
+                parameter: "level",
+                value: 20
+            },
+            { ticks: 480, preferredSystem: "gs" }
+        )
     );
     midi.noteOn(960, 1, 2, 36, 100);
     midi.flush();
@@ -354,7 +380,15 @@ function newFile() {
 {
     const midi = newFile();
     midi.tracks[1].pushEvents(
-        ...MIDIUtils.setChannelMIDIParameter(0, 9, "gs", "drumMap", 0)
+        ...MIDIUtils.fromAnalyzedMessage(
+            {
+                type: "Channel MIDI Param",
+                channel: 9,
+                parameter: "drumMap",
+                value: 0
+            },
+            { ticks: 0, preferredSystem: "gs" }
+        )
     );
     midi.noteOn(0, 1, 9, 36, 100);
     midi.noteOff(240, 1, 9, 36);
@@ -433,7 +467,16 @@ function newFile() {
     midi.noteOff(240, 2, 0, 38);
     // Map 1 edit sent on port 0
     midi.tracks[1].pushEvents(
-        MIDIUtils.setDrumMapParameter(480, 1, "gs", 38, "level", 20)
+        ...MIDIUtils.fromAnalyzedMessage(
+            {
+                type: "Map Drum Setup",
+                drumMap: 1,
+                key: 38,
+                parameter: "level",
+                value: 20
+            },
+            { ticks: 480, preferredSystem: "gs" }
+        )
     );
     midi.flush();
     midi.modify({
@@ -503,7 +546,15 @@ function newFile() {
     midi.noteOff(240, 1, 2, 36);
     // The file turns the drums off later
     midi.tracks[1].pushEvents(
-        ...MIDIUtils.setChannelMIDIParameter(480, 2, "gs", "drumMap", 0)
+        ...MIDIUtils.fromAnalyzedMessage(
+            {
+                type: "Channel MIDI Param",
+                channel: 2,
+                parameter: "drumMap",
+                value: 0
+            },
+            { ticks: 480, preferredSystem: "gs" }
+        )
     );
     midi.noteOn(960, 1, 2, 36, 100);
     midi.flush();
@@ -599,7 +650,15 @@ function newFile() {
 {
     const midi = newFile();
     midi.tracks[1].pushEvents(
-        ...MIDIUtils.setChannelMIDIParameter(0, 10, "gs", "drumMap", 2)
+        ...MIDIUtils.fromAnalyzedMessage(
+            {
+                type: "Channel MIDI Param",
+                channel: 10,
+                parameter: "drumMap",
+                value: 2
+            },
+            { ticks: 0, preferredSystem: "gs" }
+        )
     );
     midi.noteOn(0, 1, 10, 36, 100);
     midi.flush();
@@ -1028,6 +1087,34 @@ for (const lockPatch of [false, true]) {
         "30. the synth keeps the locked melodic map after the file's bank 127 program change",
         synth.midiChannels[3].midiParameters.drumMap === 0,
         `map ${synth.midiChannels[3].midiParameters.drumMap}`
+    );
+}
+
+// 31. A locked receive channel on the second port is written relative to the port, like the channel.
+// The synth adds the port offset to the received channel, so channel 20 receiving on 20 is written as 4.
+{
+    const midi = newFile();
+    midi.noteOn(480, 1, 4, 60, 100);
+    midi.noteOff(720, 1, 4, 60);
+    midi.addTrack("port 1", 1);
+    midi.noteOn(480, 2, 4, 60, 100);
+    midi.noteOff(720, 2, 4, 60);
+    midi.flush();
+    midi.modify({
+        channels: new Map([[20, { midiParams: { rxChannel: 20 } }]])
+    });
+    const rx = sysExResults(midi)
+        .flatMap(({ results }) => results)
+        .filter(
+            (r) =>
+                r.type === "Channel MIDI Param" && r.parameter === "rxChannel"
+        );
+    check(
+        "31. the locked receive channel is written once, relative to the port",
+        rx.length === 1 &&
+            rx[0].type === "Channel MIDI Param" &&
+            rx[0].value === 4,
+        JSON.stringify(rx)
     );
 }
 

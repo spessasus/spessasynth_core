@@ -294,12 +294,14 @@ export class TrackerMIDITrack {
         if (this.channel === MIDI_DRUM_CHANNEL) {
             // Turn the GS rhythm part into a melodic part, the presets are not drum kits
             setup.push(
-                ...MIDIUtils.setChannelMIDIParameter(
-                    0,
-                    this.channel,
-                    "gs",
-                    "drumMap",
-                    MELODIC_MAP
+                ...MIDIUtils.fromAnalyzedMessage(
+                    {
+                        type: "Channel MIDI Param",
+                        channel: this.channel,
+                        parameter: "drumMap",
+                        value: MELODIC_MAP
+                    },
+                    { ticks: 0, preferredSystem: "gs" }
                 )
             );
         }

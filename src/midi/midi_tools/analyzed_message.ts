@@ -574,30 +574,42 @@ export type MapDrumSetupMessage = {
 export type AnalyzedParameter =
     | ChannelMIDIParameterMessage
     | ChannelDrumSetupMessage
-    | {
-          /**
-           * An unhandled or unrecognized parameter message.
-           */
-          type: "Other";
-      }
-    | {
-          /**
-           * A standard MIDI controller change mapped from an NRPN or parameter.
-           */
-          type: "Controller Change";
-          /**
-           * The MIDI controller being modified.
-           */
-          controller: MIDIController;
-          /**
-           * The 7-bit controller value (0-127).
-           */
-          value: number;
-          /**
-           * The MIDI channel number (it may be above 15).
-           */
-          channel: number;
-      };
+    | OtherMessage
+    | ControllerChangeMessage;
+/**
+ * Represents an unhandled or unrecognized analyzed message.
+ *
+ * @group MIDI.Protocol
+ */
+export interface OtherMessage {
+    /**
+     * An unhandled or unrecognized parameter message.
+     */
+    type: "Other";
+}
+/**
+ * Represents an analyzed controller change, set via NRPN or System Exclusive.
+ *
+ * @group MIDI.Protocol
+ */
+export interface ControllerChangeMessage {
+    /**
+     * A standard MIDI controller change mapped from an NRPN or parameter.
+     */
+    type: "Controller Change";
+    /**
+     * The MIDI controller being modified.
+     */
+    controller: MIDIController;
+    /**
+     * The 7-bit controller value (0-127).
+     */
+    value: number;
+    /**
+     * The MIDI channel number (it may be above 15).
+     */
+    channel: number;
+}
 /**
  * The analysis result of a System Exclusive (SysEx) or (N)RPN MIDI message.
  *
@@ -618,52 +630,70 @@ export type AnalyzedMIDIMessage =
     | XGVariationParameterMessage
     | XGInsertionParameterMessage
     | GlobalMIDIParameterMessage
-    | {
-          [K in keyof UserDrumSetParameter]: {
-              /**
-               * A user drum set parameter setup message.
-               */
-              type: "User Drum Setup";
-              /**
-               * The 0-based user drum set index.
-               */
-              drumSet: number;
-              /**
-               * The MIDI note number within the user drum set.
-               */
-              midiNote: number;
-              /**
-               * The user drum set parameter name.
-               */
-              parameter: K;
-              /**
-               * The value for the user drum set parameter.
-               * `pitchCoarse` is in GS steps, see {@link UserDrumSetParameter.pitchCoarse}.
-               */
-              value: UserDrumSetParameter[K];
-          };
-      }[keyof UserDrumSetParameter]
+    | UserDrumSetupMessage
     | MapDrumSetupMessage
-    | {
-          /**
-           * A MIDI program change message configured via System Exclusive.
-           */
-          type: "Program Change";
-          /**
-           * The MIDI channel number.
-           */
-          channel: number;
-          /**
-           * The MIDI program number (0-127).
-           */
-          value: number;
-      }
-    | {
-          /**
-           * A System Exclusive display data message (e.g., Roland GS or Yamaha XG LCD text or graphic display data).
-           */
-          type: "Display Data";
-      };
+    | ProgramChangeMessage
+    | DisplayDataMessage;
+/**
+ * Represents an analyzed User Drum Set parameter change, set via System Exclusive.
+ *
+ * @group MIDI.Protocol
+ */
+export type UserDrumSetupMessage = {
+    [K in keyof UserDrumSetParameter]: {
+        /**
+         * A user drum set parameter setup message.
+         */
+        type: "User Drum Setup";
+        /**
+         * The 0-based user drum set index (0 or 1).
+         */
+        drumSet: number;
+        /**
+         * The MIDI note number within the user drum set.
+         */
+        midiNote: number;
+        /**
+         * The user drum set parameter name.
+         */
+        parameter: K;
+        /**
+         * The value for the user drum set parameter.
+         * `pitchCoarse` is in GS steps, see {@link UserDrumSetParameter.pitchCoarse}.
+         */
+        value: UserDrumSetParameter[K];
+    };
+}[keyof UserDrumSetParameter];
+/**
+ * Represents an analyzed program change, set via System Exclusive.
+ *
+ * @group MIDI.Protocol
+ */
+export interface ProgramChangeMessage {
+    /**
+     * A MIDI program change message configured via System Exclusive.
+     */
+    type: "Program Change";
+    /**
+     * The MIDI channel number.
+     */
+    channel: number;
+    /**
+     * The MIDI program number (0-127).
+     */
+    value: number;
+}
+/**
+ * Represents an analyzed display data message.
+ *
+ * @group MIDI.Protocol
+ */
+export interface DisplayDataMessage {
+    /**
+     * A System Exclusive display data message (e.g., Roland GS or Yamaha XG LCD text or graphic display data).
+     */
+    type: "Display Data";
+}
 /**
  * The analysis result of a System Exclusive (SysEx) MIDI message.
  *

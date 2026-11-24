@@ -10,6 +10,10 @@ import * as MIDIUtils from "../midi_utils";
 import type { DrumParameter } from "../../types";
 import { DEFAULT_XG_DRUM_MAP, MELODIC_MAP } from "../sysex_data";
 import type { ClearableParameter, EditContext } from "./types";
+import type {
+    ChannelDrumSetupMessage,
+    ChannelMIDIParameterMessage
+} from "../analyzed_message";
 
 /**
  * Inserts the locked state of a channel before its first note on (after a reset).
@@ -63,12 +67,14 @@ export function firstNoteOn(ctx: EditContext, ticks: number, channel: number) {
                 ConsoleColors.value
             );
             ctx.cursor.insertBefore(
-                ...MIDIUtils.setChannelMIDIParameter(
-                    ticks,
-                    midiChannel,
-                    "gs",
-                    "drumMap",
-                    1
+                ...MIDIUtils.fromAnalyzedMessage(
+                    {
+                        type: "Channel MIDI Param",
+                        channel: midiChannel,
+                        parameter: "drumMap",
+                        value: 1
+                    },
+                    { ticks, preferredSystem: "gs" }
                 )
             );
             // Track it, so the file's drum map edits for map 1 get checked against this channel
@@ -85,12 +91,14 @@ export function firstNoteOn(ctx: EditContext, ticks: number, channel: number) {
                 ConsoleColors.value
             );
             ctx.cursor.insertBefore(
-                ...MIDIUtils.setChannelMIDIParameter(
-                    ticks,
-                    midiChannel,
-                    "gs",
-                    "drumMap",
-                    MELODIC_MAP
+                ...MIDIUtils.fromAnalyzedMessage(
+                    {
+                        type: "Channel MIDI Param",
+                        channel: midiChannel,
+                        parameter: "drumMap",
+                        value: MELODIC_MAP
+                    },
+                    { ticks, preferredSystem: "gs" }
                 )
             );
             channelStatus.drumMap = MELODIC_MAP;
@@ -196,12 +204,18 @@ export function firstNoteOn(ctx: EditContext, ticks: number, channel: number) {
             )
                 continue;
             ctx.cursor.insertBefore(
-                ...MIDIUtils.setChannelMIDIParameter(
-                    ticks,
-                    midiChannel,
-                    ctx.system,
-                    param,
-                    value
+                ...MIDIUtils.fromAnalyzedMessage(
+                    {
+                        type: "Channel MIDI Param",
+                        channel: midiChannel,
+                        parameter: param,
+                        // The receive channel is relative to the port, like the channel itself
+                        value:
+                            param === "rxChannel" && value !== -1
+                                ? value % 16
+                                : value
+                    } as ChannelMIDIParameterMessage,
+                    { ticks, preferredSystem: ctx.system }
                 )
             );
             // A locked drum map is tracked like the file's
@@ -214,12 +228,14 @@ export function firstNoteOn(ctx: EditContext, ticks: number, channel: number) {
     // Insert the target fine tune
     if (finalTune !== undefined) {
         ctx.cursor.insertBefore(
-            ...MIDIUtils.setChannelMIDIParameter(
-                ticks,
-                midiChannel,
-                ctx.system,
-                "fineTune",
-                finalTune
+            ...MIDIUtils.fromAnalyzedMessage(
+                {
+                    type: "Channel MIDI Param",
+                    channel: midiChannel,
+                    parameter: "fineTune",
+                    value: finalTune
+                },
+                { ticks, preferredSystem: ctx.system }
             )
         );
     }
@@ -246,13 +262,15 @@ export function firstNoteOn(ctx: EditContext, ticks: number, channel: number) {
             // Parameter cleared
             if (value === "clear" || value === undefined) continue;
             ctx.cursor.insertBefore(
-                ...MIDIUtils.setDrumChannelParameter(
-                    ticks,
-                    midiChannel,
-                    key,
-                    param,
-                    value,
-                    drumPitchStep
+                ...MIDIUtils.fromAnalyzedMessage(
+                    {
+                        type: "Channel Drum Setup",
+                        channel: midiChannel,
+                        key,
+                        parameter: param,
+                        value
+                    } as ChannelDrumSetupMessage,
+                    { ticks, drumPitchStep }
                 )
             );
         }
@@ -285,12 +303,14 @@ export function trackXGDrumSetup(
     // A locked drum map stays locked: it is written again right after the file's program change that switched it
     const locked = ctx.options.channelChanges.get(channel)?.midiParams?.drumMap;
     if (programChange && locked !== undefined && locked !== "clear") {
-        return MIDIUtils.setChannelMIDIParameter(
-            programChange.ticks,
-            channel % 16,
-            ctx.system,
-            "drumMap",
-            locked
+        return MIDIUtils.fromAnalyzedMessage(
+            {
+                type: "Channel MIDI Param",
+                channel: channel % 16,
+                parameter: "drumMap",
+                value: locked
+            },
+            { ticks: programChange.ticks, preferredSystem: ctx.system }
         );
     }
     channelStatus.drumMap = map;

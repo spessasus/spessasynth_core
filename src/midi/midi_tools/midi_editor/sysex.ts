@@ -49,7 +49,9 @@ export function handleSysEx(
     // And uses the default device ID, which the single messages are written with.
     //
     // TODO: Other dumps are deleted whole when anything in them is locked.
-    // So their unlocked entries are lost too. Splitting them needs the device ID in the written messages.
+    // So their unlocked entries are lost too.
+    // Note: the encoder can write the device ID now, using it here (and dropping the 0x10 check)
+    // Is part of the planned partial delete for every dump type.
     if (
         syxs.length > 1 &&
         e.data[1] === 0x10 &&
@@ -68,14 +70,8 @@ export function handleSysEx(
         if (kept.length < syxs.length) {
             deleteCurrentEvent(ctx);
             ctx.cursor.insertBefore(
-                ...kept.map((s) =>
-                    MIDIUtils.setUserDrumParameter(
-                        e.ticks,
-                        s.drumSet,
-                        s.midiNote,
-                        s.parameter,
-                        s.value as never
-                    )
+                ...kept.flatMap((s) =>
+                    MIDIUtils.fromAnalyzedMessage(s, { ticks: e.ticks })
                 )
             );
         }

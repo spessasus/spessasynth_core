@@ -265,6 +265,47 @@ export type SysExAcceptedArray =
     number[] | Uint8Array | Int8Array | Uint8ClampedArray;
 
 /**
+ * Options for encoding an analyzed message with {@link MIDIUtils.fromAnalyzedMessage}.
+ *
+ * @group MIDI.Protocol
+ */
+export interface MIDIEncodeOptions {
+    /**
+     * The preferred system to write a System Exclusive message for, when it exists in more than one system
+     * (global and channel MIDI parameters and drum map setups).
+     *
+     * A message that the system does not have uses the one it has, GS first for `gm` and `gm2`
+     * (like the dry level, which is always XG, or a channel parameter for `gm`, which is GS).
+     *
+     * A message named after GS or XG always uses that system,
+     * except the GS reverb and chorus parameters that GM2 also has (the macros GM2 does not have stay GS),
+     * which use the Universal message for `gm` and `gm2`.
+     *
+     * Messages with a standard channel message form (controllers, programs, RPNs and so on) ignore it.
+     */
+    preferredSystem: MIDISystem;
+    /**
+     * The device ID byte of System Exclusive messages. Leave it undefined for the default:
+     * 16 (`0x10`) for Roland and Yamaha, 127 (`0x7F`, broadcast) for Universal messages.
+     * It is written into whichever message the preferred system picks, so keep it undefined when that can be a Universal one
+     * (the XG master pan, the GM2 reverb and chorus).
+     *
+     * It is very rare that you need to change this.
+     */
+    deviceID: number | undefined;
+    /**
+     * The MIDI tick time of the returned messages.
+     */
+    ticks: number;
+    /**
+     * The drum pitch coarse resolution in semitones, for the drum NRPNs (`Channel Drum Setup` pitch coarse).
+     * 0.5 for GS (SC-88 and above), 1 for XG and the SC-55 drum map (bank LSB 1).
+     * The GS `Map Drum Setup` message always uses 0.5, like the analysis assumes.
+     */
+    drumPitchStep: number;
+}
+
+/**
  * An interface that represents a virtual sound bank which can return a preset.
  *
  * @group Sound Banks

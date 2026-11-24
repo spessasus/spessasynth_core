@@ -91,12 +91,28 @@ const port = (m: MIDIBuilder, track: number, ticks: number, p: number) =>
     port(m, 0, 0, 0);
     m.tracks[0].pushEvents(
         MIDIUtils.reset(0, "gs"),
-        ...MIDIUtils.setChannelMIDIParameter(0, 10, "gs", "drumMap", 2)
+        ...MIDIUtils.fromAnalyzedMessage(
+            {
+                type: "Channel MIDI Param",
+                channel: 10,
+                parameter: "drumMap",
+                value: 2
+            },
+            { ticks: 0, preferredSystem: "gs" }
+        )
     );
     port(m, 0, 0, 1);
     m.tracks[0].pushEvents(
         MIDIUtils.reset(0, "gs"),
-        ...MIDIUtils.setChannelMIDIParameter(0, 10, "gs", "drumMap", 1)
+        ...MIDIUtils.fromAnalyzedMessage(
+            {
+                type: "Channel MIDI Param",
+                channel: 10,
+                parameter: "drumMap",
+                value: 1
+            },
+            { ticks: 0, preferredSystem: "gs" }
+        )
     );
     port(m, 0, 0, 0);
     m.addTrack("A notes", 0);
@@ -185,7 +201,15 @@ const port = (m: MIDIBuilder, track: number, ticks: number, p: number) =>
     port(m, 0, 0, 1);
     m.tracks[0].pushEvents(
         MIDIUtils.reset(0, "gs"),
-        ...MIDIUtils.setChannelMIDIParameter(0, 10, "gs", "drumMap", 2)
+        ...MIDIUtils.fromAnalyzedMessage(
+            {
+                type: "Channel MIDI Param",
+                channel: 10,
+                parameter: "drumMap",
+                value: 2
+            },
+            { ticks: 0, preferredSystem: "gs" }
+        )
     );
     m.addTrack("A notes", 0);
     m.noteOn(480, 1, 0, 60, 100);

@@ -113,12 +113,14 @@ export function handleChannelMIDIParam(
     }
 
     // Build the replacement rpn
-    const newRPN = MIDIUtils.setChannelMIDIParameter(
-        e.ticks,
-        channel % 16,
-        ctx.system,
-        "fineTune",
-        targetTune
+    const newRPN = MIDIUtils.fromAnalyzedMessage(
+        {
+            type: "Channel MIDI Param",
+            channel: channel % 16,
+            parameter: "fineTune",
+            value: targetTune
+        },
+        { ticks: e.ticks, preferredSystem: ctx.system }
     );
     const pending = channelStatus.pendingParam;
 
@@ -392,12 +394,14 @@ export function handleResetAllControllers(ctx: EditContext, channel: number) {
         channelChange.midiParams?.pitchWheel !== "clear"
     ) {
         ctx.cursor.insertAfter(
-            ...MIDIUtils.setChannelMIDIParameter(
-                ticks,
-                channel,
-                ctx.system,
-                "pitchWheel",
-                channelChange.midiParams.pitchWheel
+            ...MIDIUtils.fromAnalyzedMessage(
+                {
+                    type: "Channel MIDI Param",
+                    channel: channel % 16,
+                    parameter: "pitchWheel",
+                    value: channelChange.midiParams.pitchWheel
+                },
+                { ticks, preferredSystem: ctx.system }
             )
         );
     }
@@ -406,12 +410,14 @@ export function handleResetAllControllers(ctx: EditContext, channel: number) {
         channelChange.midiParams?.pressure !== "clear"
     ) {
         ctx.cursor.insertAfter(
-            ...MIDIUtils.setChannelMIDIParameter(
-                ticks,
-                channel,
-                ctx.system,
-                "pressure",
-                channelChange.midiParams.pressure
+            ...MIDIUtils.fromAnalyzedMessage(
+                {
+                    type: "Channel MIDI Param",
+                    channel: channel % 16,
+                    parameter: "pressure",
+                    value: channelChange.midiParams.pressure
+                },
+                { ticks, preferredSystem: ctx.system }
             )
         );
     }

@@ -12,27 +12,13 @@ import {
     RegisteredParameterTypes
 } from "../enums";
 
-import type {
-    DrumParameter,
-    SysExAcceptedArray,
-    UserDrumSetParameter
-} from "../types";
-import type { GlobalMIDIParameter } from "../../synthesizer/audio_engine/parameters/midi";
-import type { ChannelMIDIParameter } from "../../synthesizer/audio_engine/channel/parameters/midi";
+import type { SysExAcceptedArray, MIDIEncodeOptions } from "../types";
 import type { MIDISystem } from "../../soundbank/types";
 import type {
+    AnalyzedMIDIMessage,
     AnalyzedParameter,
     AnalyzedSysExMessage,
-    GSChorusParameterMessage,
-    GSDelayParameterMessage,
-    GSEqualizerParameterMessage,
-    GSInsertionParameterMessage,
-    GSReverbParameterMessage,
-    XGChorusParameterMessage,
-    XGInsertionParameterMessage,
-    XGReverbParameterMessage,
-    XGVariationConnection,
-    XGVariationParameterMessage
+    GSChorusParameterMessage
 } from "./analyzed_message";
 import {
     DEFAULT_GS_DRUM_MAP,
@@ -51,7 +37,7 @@ import {
     PartParamAddressMap,
     XGDrumParamMap
 } from "./sysex_data";
-import { SpessaLog } from "../../utils/loggin";
+import { fillWithDefaults } from "../../utils/fill_with_defaults";
 import type { GSInsertionParameter } from "../../synthesizer/audio_engine/effects/gs/interface/gs_insertion_block";
 import type { GSEqualizerParameter } from "../../synthesizer/audio_engine/effects/gs/interface/gs_equalizer_processor";
 
@@ -224,836 +210,863 @@ export function analyzeNRPN(
 }
 
 /**
- * Returns a MIDI event needed to set the given GS Reverb Parameter.
- * @param ticks The MIDI tick time for the output event.
- * @param parameter The parameter to set, or `"macro"` to select a reverb macro.
- * @param value The value to set it to.
- * @returns The {@link MIDIMessage} needed to set this GS Reverb Parameter.
+ * The default options for {@link fromAnalyzedMessage}.
  */
-export function setGSReverbParameter<
-    P extends GSReverbParameterMessage["parameter"]
->(
-    ticks: number,
-    parameter: P,
-    value: Extract<GSReverbParameterMessage, { parameter: P }>["value"]
+export const DEFAULT_MIDI_ENCODE_OPTIONS: MIDIEncodeOptions = {
+    preferredSystem: "gs",
+    deviceID: undefined,
+    ticks: 0,
+    drumPitchStep: 0.5
+};
+
+/**
+ * Encodes an analyzed message back into MIDI messages.
+ * Analyzing the returned messages gives the same result again
+ * (except random pan off and poly/mono mode, which come back as the controller changes they are written as).
+ *
+ * Standard channel messages are used whenever one exists, on every system:
+ * controller changes, program changes, channel pressure, pitch wheel,
+ * RPNs (pitch wheel range, fine and coarse tuning, modulation depth) and the drum NRPNs.
+ * Everything else is one System Exclusive message, for the preferred system if it has that message.
+ *
+ * Continuous values (volume, pan, tuning, pitch wheel) are rounded and clamped to what their message can hold,
+ * other values that do not fit their message throw.
+ *
+ * > **Note**
+ * >
+ * > Messages that analyze to more than one result (like the GS User Drum Set bulk dump or the GS tone number)
+ * > can not be written back as one message. Encode each result on its own instead.
+ *
+ * > **Warning**
+ * >
+ * > An analyzed message does not record the system it came from.
+ * > To write a result of an XG message back as XG, pass `preferredSystem: "xg"`
+ * > (and `"gm"` for Universal ones), the default is GS.
+ * > This matters for the messages both systems have, like `Map Drum Setup` (the GS map numbers and the XG setup
+ * > numbers overlap) and the part parameters.
+ *
+ * @param message The analyzed message, for example a result of {@link analyzeSysEx} or {@link analyzeRPN}.
+ * @param options The encoding options: the preferred system for System Exclusive messages
+ * that exist in more than one system (a message the system does not have uses the one it has),
+ * the device ID, the tick time and the drum pitch resolution for the drum NRPNs.
+ * @returns The MIDI messages: one channel message, the four controller changes of an RPN or NRPN,
+ * or one System Exclusive message.
+ * @example
+ * ```ts
+ * // GS reverb time, sent to the synthesizer
+ * const [reverb] = MIDIUtils.fromAnalyzedMessage({
+ *     type: "GS Reverb Param",
+ *     parameter: "time",
+ *     value: 80
+ * });
+ * synth.processMessage(reverb);
+ *
+ * // A pitch wheel range of 12 semitones on channel 3 at tick 480 (an RPN), written into a track
+ * track.pushEvents(
+ *     ...MIDIUtils.fromAnalyzedMessage(
+ *         {
+ *             type: "Channel MIDI Param",
+ *             channel: 3,
+ *             parameter: "pitchWheelRange",
+ *             value: 12
+ *         },
+ *         { ticks: 480 }
+ *     )
+ * );
+ * ```
+ * @throws Error if the message can not be encoded at all
+ * (like `Other`, `Display Data`, or a drum parameter that has no NRPN),
+ * a channel message is for a channel above 15 (put it on the port of the channel and pass `channel % 16`,
+ * this includes analyzed GS block B and XG part 17 and up results that have a standard form),
+ * or a value does not fit in it.
+ */
+export function fromAnalyzedMessage(
+    message: AnalyzedMIDIMessage,
+    options: Partial<MIDIEncodeOptions> = DEFAULT_MIDI_ENCODE_OPTIONS
 ) {
-    const a3 = GSReverbAddressMap[parameter];
-    if (a3 === undefined) {
-        throw new Error(`Invalid reverb parameter: ${parameter}`);
+    const { preferredSystem, deviceID, ticks, drumPitchStep } =
+        fillWithDefaults(options, DEFAULT_MIDI_ENCODE_OPTIONS);
+    const name = `${message.type}${"parameter" in message ? ` (${message.parameter})` : ""}`;
+    const channelMessages = encodeChannelMessage(message, ticks, drumPitchStep);
+    if (channelMessages) {
+        return channelMessages;
     }
-    return gsMessage(ticks, 0x40, 0x01, a3, [value]);
+    const data = encodeSysEx(message as AnalyzedSysExMessage, preferredSystem);
+    if (deviceID !== undefined) data[1] = deviceID;
+    // Everything except the closing F7 has to be a 7-bit data byte
+    for (let i = 0; i < data.length - 1; i++) {
+        const byte = data[i];
+        if (!Number.isSafeInteger(byte) || byte < 0 || byte > 0x7f) {
+            throw new Error(
+                `Can not encode ${name}: byte ${i} would be ${byte}, outside of 0-127.`
+            );
+        }
+    }
+    return [MIDIMessage.systemExclusive(ticks, data)];
 }
 
 /**
- * Returns a MIDI event needed to set the given GS Chorus Parameter.
- * @param ticks The MIDI tick time for the output event.
- * @param parameter The parameter to set, or `"macro"` to select a chorus macro.
- * @param value The value to set it to.
- * @returns The {@link MIDIMessage} needed to set this GS Chorus Parameter.
+ * Checks the channel of a channel message.
+ * @param channel The channel.
  */
-export function setGSChorusParameter<
-    P extends GSChorusParameterMessage["parameter"]
->(
-    ticks: number,
-    parameter: P,
-    value: Extract<GSChorusParameterMessage, { parameter: P }>["value"]
-) {
-    const a3 = GSChorusAddressMap[parameter];
-    if (a3 === undefined) {
-        throw new Error(`Invalid chorus parameter: ${parameter}`);
+function checkChannel(channel: number) {
+    if (!Number.isSafeInteger(channel) || channel < 0 || channel > 15) {
+        throw new Error(
+            `Channel ${channel} can not be set with a channel message, ` +
+                "put it on the port of the channel and pass channel % 16."
+        );
     }
-    return gsMessage(ticks, 0x40, 0x01, a3, [value]);
+    return channel;
 }
 
 /**
- * Returns a MIDI event needed to set the given GS Delay Parameter.
- * @param ticks The MIDI tick time for the output event.
- * @param parameter The parameter to set, or `"macro"` to select a delay macro.
- * @param value The value to set it to.
- * @returns The {@link MIDIMessage} needed to set this GS Delay Parameter.
+ * Checks a 14-bit value of a channel message.
+ * @param name The parameter name, for the error.
+ * @param value The value.
  */
-export function setGSDelayParameter<
-    P extends GSDelayParameterMessage["parameter"]
->(
-    ticks: number,
-    parameter: P,
-    value: Extract<GSDelayParameterMessage, { parameter: P }>["value"]
-) {
-    const a3 = GSDelayAddressMap[parameter];
-    if (a3 === undefined) {
-        throw new Error(`Invalid delay parameter: ${parameter}`);
+function check14Bit(name: string, value: number) {
+    if (!Number.isSafeInteger(value) || value < 0 || value > 16_383) {
+        throw new Error(
+            `Can not encode ${name}: ${value} is outside of 0-16383.`
+        );
     }
-    return gsMessage(ticks, 0x40, 0x01, a3, [value]);
+    return value;
 }
 
 /**
- * Returns a MIDI event needed to set the given GS Equalizer Parameter.
- * @param ticks The MIDI tick time for the output event.
- * @param parameter The parameter to set.
- * @param value The value to set it to.
- * @returns The {@link MIDIMessage} needed to set this GS Equalizer Parameter.
+ * Checks a 7-bit value of a channel message.
+ * They are checked before building the message, as its Uint8Array would wrap them.
+ * @param name The value name, for the error.
+ * @param value The value.
  */
-export function setGSEqualizerParameter(
-    ticks: number,
-    parameter: GSEqualizerParameterMessage["parameter"],
-    value: number
-) {
-    const a3 = GSEqualizerAddressMap[parameter];
-    if (a3 === undefined) {
-        throw new Error(`Invalid equalizer parameter: ${parameter}`);
+function check7Bit(name: string, value: number) {
+    if (!Number.isSafeInteger(value) || value < 0 || value > 127) {
+        throw new Error(
+            `Can not encode ${name}: ${value} is outside of 0-127.`
+        );
     }
-    return gsMessage(ticks, 0x40, 0x02, a3, [value]);
+    return value;
 }
 
 /**
- * Returns a MIDI event needed to set the given GS Insertion Parameter.
- * @param ticks The MIDI tick time for the output event.
- * @param parameter The parameter to set: `"type"`, a send level or EFX control name (see {@link GSInsertionParameter}),
- * or a 0-based effect-specific parameter number (0-19).
- * @param value The value to set it to. A boolean for `"sendEQSwitch"`.
- * @returns The {@link MIDIMessage} needed to set this GS Insertion Parameter.
+ * Encodes an analyzed message that has a standard channel message form.
+ * @param msg The analyzed message.
+ * @param ticks The tick time of the messages.
+ * @param drumPitchStep The drum pitch coarse resolution in semitones, for the drum NRPN.
+ * @returns The messages, or undefined if the message has no channel message form.
  */
-export function setGSInsertionParameter(
+function encodeChannelMessage(
+    msg: AnalyzedMIDIMessage,
     ticks: number,
-    parameter: GSInsertionParameterMessage["parameter"],
-    value: number | boolean
+    drumPitchStep: number
 ) {
-    const data = typeof value === "boolean" ? (value ? 1 : 0) : value;
-    switch (parameter) {
-        case "type": {
-            return gsMessage(ticks, 0x40, 0x03, 0x00, [
-                (data >> 8) & 0x7f,
-                data & 0x7f
+    switch (msg.type) {
+        case "Controller Change": {
+            return [
+                MIDIMessage.controllerChange(
+                    ticks,
+                    checkChannel(msg.channel),
+                    check7Bit(
+                        "Controller Change number",
+                        msg.controller
+                    ) as MIDIController,
+                    check7Bit(`Controller Change ${msg.controller}`, msg.value)
+                )
+            ];
+        }
+
+        case "Program Change": {
+            return [
+                MIDIMessage.programChange(
+                    ticks,
+                    checkChannel(msg.channel),
+                    check7Bit("Program Change", msg.value)
+                )
+            ];
+        }
+
+        case "Channel Drum Setup": {
+            const { key, parameter, value } = msg;
+            if (!Object.hasOwn(NRPNDrumParamMap, parameter)) {
+                throw new Error(
+                    `Channel Drum Setup ${parameter} has no NRPN, use Map Drum Setup instead.`
+                );
+            }
+            const coarse =
+                parameter === "pitchCoarse"
+                    ? Math.round(value / drumPitchStep) + 64
+                    : parameter === "pitchFine"
+                      ? Math.round(value) + 64
+                      : value;
+            return MIDIMessage.nonRegisteredParameter(
+                ticks,
+                checkChannel(msg.channel),
+                // The key is ORed into the NRPN number, it has to fit
+                (NRPNDrumParamMap[parameter as NRPNDrumParameter] << 7) |
+                    check7Bit("Channel Drum Setup key", key),
+                // The data entry MSB is the value, like analyzeNRPN reads it
+                check7Bit(
+                    `Channel Drum Setup ${parameter}`,
+                    coarse as number
+                ) << 7
+            );
+        }
+
+        case "Channel MIDI Param": {
+            const name = `Channel MIDI Param ${msg.parameter}`;
+            switch (msg.parameter) {
+                case "pressure": {
+                    return [
+                        MIDIMessage.channelPressure(
+                            ticks,
+                            checkChannel(msg.channel),
+                            check7Bit(name, msg.value)
+                        )
+                    ];
+                }
+
+                case "pitchWheel": {
+                    return [
+                        MIDIMessage.pitchWheel(
+                            ticks,
+                            checkChannel(msg.channel),
+                            fitRound(msg.value, 16_383)
+                        )
+                    ];
+                }
+
+                case "polyMode": {
+                    return [
+                        MIDIMessage.controllerChange(
+                            ticks,
+                            checkChannel(msg.channel),
+                            msg.value
+                                ? MIDIControllers.polyModeOn
+                                : MIDIControllers.monoModeOn,
+                            0
+                        )
+                    ];
+                }
+
+                case "randomPan": {
+                    // Random pan has no channel message, setting the pan turns it off
+                    if (msg.value) return undefined;
+                    return [
+                        MIDIMessage.controllerChange(
+                            ticks,
+                            checkChannel(msg.channel),
+                            MIDIControllers.pan,
+                            64
+                        )
+                    ];
+                }
+
+                case "pitchWheelRange": {
+                    // MSB is semitones, LSB is cents
+                    const totalCents = Math.round(msg.value * 100);
+                    const semitones = Math.floor(totalCents / 100);
+                    return MIDIMessage.registeredParameter(
+                        ticks,
+                        checkChannel(msg.channel),
+                        RegisteredParameterTypes.pitchWheelRange,
+                        check14Bit(
+                            name,
+                            (semitones << 7) | (totalCents - semitones * 100)
+                        )
+                    );
+                }
+
+                case "modulationDepth": {
+                    return MIDIMessage.registeredParameter(
+                        ticks,
+                        checkChannel(msg.channel),
+                        RegisteredParameterTypes.modulationDepth,
+                        // Cents, so data / 128 * 100 is data / 1.28
+                        check14Bit(name, Math.round(msg.value * 1.28))
+                    );
+                }
+
+                case "keyShift": {
+                    return MIDIMessage.registeredParameter(
+                        ticks,
+                        checkChannel(msg.channel),
+                        RegisteredParameterTypes.coarseTuning,
+                        check14Bit(name, (Math.round(msg.value) + 64) << 7)
+                    );
+                }
+
+                case "fineTune": {
+                    return MIDIMessage.registeredParameter(
+                        ticks,
+                        checkChannel(msg.channel),
+                        RegisteredParameterTypes.fineTuning,
+                        // Resolution is 100/8192 cents
+                        fitRound(msg.value * 81.92 + 8192, 16_383)
+                    );
+                }
+
+                default: {
+                    return undefined;
+                }
+            }
+        }
+
+        default: {
+            return undefined;
+        }
+    }
+}
+
+/**
+ * Picks the System Exclusive form of a message for the system.
+ * A message without a form for the system uses the one it has (GS first for `gm` and `gm2`).
+ * @param system The selected system.
+ * @param name The message name, for the error.
+ * @param forms The message for each system that has one. `universal` is used for `gm` and `gm2`.
+ * @returns The message data.
+ */
+function pickForm(
+    system: MIDISystem,
+    name: string,
+    forms: {
+        gs?: () => number[];
+        xg?: () => number[];
+        universal?: () => number[];
+    }
+) {
+    const form =
+        (system === "gs"
+            ? forms.gs
+            : system === "xg"
+              ? forms.xg
+              : forms.universal) ??
+        forms.gs ??
+        forms.xg ??
+        forms.universal;
+    if (!form) {
+        throw new Error(`${name} has no System Exclusive message.`);
+    }
+    return form();
+}
+
+/**
+ * Clamps and rounds a value into the range of a data field.
+ * @param value The value.
+ * @param max The highest value of the field.
+ */
+function fitRound(value: number, max: number) {
+    return Math.max(0, Math.min(max, Math.round(value)));
+}
+
+/**
+ * Splits a value into four nibbles, the format of the GS and XG master tune.
+ * @param value The value.
+ */
+function nibbles(value: number) {
+    return [
+        (value >> 12) & 0x0f,
+        (value >> 8) & 0x0f,
+        (value >> 4) & 0x0f,
+        value & 0x0f
+    ];
+}
+
+/**
+ * A GS part parameter message.
+ * @param channel The channel, 0-15 is block A, 16-31 is block B.
+ * @param block The upper nibble of the second address byte: 1 for patch part, 2 for the controllers and 4 for the tone map.
+ * @param a3 Address 3.
+ * @param data The data bytes.
+ */
+function gsPart(channel: number, block: number, a3: number, data: number[]) {
+    if (!Number.isSafeInteger(channel) || channel < 0 || channel > 31) {
+        throw new Error(`Invalid GS part channel: ${channel}`);
+    }
+    return gs(
+        channel < 16 ? 0x40 : 0x50,
+        (block << 4) | channelToGSPart(channel),
+        a3,
+        data
+    );
+}
+
+/**
+ * A GM2 Global Parameter Control message (reverb and chorus).
+ * @param slot The slot path LSB: 1 for reverb, 2 for chorus.
+ * @param parameter The parameter number.
+ * @param value The value.
+ */
+function gm2GlobalParameter(slot: number, parameter: number, value: number) {
+    return deviceControl(0x05, [
+        0x01,
+        0x01,
+        0x01,
+        0x01,
+        slot,
+        parameter,
+        value
+    ]);
+}
+
+/**
+ * The GM2 Global Parameter Control numbers of the GS chorus parameters.
+ */
+const GM2_CHORUS_PARAMETERS: Partial<
+    Record<GSChorusParameterMessage["parameter"], number>
+> = {
+    macro: 0,
+    rate: 1,
+    depth: 2,
+    feedback: 3,
+    sendLevelToReverb: 4
+};
+
+/**
+ * Encodes an analyzed message into System Exclusive data with the default device IDs.
+ * @param msg The analyzed message.
+ * @param system The selected system.
+ * @returns The data, excluding the starting `0xF0`.
+ */
+function encodeSysEx(msg: AnalyzedSysExMessage, system: MIDISystem) {
+    const universal = system === "gm" || system === "gm2";
+    switch (msg.type) {
+        case "Other":
+        case "Display Data": {
+            throw new Error(`${msg.type} can not be encoded.`);
+        }
+
+        case "Global MIDI Param": {
+            const name = `Global MIDI Param ${msg.parameter}`;
+            switch (msg.parameter) {
+                case "system": {
+                    // A reset is a reset, whatever the selected system is
+                    return resetData(msg.value);
+                }
+
+                case "keyShift": {
+                    const v = Math.round(msg.value) + 64;
+                    return pickForm(system, name, {
+                        gs: () => gs(0x40, 0x00, 0x05, [v]),
+                        xg: () => xg(0x00, 0x00, 0x06, [v]),
+                        // Master Coarse Tuning, the LSB is not used
+                        universal: () => deviceControl(0x04, [0x00, v])
+                    });
+                }
+
+                case "fineTune": {
+                    // GS and XG: 0.1 cent steps, 1024 is the center
+                    const tune = fitRound(msg.value * 10 + 1024, 0xff_ff);
+                    // Universal: 14-bit, 100 / 8192 cent steps
+                    const gmTune = fitRound(msg.value * 81.92 + 8192, 16_383);
+                    return pickForm(system, name, {
+                        gs: () => gs(0x40, 0x00, 0x00, nibbles(tune)),
+                        xg: () => xg(0x00, 0x00, 0x00, nibbles(tune)),
+                        universal: () =>
+                            deviceControl(0x03, [gmTune & 0x7f, gmTune >> 7])
+                    });
+                }
+
+                case "volume": {
+                    const v = fitRound(msg.value * 127, 127);
+                    const gain = fitRound(msg.value * 16_383, 16_383);
+                    return pickForm(system, name, {
+                        gs: () => gs(0x40, 0x00, 0x04, [v]),
+                        xg: () => xg(0x00, 0x00, 0x04, [v]),
+                        universal: () =>
+                            deviceControl(0x01, [gain & 0x7f, gain >> 7])
+                    });
+                }
+
+                case "pan": {
+                    // GS: 1 to 127, 64 is the center
+                    const v = fitRound(msg.value * 63 + 64, 127);
+                    // Universal Master Balance: 14-bit, 8192 is the center
+                    const balance = fitRound(msg.value * 8192 + 8192, 16_383);
+                    const masterBalance = () =>
+                        deviceControl(0x02, [balance & 0x7f, balance >> 7]);
+                    return pickForm(system, name, {
+                        gs: () => gs(0x40, 0x00, 0x06, [v]),
+                        // XG has no master pan, XG devices take the Universal Master Balance
+                        xg: masterBalance,
+                        universal: masterBalance
+                    });
+                }
+            }
+            break;
+        }
+
+        case "Channel MIDI Param": {
+            const channel = msg.channel;
+            const name = `Channel MIDI Param ${msg.parameter}`;
+            switch (msg.parameter) {
+                case "rxChannel": {
+                    const v = msg.value;
+                    return pickForm(system, name, {
+                        gs: () => {
+                            // 16 is off in GS, so receiving on 16 (like an XG part on port B) can not be written.
+                            // Above 16 is kept like the synth reads it (the port offset is added to it)
+                            if (v === 16) {
+                                throw new Error(
+                                    `Can not encode ${name}: 16 means off in GS.`
+                                );
+                            }
+                            return gsPart(channel, 1, 0x02, [
+                                v === -1 ? 0x10 : v
+                            ]);
+                        },
+                        xg: () => xg(0x08, channel, 0x04, [v === -1 ? 0x7f : v])
+                    });
+                }
+
+                case "randomPan": {
+                    return pickForm(system, name, {
+                        gs: () => gsPart(channel, 1, 0x1c, [0]),
+                        xg: () => xg(0x08, channel, 0x0e, [0])
+                    });
+                }
+
+                case "eqEnabled":
+                case "efxAssign": {
+                    const v = msg.value ? 1 : 0;
+                    const a3 = msg.parameter === "eqEnabled" ? 0x20 : 0x22;
+                    return pickForm(system, name, {
+                        gs: () => gsPart(channel, 4, a3, [v])
+                    });
+                }
+
+                case "dryLevel": {
+                    const v = msg.value;
+                    return pickForm(system, name, {
+                        xg: () => xg(0x08, channel, 0x11, [v])
+                    });
+                }
+
+                case "assignMode":
+                case "drumMap":
+                case "velocitySenseDepth":
+                case "velocitySenseOffset":
+                case "cc1":
+                case "cc2": {
+                    const address = PartParamAddressMap[msg.parameter];
+                    const v = msg.value;
+                    return pickForm(system, name, {
+                        gs: () => gsPart(channel, 1, address.gs, [v]),
+                        xg: () => xg(0x08, channel, address.xg, [v])
+                    });
+                }
+            }
+            break;
+        }
+
+        case "GS Reverb Param": {
+            // GM2 has the GS reverb macros 0-5 (plate is 8 in GM2, 5 in GS),
+            // The delay macros (6 and 7) stay GS
+            if (universal && msg.parameter === "macro" && msg.value <= 0x05) {
+                return gm2GlobalParameter(
+                    0x01,
+                    0x00,
+                    msg.value === 0x05 ? 0x08 : msg.value
+                );
+            }
+            if (universal && msg.parameter === "time") {
+                return gm2GlobalParameter(0x01, 0x01, msg.value);
+            }
+            return gs(0x40, 0x01, GSReverbAddressMap[msg.parameter], [
+                msg.value
             ]);
         }
-        default: {
+
+        case "GS Chorus Param": {
+            const gm2Parameter = GM2_CHORUS_PARAMETERS[msg.parameter];
+            // GM2 has the GS chorus macros 0-5, the short delays (6 and 7) stay GS
+            if (
+                universal &&
+                gm2Parameter !== undefined &&
+                (msg.parameter !== "macro" || msg.value <= 0x05)
+            ) {
+                return gm2GlobalParameter(0x02, gm2Parameter, msg.value);
+            }
+            return gs(0x40, 0x01, GSChorusAddressMap[msg.parameter], [
+                msg.value
+            ]);
+        }
+
+        case "GS Delay Param": {
+            return gs(0x40, 0x01, GSDelayAddressMap[msg.parameter], [
+                msg.value
+            ]);
+        }
+
+        case "GS Equalizer Param": {
+            return gs(0x40, 0x02, GSEqualizerAddressMap[msg.parameter], [
+                msg.value
+            ]);
+        }
+
+        case "GS Insertion Param": {
+            const { parameter, value } = msg;
+            if (parameter === "type") {
+                return gs(0x40, 0x03, 0x00, [value >> 8, value & 0xff]);
+            }
             if (typeof parameter === "string") {
-                return gsMessage(
-                    ticks,
-                    0x40,
-                    0x03,
-                    GSInsertionAddressMap[parameter],
-                    [data]
-                );
+                return gs(0x40, 0x03, GSInsertionAddressMap[parameter], [
+                    typeof value === "boolean" ? (value ? 1 : 0) : value
+                ]);
             }
             if (
                 !Number.isSafeInteger(parameter) ||
                 parameter < 0 ||
                 parameter > 19
             ) {
-                throw new Error(`Invalid insertion parameter: ${parameter}`);
+                throw new Error(`Invalid GS insertion parameter: ${parameter}`);
             }
-            return gsMessage(ticks, 0x40, 0x03, parameter + 3, [data]);
+            return gs(0x40, 0x03, parameter + 3, [value]);
         }
-    }
-}
 
-/**
- * Returns a MIDI event needed to set the given XG Reverb Parameter.
- * @param ticks The MIDI tick time for the output event.
- * @param parameter The parameter to set:
- * - `"type"` (16-bit),
- * - `"return"`, `"pan"` (7-bit),
- * - 0-based type-specific parameter number (0-15) (7-bit).
- * @param value The value to set it to.
- * @returns The {@link MIDIMessage} needed to set this XG Reverb Parameter.
- */
-export function setXGReverbParameter(
-    ticks: number,
-    parameter: XGReverbParameterMessage["parameter"],
-    value: number
-) {
-    switch (parameter) {
-        case "type": {
-            return xgMessage(ticks, 0x02, 0x01, 0x00, [
-                (value >> 8) & 0x7f,
-                value & 0x7f
-            ]);
-        }
-        case "return": {
-            return xgMessage(ticks, 0x02, 0x01, 0x0c, [value]);
-        }
-        case "pan": {
-            return xgMessage(ticks, 0x02, 0x01, 0x0d, [value]);
-        }
-        default: {
-            if (
-                !Number.isSafeInteger(parameter) ||
-                parameter < 0 ||
-                parameter > 15
-            ) {
-                throw new Error(`Invalid XG reverb parameter: ${parameter}`);
+        case "XG Reverb Param": {
+            const { parameter, value } = msg;
+            switch (parameter) {
+                case "type": {
+                    return xg(0x02, 0x01, 0x00, [value >> 8, value & 0xff]);
+                }
+                case "return": {
+                    return xg(0x02, 0x01, 0x0c, [value]);
+                }
+                case "pan": {
+                    return xg(0x02, 0x01, 0x0d, [value]);
+                }
+                default: {
+                    checkXGEffectParameter("reverb", parameter);
+                    return xg(
+                        0x02,
+                        0x01,
+                        parameter + (parameter < 10 ? 0x02 : 0x06),
+                        [value]
+                    );
+                }
             }
-            const a3 = parameter + (parameter < 10 ? 0x02 : 0x06);
-            return xgMessage(ticks, 0x02, 0x01, a3, [value]);
         }
-    }
-}
 
-/**
- * Returns a MIDI event needed to set the given XG Chorus Parameter.
- * @param ticks The MIDI tick time for the output event.
- * @param parameter The parameter to set:
- * - `"type"` (16-bit),
- * - `"return"`, `"pan"`, `"sendToReverb"` (7-bit),
- * - 0-based type-specific parameter number (0-15) (7-bit).
- * @param value The value to set it to.
- * @returns The {@link MIDIMessage} needed to set this XG Chorus Parameter.
- */
-export function setXGChorusParameter(
-    ticks: number,
-    parameter: XGChorusParameterMessage["parameter"],
-    value: number
-) {
-    switch (parameter) {
-        case "type": {
-            return xgMessage(ticks, 0x02, 0x01, 0x20, [
-                (value >> 8) & 0x7f,
-                value & 0x7f
-            ]);
-        }
-        case "return": {
-            return xgMessage(ticks, 0x02, 0x01, 0x2c, [value]);
-        }
-        case "pan": {
-            return xgMessage(ticks, 0x02, 0x01, 0x2d, [value]);
-        }
-        case "sendToReverb": {
-            return xgMessage(ticks, 0x02, 0x01, 0x2e, [value]);
-        }
-        default: {
-            if (
-                !Number.isSafeInteger(parameter) ||
-                parameter < 0 ||
-                parameter > 15
-            ) {
-                throw new Error(`Invalid XG chorus parameter: ${parameter}`);
+        case "XG Chorus Param": {
+            const { parameter, value } = msg;
+            switch (parameter) {
+                case "type": {
+                    return xg(0x02, 0x01, 0x20, [value >> 8, value & 0xff]);
+                }
+                case "return": {
+                    return xg(0x02, 0x01, 0x2c, [value]);
+                }
+                case "pan": {
+                    return xg(0x02, 0x01, 0x2d, [value]);
+                }
+                case "sendToReverb": {
+                    return xg(0x02, 0x01, 0x2e, [value]);
+                }
+                default: {
+                    checkXGEffectParameter("chorus", parameter);
+                    return xg(
+                        0x02,
+                        0x01,
+                        parameter + (parameter < 10 ? 0x22 : 0x26),
+                        [value]
+                    );
+                }
             }
-            const a3 = parameter + (parameter < 10 ? 0x22 : 0x26);
-            return xgMessage(ticks, 0x02, 0x01, a3, [value]);
         }
-    }
-}
 
-/**
- * Returns a MIDI event needed to set the given XG Variation Parameter.
- * @param ticks The MIDI tick time for the output event.
- * @param parameter The parameter to set:
- * - `"type"` (16-bit),
- * - `"return"`, `"pan"`, `"sendToReverb"`, `"sendToChorus"` (7-bit),
- * - `"connection"` (`"system"` or `"insertion"`)
- * - `"partNumber"` (insertion target, generally 0-63),
- * - 0-based type-specific parameter number (0-15) (14-bit) Note that for 7-bit parameters, only the lower 7 bits will be used.
- * @param value The value to set it to.
- * @returns The {@link MIDIMessage} needed to set this XG Variation Parameter.
- */
-export function setXGVariationParameter<
-    P extends XGVariationParameterMessage["parameter"]
->(
-    ticks: number,
-    parameter: P,
-    value: P extends "connection" ? XGVariationConnection : number
-) {
-    // Handle connection
-    if (parameter === "connection") {
-        if (value !== "system" && value !== "insertion") {
-            throw new Error(`Invalid XG variation connection: ${value}`);
-        }
-        return xgMessage(ticks, 0x02, 0x01, 0x5a, [value === "system" ? 1 : 0]);
-    }
-    if (typeof value !== "number") {
-        throw new TypeError(
-            `Invalid XG variation ${parameter} value: ${value}`
-        );
-    }
-    switch (parameter) {
-        case "type": {
-            return xgMessage(ticks, 0x02, 0x01, 0x40, [
-                (value >> 8) & 0x7f,
-                value & 0x7f
-            ]);
-        }
-        case "return": {
-            return xgMessage(ticks, 0x02, 0x01, 0x56, [value]);
-        }
-        case "pan": {
-            return xgMessage(ticks, 0x02, 0x01, 0x57, [value]);
-        }
-        case "sendToReverb": {
-            return xgMessage(ticks, 0x02, 0x01, 0x58, [value]);
-        }
-        case "sendToChorus": {
-            return xgMessage(ticks, 0x02, 0x01, 0x59, [value]);
-        }
-        case "partNumber": {
-            return xgMessage(ticks, 0x02, 0x01, 0x5b, [value]);
-        }
-        default: {
-            if (
-                typeof parameter !== "number" ||
-                !Number.isSafeInteger(parameter) ||
-                parameter < 0 ||
-                parameter > 15
-            ) {
-                throw new Error(`Invalid XG variation parameter: ${parameter}`);
+        case "XG Variation Param": {
+            switch (msg.parameter) {
+                case "connection": {
+                    if (msg.value !== "system" && msg.value !== "insertion") {
+                        throw new Error(
+                            `Invalid XG variation connection: ${String(msg.value)}`
+                        );
+                    }
+                    // 0 = insertion, 1 = system
+                    return xg(0x02, 0x01, 0x5a, [
+                        msg.value === "system" ? 1 : 0
+                    ]);
+                }
+                case "type": {
+                    return xg(0x02, 0x01, 0x40, [
+                        msg.value >> 8,
+                        msg.value & 0xff
+                    ]);
+                }
+                case "return": {
+                    return xg(0x02, 0x01, 0x56, [msg.value]);
+                }
+                case "pan": {
+                    return xg(0x02, 0x01, 0x57, [msg.value]);
+                }
+                case "sendToReverb": {
+                    return xg(0x02, 0x01, 0x58, [msg.value]);
+                }
+                case "sendToChorus": {
+                    return xg(0x02, 0x01, 0x59, [msg.value]);
+                }
+                case "partNumber": {
+                    return xg(0x02, 0x01, 0x5b, [msg.value]);
+                }
+                default: {
+                    const { parameter, value } = msg;
+                    checkXGEffectParameter("variation", parameter);
+                    // Parameters 1-10 are 14-bit, 11-16 7-bit
+                    return parameter < 10
+                        ? xg(0x02, 0x01, 0x42 + parameter * 2, [
+                              value >> 7,
+                              value & 0x7f
+                          ])
+                        : xg(0x02, 0x01, 0x70 + parameter - 10, [value]);
+                }
             }
-            return parameter < 10
-                ? xgMessage(ticks, 0x02, 0x01, 0x42 + parameter * 2, [
-                      (value >> 7) & 0x7f,
-                      value & 0x7f
-                  ])
-                : xgMessage(ticks, 0x02, 0x01, 0x70 + parameter - 10, [
-                      value & 0x7f
-                  ]);
         }
-    }
-}
 
-/**
- * Returns a MIDI event needed to set the given XG Insertion Parameter (EFFECT 2).
- * @param ticks The MIDI tick time for the output event.
- * @param insertionNumber The insertion effect number (second address byte).
- * @param parameter The parameter to set:
- * - `"type"` (16-bit),
- * - `"partNumber"` (insertion target),
- * - or a 0-based type-specific parameter number (0-15) (14-bit) Note that for 7-bit parameters, only the lower 7 bits will be used. If the 14-bit parameter has MSB of zero, the LSB-only version will be used.
- * @param value The value to set it to.
- * @returns The {@link MIDIMessage} needed to set this XG Insertion Parameter.
- */
-export function setXGInsertionParameter(
-    ticks: number,
-    insertionNumber: number,
-    parameter: XGInsertionParameterMessage["parameter"],
-    value: number
-) {
-    switch (parameter) {
-        case "type": {
-            return xgMessage(ticks, 0x03, insertionNumber, 0x00, [
-                (value >> 8) & 0x7f,
-                value & 0x7f
-            ]);
-        }
-        case "partNumber": {
-            return xgMessage(ticks, 0x03, insertionNumber, 0x0c, [value]);
-        }
-        default: {
-            if (
-                !Number.isSafeInteger(parameter) ||
-                parameter < 0 ||
-                parameter > 15
-            ) {
-                throw new Error(`Invalid XG insertion parameter: ${parameter}`);
+        case "XG Insertion Param": {
+            const { insertionNumber, parameter, value } = msg;
+            switch (parameter) {
+                case "type": {
+                    return xg(0x03, insertionNumber, 0x00, [
+                        value >> 8,
+                        value & 0xff
+                    ]);
+                }
+                case "partNumber": {
+                    return xg(0x03, insertionNumber, 0x0c, [value]);
+                }
+                default: {
+                    checkXGEffectParameter("insertion", parameter);
+                    if (parameter >= 10) {
+                        // Parameters 11-16 only have single byte addresses
+                        return xg(
+                            0x03,
+                            insertionNumber,
+                            0x20 + parameter - 10,
+                            [value]
+                        );
+                    }
+                    return value >> 7 === 0
+                        ? // Fits in the LSB alone: LSB-only address
+                          xg(0x03, insertionNumber, 0x02 + parameter, [value])
+                        : // Needs the MSB: two-byte [Ext.2] address
+                          // Yamaha XG spec v1.32, page 41.
+                          xg(0x03, insertionNumber, 0x30 + parameter * 2, [
+                              value >> 7,
+                              value & 0x7f
+                          ]);
+                }
             }
-            if (parameter < 10) {
-                return value >> 7 === 0
-                    ? // Fits in the LSB alone: LSB-only address
-                      xgMessage(
-                          ticks,
-                          0x03,
-                          insertionNumber,
-                          0x02 + parameter,
-                          [value & 0x7f]
-                      )
-                    : // Needs the LSB: two-byte [Ext.2] address
-                      // Yamaha XG spec v1.32, page 41.
-                      xgMessage(
-                          ticks,
-                          0x03,
-                          insertionNumber,
-                          0x30 + parameter * 2,
-                          [(value >> 7) & 0x7f, value & 0x7f]
-                      );
-            }
+        }
 
-            // Parameters 10-15 only have single-byte versions, use that
-            if (value >> 7 !== 0) {
-                SpessaLog.warn(
-                    "Attempting to set value over 127 for XG insertion parameter 10-15 (11-16 in the spec). It will be truncated to 7-bit!"
+        case "Map Drum Setup": {
+            const { drumMap, key, parameter, value } = msg;
+            const name = `Map Drum Setup ${parameter}`;
+            return pickForm(system, name, {
+                gs: () => {
+                    if (parameter === "pitchFine") {
+                        throw new Error(
+                            `${name} has no GS System Exclusive message.`
+                        );
+                    }
+                    // PLAY NOTE is relative to 60, in SC-88 steps (50 cents), like the analysis assumes
+                    const v =
+                        parameter === "pitchCoarse"
+                            ? 60 + Math.round(value / 0.5)
+                            : typeof value === "boolean"
+                              ? value
+                                  ? 1
+                                  : 0
+                              : value;
+                    const mapIndex = drumMap - DEFAULT_GS_DRUM_MAP;
+                    if (
+                        !Number.isSafeInteger(mapIndex) ||
+                        mapIndex < 0 ||
+                        mapIndex > 7
+                    ) {
+                        throw new Error(`Invalid GS drum map: ${drumMap}`);
+                    }
+                    // The parameter is ORed into the address, so an unknown one would not reach the byte check
+                    if (!Object.hasOwn(GSDrumParamMap, parameter)) {
+                        throw new Error(
+                            `Invalid GS drum parameter: ${parameter}`
+                        );
+                    }
+                    return gs(
+                        0x41,
+                        (mapIndex << 4) | GSDrumParamMap[parameter],
+                        key,
+                        [v]
+                    );
+                },
+                xg: () => {
+                    const v =
+                        parameter === "pitchCoarse" || parameter === "pitchFine"
+                            ? Math.round(value) + 64
+                            : typeof value === "boolean"
+                              ? value
+                                  ? 1
+                                  : 0
+                              : value;
+                    const setup = drumMap - DEFAULT_XG_DRUM_MAP;
+                    if (
+                        !Number.isSafeInteger(setup) ||
+                        setup < 0 ||
+                        setup > 15
+                    ) {
+                        throw new Error(`Invalid XG drum setup: ${drumMap}`);
+                    }
+                    return xg(0x30 + setup, key, XGDrumParamMap[parameter], [
+                        v
+                    ]);
+                }
+            });
+        }
+
+        case "User Drum Setup": {
+            const { drumSet, midiNote, parameter, value } = msg;
+            if (parameter === "pitchFine") {
+                throw new Error(
+                    "User Drum Setup pitchFine has no System Exclusive message."
                 );
             }
-            return xgMessage(
-                ticks,
-                0x03,
-                insertionNumber,
-                0x20 + parameter - 10,
-                [value & 0x7f]
-            );
-        }
-    }
-}
-
-/**
- * Returns a list of MIDI events needed to set the given parameter.
- * @param ticks The MIDI tick time for output events.
- * @param system If the message has multiple ways of setting it,
- * this selects the preferred way. Otherwise, it prefers Universal (GM).
- * @param parameter The parameter to set.
- * @param value The value to set it to.
- * @returns The list of {@link MIDIMessage}s needed to set this Global MIDI Parameter.
- */
-export function setGlobalMIDIParameter<P extends keyof GlobalMIDIParameter>(
-    ticks: number,
-    system: MIDISystem,
-    parameter: P,
-    value: GlobalMIDIParameter[P]
-): MIDIMessage[] {
-    switch (parameter) {
-        case "system": {
-            // Well, we set the system so we don't care about the current one
-            return [reset(ticks, value as MIDISystem)];
-        }
-
-        case "keyShift": {
-            // Three ways of setting it: GM. XG and GS.
-            switch (system) {
-                default: {
-                    // GM2 and GM are the same here
-                    // Master Coarse Tuning
-                    return [
-                        deviceControlMessage(ticks, 0x04, [
-                            0x00, // LSB is not used for key shift
-                            (value as number) + 64
-                        ])
-                    ];
-                }
-
-                case "xg": {
-                    // Transpose
-                    return [
-                        xgMessage(ticks, 0x00, 0x00, 0x06, [
-                            (value as number) + 64
-                        ])
-                    ];
-                }
-
-                case "gs": {
-                    // Master Key-Shift
-                    return [
-                        gsMessage(ticks, 0x40, 0x00, 0x05, [
-                            (value as number) + 64
-                        ])
-                    ];
-                }
+            if (drumSet !== 0 && drumSet !== 1) {
+                throw new Error(`Invalid User Drum Set: ${drumSet}`);
             }
-        }
-
-        case "fineTune": {
-            // Again, all three systems have their own way of setting it, and they are all different
-            switch (system) {
-                default: {
-                    // GM tunes in 14-bit numbers, how nice!
-                    const tuneValue = Math.min(
-                        16_383,
-                        Math.floor((value as number) * 81.92 + 8192)
-                    );
-                    return [
-                        deviceControlMessage(ticks, 0x03, [
-                            tuneValue & 0x7f, // LSB
-                            (tuneValue >> 7) & 0x7f // MSB
-                        ])
-                    ];
-                }
-
-                case "xg": {
-                    // -102.4 to 102.3, in 0.1 cent steps
-                    // Real range is 0 to 2047 with 1024 as center
-                    const tuneValue = Math.floor((value as number) * 10 + 1024);
-                    return [
-                        xgMessage(ticks, 0x00, 0x00, 0x00, [
-                            (tuneValue >> 12) & 0x0f,
-                            (tuneValue >> 8) & 0x0f,
-                            (tuneValue >> 4) & 0x0f,
-                            tuneValue & 0x0f
-                        ])
-                    ];
-                }
-
-                case "gs": {
-                    // Gs is -100 cents to 100 cents, 0.1 cent steps
-                    // Real range is 24 to 2024, so narrower than XG
-                    const tuneValue = Math.floor((value as number) * 10 + 1024);
-                    return [
-                        gsMessage(ticks, 0x40, 0x00, 0x00, [
-                            (tuneValue >> 12) & 0x0f,
-                            (tuneValue >> 8) & 0x0f,
-                            (tuneValue >> 4) & 0x0f,
-                            tuneValue & 0x0f
-                        ])
-                    ];
-                }
+            // The parameter is ORed into the address, so an unknown one would not reach the byte check
+            if (!Object.hasOwn(GSUserDrumParamMap, parameter)) {
+                throw new Error(
+                    `Invalid User Drum Set parameter: ${parameter}`
+                );
             }
-        }
-
-        case "volume": {
-            // All three once more!
-            switch (system) {
-                default: {
-                    const gainValue = Math.floor((value as number) * 16_383);
-                    return [
-                        deviceControlMessage(ticks, 0x01, [
-                            gainValue & 0x7f, // LSB
-                            (gainValue >> 7) & 0x7f // MSB
-                        ])
-                    ];
-                }
-
-                case "xg": {
-                    const gainValue = Math.floor((value as number) * 127);
-                    return [xgMessage(ticks, 0x00, 0x00, 0x04, [gainValue])];
-                }
-
-                case "gs": {
-                    // GS
-                    const gainValue = Math.floor((value as number) * 127);
-                    return [gsMessage(ticks, 0x40, 0x00, 0x04, [gainValue])];
-                }
-            }
-        }
-
-        case "pan": {
-            // Only GM and GS, XG doesn't have a pan message?
-            switch (system) {
-                default: {
-                    // Master Balance message
-                    const balance = Math.min(
-                        16_383,
-                        Math.floor((value as number) * 8192) + 8192
-                    );
-
-                    return [
-                        deviceControlMessage(ticks, 0x02, [
-                            balance & 0x7f, // LSB
-                            (balance >> 7) & 0x7f // MSB
-                        ])
-                    ];
-                }
-
-                case "gs": {
-                    // 63, it ranges from 1 to 127, NOT 0 to 127!
-                    const balance = Math.floor((value as number) * 63) + 64;
-                    return [gsMessage(ticks, 0x40, 0x00, 0x06, [balance])];
-                }
-            }
-        }
-    }
-}
-
-/**
- * Returns a list of MIDI events needed to set the given parameter.
- * @param ticks The MIDI tick time for output events.
- * @param channel The channel number. Channels above 15 are wrapped to 0-15, so the port offset is ignored.
- * @param system If the message has multiple ways of setting it,
- * this selects the preferred way. Otherwise, it prefers Universal (GM).
- * @param parameter The parameter to set.
- * @param value The value to set it to.
- * @returns The list of {@link MIDIMessage}s needed to set this Channel MIDI Parameter.
- */
-export function setChannelMIDIParameter<P extends keyof ChannelMIDIParameter>(
-    ticks: number,
-    channel: number,
-    system: MIDISystem,
-    parameter: P,
-    value: ChannelMIDIParameter[P]
-): MIDIMessage[] {
-    channel %= 16;
-    switch (parameter) {
-        case "pressure": {
-            return [
-                MIDIMessage.channelPressure(ticks, channel, value as number)
-            ];
-        }
-
-        case "pitchWheel": {
-            return [MIDIMessage.pitchWheel(ticks, channel, value as number)];
-        }
-
-        case "pitchWheelRange": {
-            // MSB is semitones, LSB is cents
-            const semitones = Math.floor(value as number);
-            const cents = Math.min(
-                99,
-                Math.round(((value as number) - semitones) * 100)
-            );
-            return MIDIMessage.registeredParameter(
-                ticks,
-                channel,
-                RegisteredParameterTypes.pitchWheelRange,
-                (semitones << 7) | cents
-            );
-        }
-
-        case "modulationDepth": {
-            return MIDIMessage.registeredParameter(
-                ticks,
-                channel,
-                RegisteredParameterTypes.modulationDepth,
-                // Cents, so data / 128 * 100 is data / 1.28
-                Math.floor((value as number) * 1.28)
-            );
-        }
-
-        case "rxChannel": {
+            // PLAY NOTE is relative to 60
             const v =
-                value === -1
-                    ? system === "xg"
-                        ? 0x7f
-                        : 0x10
-                    : (value as number) % 16;
-            return [partParamMessage(ticks, channel, system, "rxChannel", v)];
-        }
-
-        case "polyMode": {
-            return [
-                MIDIMessage.controllerChange(
-                    ticks,
-                    channel,
-                    value
-                        ? MIDIControllers.polyModeOn
-                        : MIDIControllers.monoModeOn,
-                    0
-                )
-            ];
-        }
-
-        case "keyShift": {
-            // Prefer RPN as it's universal
-            return MIDIMessage.registeredParameter(
-                ticks,
-                channel,
-                RegisteredParameterTypes.coarseTuning,
-                ((value as number) + 64) << 7
+                parameter === "pitchCoarse"
+                    ? 60 + Math.round(value)
+                    : typeof value === "boolean"
+                      ? value
+                          ? 1
+                          : 0
+                      : value;
+            return gs(
+                0x21,
+                (drumSet << 4) | GSUserDrumParamMap[parameter],
+                midiNote,
+                [v]
             );
         }
-
-        case "fineTune": {
-            // Prefer RPN as it's universal
-            return MIDIMessage.registeredParameter(
-                ticks,
-                channel,
-                RegisteredParameterTypes.fineTuning,
-                // Resolution is 100/8192 cents
-                Math.min(16_383, Math.floor((value as number) * 81.92 + 8192))
-            );
-        }
-
-        case "randomPan": {
-            if (value === false)
-                return [
-                    MIDIMessage.controllerChange(
-                        ticks,
-                        channel,
-                        MIDIControllers.pan,
-                        64
-                    )
-                ];
-            // Only set via SysEx in both GS and XG (value 0 means random pan)
-            return [partParamMessage(ticks, channel, system, "randomPan", 0)];
-        }
-
-        // XG/GS only
-        case "assignMode":
-        case "cc1":
-        case "cc2":
-        case "drumMap":
-        case "velocitySenseDepth":
-        case "velocitySenseOffset": {
-            return [
-                partParamMessage(
-                    ticks,
-                    channel,
-                    system,
-                    parameter,
-                    value as number
-                )
-            ];
-        }
-
-        case "eqEnabled": {
-            // GS only
-            return [
-                gsMessage(ticks, 0x40, 0x40 | channelToGSPart(channel), 0x20, [
-                    value ? 1 : 0
-                ])
-            ];
-        }
-
-        case "efxAssign": {
-            // GS only (again)
-            return [
-                gsMessage(ticks, 0x40, 0x40 | channelToGSPart(channel), 0x22, [
-                    // Value is boolean
-                    value ? 1 : 0
-                ])
-            ];
-        }
-
-        case "dryLevel": {
-            // XG only
-            return [xgMessage(ticks, 0x08, channel, 0x11, [value as number])];
-        }
-
-        // That's it!
     }
+    throw new Error(`Unknown analyzed message: ${JSON.stringify(msg)}`);
 }
 
 /**
- * Returns a MIDI event needed to set the given drum map parameter.
- * @param ticks The MIDI tick time for the output event.
- * @param map The GS drum map/XG drum setup number.
- * @param system The system to prepare the message for. Any value other than `xg` will result in a GS-style message.
- * @param key The MIDI drum key/note number to modify.
- * @param parameter The parameter to set.
- * @param value The value to set it to.
- * @param gsDrumPitchStep The GS drum pitch coarse resolution in semitones.
- * 0.5 for SC-88 and above, 1 for the SC-55 drum map (bank LSB 1). XG always uses 1.
- * @returns The {@link MIDIMessage} needed to set this drum map parameter.
+ * Checks the number of an XG effect type parameter.
+ * @param effect The effect name, for the error.
+ * @param parameter The 0-based parameter number.
  */
-export function setDrumMapParameter<P extends keyof DrumParameter>(
-    ticks: number,
-    map: number,
-    system: MIDISystem,
-    key: number,
-    parameter: P,
-    value: DrumParameter[P],
-    gsDrumPitchStep = 0.5
-): MIDIMessage {
-    if (key > 127 || key < 0) {
-        throw new Error("Key must be between 0 and 127.");
+function checkXGEffectParameter(effect: string, parameter: number) {
+    if (!Number.isSafeInteger(parameter) || parameter < 0 || parameter > 15) {
+        throw new Error(`Invalid XG ${effect} parameter: ${parameter}`);
     }
-    if (system === "xg") {
-        const a3Param = XGDrumParamMap[parameter];
-        if (a3Param === undefined) {
-            throw new Error(`Invalid XG drum parameter ${parameter}`);
-        }
-
-        let midiValue: number;
-        switch (parameter) {
-            case "rxNoteOff":
-            case "rxNoteOn": {
-                midiValue = value ? 1 : 0;
-                break;
-            }
-
-            case "pitchFine":
-            case "pitchCoarse": {
-                midiValue = Math.round(value as number) + 64;
-                break;
-            }
-
-            default: {
-                midiValue = value as number;
-            }
-        }
-
-        const setupIndex = map - DEFAULT_XG_DRUM_MAP;
-        if (setupIndex < 0 || setupIndex > 0xf) {
-            throw new Error(`Invalid XG drum setup ${map}`);
-        }
-        const a1 = 0x30 | setupIndex;
-        return xgMessage(ticks, a1, key, a3Param, [midiValue]);
-    }
-
-    const a2Param = GSDrumParamMap[parameter];
-    if (a2Param === undefined || parameter === "pitchFine") {
-        throw new Error(`Invalid GS drum parameter ${parameter}`);
-    }
-
-    // PLAY NOTE is relative to 60, while pitchCoarse is relative to 0 and in semitones
-    const midiValue =
-        parameter === "pitchCoarse"
-            ? 60 + Math.round((value as number) / gsDrumPitchStep)
-            : typeof value === "number"
-              ? value
-              : value
-                ? 1
-                : 0;
-
-    // 0 = MAP1
-    const mapIndex = map - DEFAULT_GS_DRUM_MAP;
-    if (mapIndex < 0 || mapIndex > 0xf) {
-        throw new Error(`Invalid GS drum map ${map}`);
-    }
-    const a2 = (mapIndex << 4) | a2Param;
-    return gsMessage(ticks, 0x41, a2, key, [midiValue]);
-}
-
-/**
- * Returns a list of MIDI events needed to set the given channel drum parameter via NRPN.
- * @param ticks The MIDI tick time of the events.
- * @param channel The MIDI channel number.
- * @param key The MIDI drum key/note number to modify.
- * @param parameter The parameter to set.
- * @param value The value to set it to.
- * @param drumPitchStep The drum pitch coarse resolution in semitones.
- * 0.5 for GS (SC-88 and above), 1 for XG and the SC-55 drum map (bank LSB 1).
- * @returns The list of {@link MIDIMessage}s needed to set this channel drum parameter.
- */
-export function setDrumChannelParameter<P extends keyof DrumParameter>(
-    ticks: number,
-    channel: number,
-    key: number,
-    parameter: P,
-    value: DrumParameter[P],
-    drumPitchStep = 0.5
-): MIDIMessage[] {
-    if (key > 127 || key < 0) {
-        throw new Error("Key must be between 0 and 127.");
-    }
-    if (!Object.hasOwn(NRPNDrumParamMap, parameter)) {
-        throw new Error(`Invalid NRPN drum parameter ${parameter}`);
-    }
-    const msb = NRPNDrumParamMap[parameter as NRPNDrumParameter];
-    const coarse =
-        parameter === "pitchCoarse"
-            ? Math.round((value as number) / drumPitchStep) + 64
-            : parameter === "pitchFine"
-              ? (value as number) + 64
-              : (value as number);
-    return MIDIMessage.nonRegisteredParameter(
-        ticks,
-        channel,
-        (msb << 7) | key,
-        coarse << 7
-    );
-}
-
-/**
- * Returns a MIDI event needed to set the given GS User Drum Set parameter.
- * @param ticks The MIDI tick time for the output event.
- * @param drumSet The drum set to modify, either 0 or 1.
- * @param midiNote The MIDI note number of the drum key to modify.
- * @param parameter The parameter to set.
- * @param value The value to set it to.
- * @returns The {@link MIDIMessage} needed to set this User Drum Set parameter.
- */
-export function setUserDrumParameter<P extends keyof UserDrumSetParameter>(
-    ticks: number,
-    drumSet: number,
-    midiNote: number,
-    parameter: P,
-    value: UserDrumSetParameter[P]
-): MIDIMessage {
-    if (midiNote > 127 || midiNote < 0) {
-        throw new Error("MIDI note must be between 0 and 127.");
-    }
-    drumSet %= 2;
-    const a2Param = GSUserDrumParamMap[parameter];
-    if (a2Param === undefined || parameter === "pitchFine") {
-        throw new Error(`Invalid GS user drum parameter ${parameter}`);
-    }
-
-    // PLAY NOTE is relative to 60 and not 0, but pitchCoarse is relative to 0
-    const midiValue: number =
-        parameter === "pitchCoarse"
-            ? 60 + (value as number)
-            : typeof value === "number"
-              ? value
-              : value
-                ? 1
-                : 0;
-
-    const a2 = (drumSet << 4) | a2Param;
-    return gsMessage(ticks, 0x21, a2, midiNote, [midiValue]);
 }
 
 /**
@@ -1086,16 +1099,23 @@ export function channelToGSPart(channel: number) {
  * @param a2 Address 2
  * @param a3 Address 3
  * @param data Data, can be multiple bytes.
+ * @param deviceID The device ID, 16 by default.
  * @returns The binary data of the MIDI message, excluding the starting `0xF0` byte.
  */
-export function gs(a1: number, a2: number, a3: number, data: number[]) {
+export function gs(
+    a1: number,
+    a2: number,
+    a3: number,
+    data: number[],
+    deviceID = 0x10
+) {
     // Calculate checksum
     // SC 8850 manual, page 245
     const sum = a1 + a2 + a3 + data.reduce((sum, cur) => sum + cur, 0);
     const checksum = (128 - (sum % 128)) & 0x7f;
     return [
         0x41, // Roland
-        0x10, // Device ID (defaults to 16 on Roland)
+        deviceID, // Device ID (defaults to 16 on Roland)
         0x42, // GS
         0x12, // Command ID (DT1)
         a1,
@@ -1120,6 +1140,7 @@ export function gs(a1: number, a2: number, a3: number, data: number[]) {
  * @param a2 Address 2
  * @param a3 Address 3
  * @param data Data, can be multiple bytes.
+ * @param deviceID The device ID, 16 by default.
  * @returns The System Exclusive MIDI message.
  */
 export function gsMessage(
@@ -1127,9 +1148,10 @@ export function gsMessage(
     a1: number,
     a2: number,
     a3: number,
-    data: number[]
+    data: number[],
+    deviceID = 0x10
 ) {
-    return MIDIMessage.systemExclusive(ticks, gs(a1, a2, a3, data));
+    return MIDIMessage.systemExclusive(ticks, gs(a1, a2, a3, data, deviceID));
 }
 
 /**
@@ -1138,12 +1160,19 @@ export function gsMessage(
  * @param a2 Address 2
  * @param a3 Address 3
  * @param data Data, can be multiple bytes.
+ * @param deviceID The device ID, 16 by default.
  * @returns The binary data of the MIDI message, excluding the starting `0xF0` byte.
  */
-export function xg(a1: number, a2: number, a3: number, data: number[]) {
+export function xg(
+    a1: number,
+    a2: number,
+    a3: number,
+    data: number[],
+    deviceID = 0x10
+) {
     return [
         0x43, // Yamaha
-        0x10, // Device ID (defaults to 16 on Yamaha)
+        deviceID, // Device ID (defaults to 16 on Yamaha)
         0x4c, // XG
         a1,
         a2,
@@ -1160,6 +1189,7 @@ export function xg(a1: number, a2: number, a3: number, data: number[]) {
  * @param a2 Address 2
  * @param a3 Address 3
  * @param data Data, can be multiple bytes.
+ * @param deviceID The device ID, 16 by default.
  * @returns The System Exclusive MIDI message.
  */
 export function xgMessage(
@@ -1167,21 +1197,23 @@ export function xgMessage(
     a1: number,
     a2: number,
     a3: number,
-    data: number[]
+    data: number[],
+    deviceID = 0x10
 ) {
-    return MIDIMessage.systemExclusive(ticks, xg(a1, a2, a3, data));
+    return MIDIMessage.systemExclusive(ticks, xg(a1, a2, a3, data, deviceID));
 }
 
 /**
  * Gets a raw Device Control System Exclusive message bytes.
  * @param subID The sub ID.
  * @param data Data, can be multiple bytes.
+ * @param deviceID The device ID, 127 (broadcast) by default.
  * @returns The binary MIDI message data, excluding the starting `0xF0` byte.
  */
-export function deviceControl(subID: number, data: number[]) {
+export function deviceControl(subID: number, data: number[], deviceID = 0x7f) {
     return [
         0x7f, // Universal realtime
-        0x7f, // Device ID (broadcast)
+        deviceID, // Device ID (defaults to broadcast)
         0x04, // Device Control
         subID,
         ...data,
@@ -1194,14 +1226,19 @@ export function deviceControl(subID: number, data: number[]) {
  * @param ticks The tick time of the message.
  * @param subID The sub ID.
  * @param data Data, can be multiple bytes.
+ * @param deviceID The device ID, 127 (broadcast) by default.
  * @returns The system exclusive MIDI message.
  */
 export function deviceControlMessage(
     ticks: number,
     subID: number,
-    data: number[]
+    data: number[],
+    deviceID = 0x7f
 ) {
-    return MIDIMessage.systemExclusive(ticks, deviceControl(subID, data));
+    return MIDIMessage.systemExclusive(
+        ticks,
+        deviceControl(subID, data, deviceID)
+    );
 }
 
 /**
@@ -1211,10 +1248,18 @@ export function deviceControlMessage(
  * @returns The system exclusive MIDI message.
  */
 export function reset(ticks: number, system: MIDISystem) {
+    return MIDIMessage.systemExclusive(ticks, resetData(system));
+}
+
+/**
+ * The data of a reset System Exclusive message.
+ * @param system The system to reset into.
+ * @returns The data, excluding the starting `0xF0` byte.
+ */
+function resetData(system: MIDISystem) {
     switch (system) {
         case "gs": {
-            return gsMessage(
-                ticks,
+            return gs(
                 0x40, // System parameter - Address
                 0x00, // Global mode parameter -  Address
                 0x7f, // MODE SET - Address
@@ -1223,8 +1268,7 @@ export function reset(ticks: number, system: MIDISystem) {
         }
 
         case "xg": {
-            return xgMessage(
-                ticks,
+            return xg(
                 0x00, // System parameter - Address
                 0x00, // Global mode parameter -  Address
                 0x7e, // XG On
@@ -1233,48 +1277,25 @@ export function reset(ticks: number, system: MIDISystem) {
         }
 
         case "gm": {
-            return MIDIMessage.systemExclusive(ticks, [
+            return [
                 0x7e, // Universal Non-Realtime
                 0x7f, // Broadcast
                 0x09, // General MIDI
                 0x01, // General MIDI 1 On
                 0xf7 // End of exclusive
-            ]);
+            ];
         }
 
         case "gm2": {
-            return MIDIMessage.systemExclusive(ticks, [
+            return [
                 0x7e, // Universal Non-Realtime
                 0x7f, // Broadcast
                 0x09, // General MIDI
                 0x03, // General MIDI 2 On
                 0xf7 // End of exclusive
-            ]);
+            ];
         }
     }
-}
-
-/**
- * Returns the GS or XG SysEx message that sets a part parameter of the given channel.
- * @param ticks The MIDI tick time for the output event.
- * @param channel The channel number (0-15).
- * @param system The system to prepare the message for. Any value other than `xg` will result in a GS-style message.
- * @param parameter The parameter to set.
- * @param data The 7-bit data byte.
- */
-function partParamMessage(
-    ticks: number,
-    channel: number,
-    system: MIDISystem,
-    parameter: keyof typeof PartParamAddressMap,
-    data: number
-) {
-    const address = PartParamAddressMap[parameter];
-    return system === "xg"
-        ? xgMessage(ticks, 0x08, channel, address.xg, [data])
-        : gsMessage(ticks, 0x40, 0x10 | channelToGSPart(channel), address.gs, [
-              data
-          ]);
 }
 
 function analyzeGM(syx: SysExAcceptedArray): AnalyzedSysExMessage[] {
@@ -3496,6 +3517,8 @@ function handleSingleUserDrum(
     data: number
 ): AnalyzedSysExMessage {
     const drumSet = a2 >> 4;
+    // The SC-88 and up have two User Drum Sets
+    if (drumSet > 1) return OTHER;
     switch (a2 & 0xf) {
         // Play Note
         case 0x1: {
