@@ -1,3 +1,12 @@
+/**
+ * The analyzed MIDI messages: what {@link MIDIUtils.analyzeSysEx}, {@link MIDIUtils.analyzeRPN} and
+ * {@link MIDIUtils.analyzeNRPN} return, and what {@link MIDIUtils.fromAnalyzedMessage} encodes.
+ *
+ * Each type matches the `type` string of its messages, like `GSReverbParam` for `"GS Reverb Param"`.
+ *
+ * @group MIDI.Protocol
+ * @module
+ */
 import type { GSInsertionParameter } from "../../synthesizer/audio_engine/effects/gs/interface/gs_insertion_block";
 import type {
     GSChorusParameter,
@@ -9,13 +18,12 @@ import type { GlobalMIDIParameter } from "../../synthesizer/audio_engine/paramet
 import type { MIDIController } from "../enums";
 import type { DrumParameter, UserDrumSetParameter } from "../types";
 import type { ChannelMIDIParameter } from "../../synthesizer/audio_engine/channel/parameters/midi";
+import type { XGVariationConnection } from "../../synthesizer/audio_engine/effects/xg/interface/xg_variation_block";
 
 /**
  * Represents an analyzed global MIDI parameter change message.
- *
- * @group MIDI.Protocol
  */
-export type GlobalMIDIParameterMessage = {
+export type GlobalMIDIParam = {
     [P in keyof GlobalMIDIParameter]: {
         /**
          * The message type identifier.
@@ -37,10 +45,8 @@ export type GlobalMIDIParameterMessage = {
  * > **Note**
  * >
  * > Channel number may be above 15 for multi-port MIDI setups.
- *
- * @group MIDI.Protocol
  */
-export type ChannelMIDIParameterMessage = {
+export type ChannelMIDIParam = {
     [P in keyof ChannelMIDIParameter]: {
         /**
          * The message type identifier.
@@ -62,10 +68,8 @@ export type ChannelMIDIParameterMessage = {
 }[keyof ChannelMIDIParameter];
 /**
  * Represents an analyzed GS Reverb Processor change.
- *
- * @group MIDI.Protocol
  */
-export type GSReverbParameterMessage =
+export type GSReverbParam =
     | {
           [P in keyof GSReverbParameter]: {
               /**
@@ -98,10 +102,8 @@ export type GSReverbParameterMessage =
       };
 /**
  * Represents an analyzed GS Chorus Processor change.
- *
- * @group MIDI.Protocol
  */
-export type GSChorusParameterMessage =
+export type GSChorusParam =
     | {
           [P in keyof GSChorusParameter]: {
               /**
@@ -134,10 +136,8 @@ export type GSChorusParameterMessage =
       };
 /**
  * Represents an analyzed GS Delay Processor change.
- *
- * @group MIDI.Protocol
  */
-export type GSDelayParameterMessage =
+export type GSDelayParam =
     | {
           [P in keyof GSDelayParameter]: {
               /**
@@ -170,10 +170,8 @@ export type GSDelayParameterMessage =
       };
 /**
  * Represents an analyzed GS Equalizer Processor change.
- *
- * @group MIDI.Protocol
  */
-export type GSEqualizerParameterMessage = {
+export type GSEqualizerParam = {
     [P in keyof GSEqualizerParameter]: {
         /**
          * The message type identifier.
@@ -191,10 +189,8 @@ export type GSEqualizerParameterMessage = {
 }[keyof GSEqualizerParameter];
 /**
  * Represents an analyzed GS Insertion Processor change.
- *
- * @group MIDI.Protocol
  */
-export type GSInsertionParameterMessage =
+export type GSInsertionParam =
     | {
           /**
            * An insertion effect processor parameter message (Roland GS).
@@ -255,10 +251,8 @@ export type GSInsertionParameterMessage =
 
 /**
  * Represents an analyzed Yamaha XG Reverb Processor change.
- *
- * @group MIDI.Protocol
  */
-export type XGReverbParameterMessage =
+export type XGReverbParam =
     | {
           /**
            * A reverb effect processor parameter message (Yamaha XG).
@@ -304,10 +298,8 @@ export type XGReverbParameterMessage =
       };
 /**
  * Represents an analyzed Yamaha XG Chorus Processor change.
- *
- * @group MIDI.Protocol
  */
-export type XGChorusParameterMessage =
+export type XGChorusParam =
     | {
           /**
            * A chorus effect processor parameter message (Yamaha XG).
@@ -352,23 +344,13 @@ export type XGChorusParameterMessage =
           value: number;
       };
 /**
- * Variation connection mode:
- * - `system` routes all channels via sends (like reverb and chorus).
- * - `insertion` routes a single `partNumber` channel straight through.
- *
- * @group MIDI.Protocol
- */
-export type XGVariationConnection = "system" | "insertion";
-/**
  * Represents an analyzed Yamaha XG Variation Processor change.
  *
  * Variation runs either as a system effect (all channels via sends, similarly to reverb and chorus and using the same CC as the GS delay)
  * or as an insertion effect (single `partNumber` channel routed straight
  * through it), selected by `connection`.
- *
- * @group MIDI.Protocol
  */
-export type XGVariationParameterMessage =
+export type XGVariationParam =
     | {
           /**
            * A variation effect processor parameter message (Yamaha XG).
@@ -436,10 +418,8 @@ export type XGVariationParameterMessage =
  * Represents an analyzed Yamaha XG Insertion Processor change (EFFECT 2).
  *
  * Insertion runs like variation in `insertion` mode, where it attaches to a single `partNumber` channel and its audio is routed straight through it.
- *
- * @group MIDI.Protocol
  */
-export type XGInsertionParameterMessage =
+export type XGInsertionParam =
     | {
           /**
            * An insertion effect processor parameter message (Yamaha XG).
@@ -505,10 +485,8 @@ export type XGInsertionParameterMessage =
  * > **Note**
  * >
  * > Channel number may be above 15 for multi-port MIDI setups.
- *
- * @group MIDI.Protocol
  */
-export type ChannelDrumSetupMessage = {
+export type ChannelDrumSetup = {
     [K in keyof DrumParameter]: {
         /**
          * A drum setup parameter message, set by NRPN.
@@ -534,10 +512,8 @@ export type ChannelDrumSetupMessage = {
 }[keyof DrumParameter];
 /**
  * Represents an analyzed map drum setup parameter change, set via System Exclusive.
- *
- * @group MIDI.Protocol
  */
-export type MapDrumSetupMessage = {
+export type MapDrumSetup = {
     [K in keyof DrumParameter]: {
         /**
          * A drum setup parameter message, set by SysEx.
@@ -568,20 +544,13 @@ export type MapDrumSetupMessage = {
  * > **Note**
  * >
  * > Channel number may be above 15 for multi-port MIDI setups.
- *
- * @group MIDI.Protocol
  */
-export type AnalyzedParameter =
-    | ChannelMIDIParameterMessage
-    | ChannelDrumSetupMessage
-    | OtherMessage
-    | ControllerChangeMessage;
+export type Parameter =
+    ChannelMIDIParam | ChannelDrumSetup | Other | ControllerChange;
 /**
  * Represents an unhandled or unrecognized analyzed message.
- *
- * @group MIDI.Protocol
  */
-export interface OtherMessage {
+export interface Other {
     /**
      * An unhandled or unrecognized parameter message.
      */
@@ -589,10 +558,8 @@ export interface OtherMessage {
 }
 /**
  * Represents an analyzed controller change, set via NRPN or System Exclusive.
- *
- * @group MIDI.Protocol
  */
-export interface ControllerChangeMessage {
+export interface ControllerChange {
     /**
      * A standard MIDI controller change mapped from an NRPN or parameter.
      */
@@ -615,31 +582,27 @@ export interface ControllerChangeMessage {
  *
  * Represents various parsed MIDI events, including effect parameters, channel setups,
  * program changes, display data, global parameters, user drum setups, and other analyzed parameters.
- *
- * @group MIDI.Protocol
  */
-export type AnalyzedMIDIMessage =
-    | AnalyzedParameter
-    | GSReverbParameterMessage
-    | GSChorusParameterMessage
-    | GSDelayParameterMessage
-    | GSEqualizerParameterMessage
-    | GSInsertionParameterMessage
-    | XGReverbParameterMessage
-    | XGChorusParameterMessage
-    | XGVariationParameterMessage
-    | XGInsertionParameterMessage
-    | GlobalMIDIParameterMessage
-    | UserDrumSetupMessage
-    | MapDrumSetupMessage
-    | ProgramChangeMessage
-    | DisplayDataMessage;
+export type Any =
+    | Parameter
+    | GSReverbParam
+    | GSChorusParam
+    | GSDelayParam
+    | GSEqualizerParam
+    | GSInsertionParam
+    | XGReverbParam
+    | XGChorusParam
+    | XGVariationParam
+    | XGInsertionParam
+    | GlobalMIDIParam
+    | UserDrumSetup
+    | MapDrumSetup
+    | ProgramChange
+    | DisplayData;
 /**
  * Represents an analyzed User Drum Set parameter change, set via System Exclusive.
- *
- * @group MIDI.Protocol
  */
-export type UserDrumSetupMessage = {
+export type UserDrumSetup = {
     [K in keyof UserDrumSetParameter]: {
         /**
          * A user drum set parameter setup message.
@@ -666,10 +629,8 @@ export type UserDrumSetupMessage = {
 }[keyof UserDrumSetParameter];
 /**
  * Represents an analyzed program change, set via System Exclusive.
- *
- * @group MIDI.Protocol
  */
-export interface ProgramChangeMessage {
+export interface ProgramChange {
     /**
      * A MIDI program change message configured via System Exclusive.
      */
@@ -685,10 +646,8 @@ export interface ProgramChangeMessage {
 }
 /**
  * Represents an analyzed display data message.
- *
- * @group MIDI.Protocol
  */
-export interface DisplayDataMessage {
+export interface DisplayData {
     /**
      * A System Exclusive display data message (e.g., Roland GS or Yamaha XG LCD text or graphic display data).
      */
@@ -696,10 +655,5 @@ export interface DisplayDataMessage {
 }
 /**
  * The analysis result of a System Exclusive (SysEx) MIDI message.
- *
- * @group MIDI.Protocol
  */
-export type AnalyzedSysExMessage = Exclude<
-    AnalyzedMIDIMessage,
-    ChannelDrumSetupMessage
->;
+export type SysEx = Exclude<Any, ChannelDrumSetup>;

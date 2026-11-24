@@ -10,10 +10,7 @@ import * as MIDIUtils from "../midi_utils";
 import type { DrumParameter } from "../../types";
 import { DEFAULT_XG_DRUM_MAP, MELODIC_MAP } from "../sysex_data";
 import type { ClearableParameter, EditContext } from "./types";
-import type {
-    ChannelDrumSetupMessage,
-    ChannelMIDIParameterMessage
-} from "../analyzed_message";
+import type * as AnalyzedMessage from "../analyzed_message";
 
 /**
  * Inserts the locked state of a channel before its first note on (after a reset).
@@ -214,7 +211,7 @@ export function firstNoteOn(ctx: EditContext, ticks: number, channel: number) {
                             param === "rxChannel" && value !== -1
                                 ? value % 16
                                 : value
-                    } as ChannelMIDIParameterMessage,
+                    } as AnalyzedMessage.ChannelMIDIParam,
                     { ticks, preferredSystem: ctx.system }
                 )
             );
@@ -269,7 +266,7 @@ export function firstNoteOn(ctx: EditContext, ticks: number, channel: number) {
                         key,
                         parameter: param,
                         value
-                    } as ChannelDrumSetupMessage,
+                    } as AnalyzedMessage.ChannelDrumSetup,
                     { ticks, drumPitchStep }
                 )
             );

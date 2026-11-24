@@ -14,12 +14,7 @@ import {
 
 import type { SysExAcceptedArray, MIDIEncodeOptions } from "../types";
 import type { MIDISystem } from "../../soundbank/types";
-import type {
-    AnalyzedMIDIMessage,
-    AnalyzedParameter,
-    AnalyzedSysExMessage,
-    GSChorusParameterMessage
-} from "./analyzed_message";
+import type * as AnalyzedMessage from "./analyzed_message";
 import {
     DEFAULT_GS_DRUM_MAP,
     DEFAULT_XG_DRUM_MAP,
@@ -76,7 +71,7 @@ const OTHER = Object.freeze({ type: "Other" as const }) as {
  * @param syx The System Exclusive message, WITHOUT the first `0xF0` System Exclusive byte!
  * @returns The analysis result(s) of the message.
  */
-export function analyzeSysEx(syx: SysExAcceptedArray): AnalyzedSysExMessage[] {
+export function analyzeSysEx(syx: SysExAcceptedArray): AnalyzedMessage.SysEx[] {
     // At least Manufacturer ID, Device ID and XG/GS model ID
     if (syx.length < 3) return [OTHER];
     switch (syx[0]) {
@@ -115,7 +110,7 @@ export function analyzeRPN(
     channel: number,
     rpn: number,
     value: number
-): AnalyzedParameter {
+): AnalyzedMessage.Parameter {
     switch (rpn) {
         default: {
             return OTHER;
@@ -176,7 +171,7 @@ export function analyzeNRPN(
     nrpn: number,
     value: number,
     drumPitchStep = 0.5
-): AnalyzedParameter {
+): AnalyzedMessage.Parameter {
     const msb = nrpn >> 7;
     const lsb = nrpn & 0x7f;
     if (msb === NonRegisteredParameterTypesMSB.partParameter) {
@@ -281,7 +276,7 @@ export const DEFAULT_MIDI_ENCODE_OPTIONS: MIDIEncodeOptions = {
  * or a value does not fit in it.
  */
 export function fromAnalyzedMessage(
-    message: AnalyzedMIDIMessage,
+    message: AnalyzedMessage.Any,
     options: Partial<MIDIEncodeOptions> = DEFAULT_MIDI_ENCODE_OPTIONS
 ) {
     const { preferredSystem, deviceID, ticks, drumPitchStep } =
@@ -291,7 +286,7 @@ export function fromAnalyzedMessage(
     if (channelMessages) {
         return channelMessages;
     }
-    const data = encodeSysEx(message as AnalyzedSysExMessage, preferredSystem);
+    const data = encodeSysEx(message as AnalyzedMessage.SysEx, preferredSystem);
     if (deviceID !== undefined) data[1] = deviceID;
     // Everything except the closing F7 has to be a 7-bit data byte
     for (let i = 0; i < data.length - 1; i++) {
@@ -356,7 +351,7 @@ function check7Bit(name: string, value: number) {
  * @returns The messages, or undefined if the message has no channel message form.
  */
 function encodeChannelMessage(
-    msg: AnalyzedMIDIMessage,
+    msg: AnalyzedMessage.Any,
     ticks: number,
     drumPitchStep: number
 ) {
@@ -612,7 +607,7 @@ function gm2GlobalParameter(slot: number, parameter: number, value: number) {
  * The GM2 Global Parameter Control numbers of the GS chorus parameters.
  */
 const GM2_CHORUS_PARAMETERS: Partial<
-    Record<GSChorusParameterMessage["parameter"], number>
+    Record<AnalyzedMessage.GSChorusParam["parameter"], number>
 > = {
     macro: 0,
     rate: 1,
@@ -627,7 +622,7 @@ const GM2_CHORUS_PARAMETERS: Partial<
  * @param system The selected system.
  * @returns The data, excluding the starting `0xF0`.
  */
-function encodeSysEx(msg: AnalyzedSysExMessage, system: MIDISystem) {
+function encodeSysEx(msg: AnalyzedMessage.SysEx, system: MIDISystem) {
     const universal = system === "gm" || system === "gm2";
     switch (msg.type) {
         case "Other":
@@ -1298,7 +1293,7 @@ function resetData(system: MIDISystem) {
     }
 }
 
-function analyzeGM(syx: SysExAcceptedArray): AnalyzedSysExMessage[] {
+function analyzeGM(syx: SysExAcceptedArray): AnalyzedMessage.SysEx[] {
     if (syx.length < 4) return [OTHER];
     const isRealtime = syx[0] === 0x7f;
 
@@ -1523,7 +1518,7 @@ function analyzeGM(syx: SysExAcceptedArray): AnalyzedSysExMessage[] {
     }
 }
 
-function analyzeXG(syx: SysExAcceptedArray): AnalyzedSysExMessage[] {
+function analyzeXG(syx: SysExAcceptedArray): AnalyzedMessage.SysEx[] {
     // Ensure XG
     if (syx[2] !== 0x4c || syx.length < 7) return [OTHER];
     const a1 = syx[3]; // Address 1
@@ -2495,7 +2490,7 @@ function analyzeXG(syx: SysExAcceptedArray): AnalyzedSysExMessage[] {
     return [OTHER];
 }
 
-function analyzeGS(syx: SysExAcceptedArray): AnalyzedSysExMessage[] {
+function analyzeGS(syx: SysExAcceptedArray): AnalyzedMessage.SysEx[] {
     if (
         syx.length < 10 ||
         // 0x12: DT1 (Device Transmit)
@@ -2751,7 +2746,7 @@ function analyzeGS(syx: SysExAcceptedArray): AnalyzedSysExMessage[] {
             a2 & 0x0f
         ];
         if (actualDrumParam === undefined) return [OTHER];
-        const analyzed = new Array<AnalyzedSysExMessage>();
+        const analyzed = new Array<AnalyzedMessage.SysEx>();
         for (let i = 0; i < dataLength && a3 + i < 128; i++) {
             const value = syx[i + 7];
             const midiNote = a3 + i;
@@ -3515,7 +3510,7 @@ function handleSingleUserDrum(
     a2: number,
     a3: number,
     data: number
-): AnalyzedSysExMessage {
+): AnalyzedMessage.SysEx {
     const drumSet = a2 >> 4;
     // The SC-88 and up have two User Drum Sets
     if (drumSet > 1) return OTHER;

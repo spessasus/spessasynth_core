@@ -11,7 +11,7 @@ import type {
     GSInsertionParameter,
     GSReverbProcessor
 } from "./audio_engine/effects/gs/types";
-import type { XGVariationConnection } from "../midi/midi_tools/analyzed_message";
+import type { XGVariationConnection } from "./audio_engine/effects/xg/interface/xg_variation_block";
 
 /**
  * A shared interface for all channel events.

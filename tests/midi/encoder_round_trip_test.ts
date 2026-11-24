@@ -4,14 +4,14 @@
 // The RPNs and the NRPNs.
 // Usage: npx tsx tests/midi/encoder_round_trip_test.ts
 import {
-    type AnalyzedMIDIMessage,
     type MIDIController,
     type MIDIEncodeOptions,
     type MIDIMessage,
     MIDIControllers,
     MIDIMessageTypes,
     MIDIUtils,
-    SpessaLog
+    SpessaLog,
+    type AnalyzedMessage
 } from "../../src";
 
 SpessaLog.setLogLevel(false, false, false);
@@ -29,7 +29,7 @@ const hexMessages = (messages: MIDIMessage[]) =>
  * Sorts the object keys, so results with the same content compare equal.
  * Poly and mono mode are the same thing as a channel parameter (GS) and as a controller (XG, the CC).
  */
-function normalize(msg: AnalyzedMIDIMessage) {
+function normalize(msg: AnalyzedMessage.Any) {
     const canonical =
         msg.type === "Channel MIDI Param" && msg.parameter === "polyMode"
             ? {
@@ -51,7 +51,7 @@ function normalize(msg: AnalyzedMIDIMessage) {
  * (selection MSB, selection LSB, data entry MSB, data entry LSB, the way the encoder writes them).
  */
 function analyzeMessages(messages: MIDIMessage[]) {
-    const results = new Array<AnalyzedMIDIMessage>();
+    const results = new Array<AnalyzedMessage.Any>();
     for (let i = 0; i < messages.length; i++) {
         const { statusByte, data } = messages[i];
         if (statusByte === MIDIMessageTypes.systemExclusive) {
@@ -128,7 +128,7 @@ function analyzeMessages(messages: MIDIMessage[]) {
  * @param options The encoding options.
  */
 function roundTrip(
-    result: AnalyzedMIDIMessage,
+    result: AnalyzedMessage.Any,
     source: string,
     options: Partial<MIDIEncodeOptions>
 ) {

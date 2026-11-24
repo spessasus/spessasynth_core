@@ -1,10 +1,5 @@
 import type { DrumParameter, UserDrumSetParameter } from "../types";
-import type {
-    GSChorusParameterMessage,
-    GSDelayParameterMessage,
-    GSEqualizerParameterMessage,
-    GSReverbParameterMessage
-} from "./analyzed_message";
+import type * as AnalyzedMessage from "./analyzed_message";
 import type { ChannelMIDIParameter } from "../../synthesizer/audio_engine/channel/parameters/midi";
 import type { GSInsertionParameter } from "../../synthesizer/audio_engine/effects/gs/interface/gs_insertion_block";
 import {
@@ -59,7 +54,7 @@ export const XGDrumParamMap: Record<keyof DrumParameter, number> = {
 };
 
 export const GSReverbAddressMap: Record<
-    GSReverbParameterMessage["parameter"],
+    AnalyzedMessage.GSReverbParam["parameter"],
     number
 > = {
     macro: 0x30,
@@ -82,7 +77,7 @@ export const GSInsertionAddressMap: Record<keyof GSInsertionParameter, number> =
         sendEQSwitch: 0x1f
     };
 export const GSChorusAddressMap: Record<
-    GSChorusParameterMessage["parameter"],
+    AnalyzedMessage.GSChorusParam["parameter"],
     number
 > = {
     macro: 0x38,
@@ -96,7 +91,7 @@ export const GSChorusAddressMap: Record<
     sendLevelToDelay: 0x40
 };
 export const GSDelayAddressMap: Record<
-    GSDelayParameterMessage["parameter"],
+    AnalyzedMessage.GSDelayParam["parameter"],
     number
 > = {
     macro: 0x50,
@@ -112,7 +107,7 @@ export const GSDelayAddressMap: Record<
     sendLevelToReverb: 0x5a
 };
 export const GSEqualizerAddressMap: Record<
-    GSEqualizerParameterMessage["parameter"],
+    AnalyzedMessage.GSEqualizerParam["parameter"],
     number
 > = {
     lowFrequency: 0x00,

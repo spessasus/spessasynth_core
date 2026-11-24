@@ -1,7 +1,7 @@
 import type { MIDIMessage } from "../../midi_message";
 import * as BankSelectHacks from "../../../utils/bank_select_hacks";
 import * as MIDIUtils from "../midi_utils";
-import type { AnalyzedMIDIMessage } from "../analyzed_message";
+import type * as AnalyzedMessage from "../analyzed_message";
 import type { EditContext, ModifyMIDIOptions } from "./types";
 import { deleteCurrentEvent } from "./delete_event";
 import {
@@ -25,7 +25,7 @@ const EFFECT_OPTIONS = {
     "XG Chorus Param": "xgChorusParams",
     "XG Variation Param": "xgVariationParams"
 } as const satisfies Partial<
-    Record<AnalyzedMIDIMessage["type"], keyof ModifyMIDIOptions>
+    Record<AnalyzedMessage.Any["type"], keyof ModifyMIDIOptions>
 >;
 
 /**

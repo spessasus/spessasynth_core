@@ -3,11 +3,7 @@ import type { MIDISystem } from "../../../soundbank/types";
 import type { GlobalMIDIParameter } from "../../../synthesizer/audio_engine/parameters/midi";
 import * as MIDIUtils from "../midi_utils";
 import type { UserDrumSetParameter } from "../../types";
-import type {
-    AnalyzedSysExMessage,
-    GSInsertionParameterMessage,
-    UserDrumSetupMessage
-} from "../analyzed_message";
+import type * as AnalyzedMessage from "../analyzed_message";
 import { GSEqualizerAddressMap, GSInsertionAddressMap } from "../sysex_data";
 import type { ClearableParameter, ModifyMIDIOptions } from "./types";
 import type {
@@ -86,7 +82,7 @@ export function generateSetup(
     // The effects and User Drum Sets are always written as GS or XG,
     // Only the global MIDI parameters follow the system (Universal for GM)
     const add = (
-        message: AnalyzedSysExMessage,
+        message: AnalyzedMessage.SysEx,
         messageSystem: MIDISystem = "gs"
     ) => {
         output.push(
@@ -309,7 +305,7 @@ export function generateSetup(
                     type: "GS Insertion Param",
                     parameter,
                     value: p[parameter]
-                } as GSInsertionParameterMessage);
+                } as AnalyzedMessage.GSInsertionParam);
             }
         }
     }
@@ -343,7 +339,7 @@ export function generateSetup(
                             midiNote,
                             parameter,
                             value
-                        } as UserDrumSetupMessage);
+                        } as AnalyzedMessage.UserDrumSetup);
                     }
                 }
             }

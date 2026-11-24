@@ -10,6 +10,14 @@ import type {
 } from "./xg_insertion_block";
 
 /**
+ * Variation connection mode:
+ * - `system` routes all channels via sends (like reverb and chorus).
+ * - `insertion` routes a single `partNumber` channel straight through.
+ *
+ * @group Synthesizer.XG Effects
+ */
+export type XGVariationConnection = "system" | "insertion";
+/**
  * Parameters for the XG variation effect.
  *
  * @group Synthesizer.XG Effects

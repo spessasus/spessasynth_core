@@ -10,7 +10,7 @@ import {
 } from "../../enums";
 import * as MIDIUtils from "../midi_utils";
 import { RP_15_RESET_CC_NUMS } from "../../../synthesizer/audio_engine/channel/reset";
-import type { AnalyzedMIDIMessage } from "../analyzed_message";
+import type * as AnalyzedMessage from "../analyzed_message";
 import { MELODIC_MAP } from "../sysex_data";
 import type { ChannelStatus, EditContext } from "./types";
 import type { PortTracker } from "../port_tracker";
@@ -30,7 +30,7 @@ import { shouldClearChannelDrum } from "./locks";
 export function handleChannelMIDIParam(
     ctx: EditContext,
     channel: number,
-    data: Extract<AnalyzedMIDIMessage, { type: "Channel MIDI Param" }>,
+    data: Extract<AnalyzedMessage.Any, { type: "Channel MIDI Param" }>,
     isRPN = false
 ) {
     const channelStatus = ctx.channels[channel];

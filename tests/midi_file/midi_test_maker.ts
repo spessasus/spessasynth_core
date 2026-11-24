@@ -2,15 +2,14 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import {
     type ChannelMIDIParameter,
-    type ChannelMIDIParameterMessage,
     type GlobalMIDIParameter,
-    type GlobalMIDIParameterMessage,
     MIDIBuilder,
     type MIDIController,
     MIDIControllers,
     MIDIMessageTypes,
     type MIDISystem,
-    MIDIUtils as MIDIUtilities
+    MIDIUtils as MIDIUtilities,
+    type AnalyzedMessage
 } from "../../src";
 import { fillWithDefaults } from "../../src/utils/fill_with_defaults";
 import { arrayToHexString } from "../../src/utils/other";
@@ -142,7 +141,7 @@ export class MIDITestMaker extends MIDIBuilder {
                     type: "Global MIDI Param",
                     parameter,
                     value
-                } as GlobalMIDIParameterMessage,
+                } as AnalyzedMessage.GlobalMIDIParam,
                 { ticks: this.ticks, preferredSystem: this.system }
             )
         );
@@ -160,7 +159,7 @@ export class MIDITestMaker extends MIDIBuilder {
                     channel: this.channel,
                     parameter,
                     value
-                } as ChannelMIDIParameterMessage,
+                } as AnalyzedMessage.ChannelMIDIParam,
                 { ticks: this.ticks, preferredSystem: this.system }
             )
         );
