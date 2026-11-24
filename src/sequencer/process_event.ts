@@ -47,9 +47,7 @@ export function processEventInternal(
         }
         this.sendMIDIMessage(
             // SysEx escape sends its bytes as-is, synth does not parse them
-            event.statusByte === MIDIMessageTypes.systemExclusiveEscape
-                ? [...event.data]
-                : [event.statusByte, ...event.data],
+            Array.from(event.toBytes()),
             // A global SysEx from a port without notes goes to the first port, it is device-wide anyway
             portOffset ?? 0
         );

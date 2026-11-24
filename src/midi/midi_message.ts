@@ -238,4 +238,27 @@ export class MIDIMessage {
             )
         ];
     }
+
+    /**
+     * Returns the message as raw MIDI bytes.
+     * - Voice and System Exclusive messages: the status byte followed by the data.
+     * - System Exclusive escape messages (`0xF7`): the data as it is, the escape byte is not sent.
+     * @returns A new array with the bytes.
+     * @throws Error for Meta Events, they only exist in MIDI files and can not be sent.
+     */
+    public toBytes() {
+        if (this.statusByte === MIDIMessageTypes.systemExclusiveEscape) {
+            return this.data.slice();
+        }
+        // Meta Events store their second status byte, which is below 0x80
+        if (this.statusByte < 0x80) {
+            throw new Error(
+                `Meta Event ${this.statusByte} can not be sent as a MIDI message.`
+            );
+        }
+        const bytes = new Uint8Array(this.data.length + 1);
+        bytes[0] = this.statusByte;
+        bytes.set(this.data, 1);
+        return bytes;
+    }
 }

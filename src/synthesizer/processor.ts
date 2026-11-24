@@ -1088,10 +1088,10 @@ export class SpessaSynthProcessor {
         channelOffset = 0,
         options: SynthMethodOptions = DEFAULT_SYNTH_METHOD_OPTIONS
     ) {
+        // Ignore meta
+        if (message instanceof MIDIMessage && message.statusByte < 0x80) return;
         const raw =
-            message instanceof MIDIMessage
-                ? [message.statusByte, ...message.data]
-                : message;
+            message instanceof MIDIMessage ? message.toBytes() : message;
 
         const time = options.time;
         if (time > this.currentTime) {
