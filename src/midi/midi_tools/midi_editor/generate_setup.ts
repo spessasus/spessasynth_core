@@ -4,17 +4,17 @@ import type { GlobalMIDIParameter } from "../../../synthesizer/audio_engine/para
 import * as MIDIUtils from "../midi_utils";
 import type { UserDrumSetParameter } from "../../types";
 import { GSEqualizerAddressMap, GSInsertionAddressMap } from "../sysex_data";
-import type { ClearableParameter } from "./types";
-import type { MIDIEditor } from "./midi_editor";
+import type { ClearableParameter, ModifyMIDIOptions } from "./types";
 
 /**
  * Generates a full setup after a reset is encountered.
+ * @param options The global options (MIDI parameters, effects, User Drum Sets).
  * @param targetTicks The tick of the reset the setup goes after.
  * @param system The system the setup is written for.
  * @returns The setup messages.
  */
 export function generateSetup(
-    this: MIDIEditor,
+    options: Omit<ModifyMIDIOptions, "channels">,
     targetTicks: number,
     system: MIDISystem
 ) {
@@ -28,11 +28,11 @@ export function generateSetup(
 
     // Add MIDI parameters
     const midiParamKeys = Object.keys(
-        this.midiParams ?? {}
+        options.midiParams ?? {}
     ) as (keyof GlobalMIDIParameter)[];
     for (const param of midiParamKeys) {
         if (param === "system") continue;
-        const value = this.midiParams?.[param];
+        const value = options.midiParams?.[param];
         if (value === undefined || value === "clear") continue;
         output.push(
             ...MIDIUtils.setGlobalMIDIParameter(
@@ -46,8 +46,8 @@ export function generateSetup(
 
     // Add effects
     if (system === "xg") {
-        if (this.xgReverbParams && this.xgReverbParams !== "clear") {
-            const p = this.xgReverbParams;
+        if (options.xgReverbParams && options.xgReverbParams !== "clear") {
+            const p = options.xgReverbParams;
             output.push(
                 MIDIUtils.setXGReverbParameter(targetTicks, "type", p.type),
                 MIDIUtils.setXGReverbParameter(targetTicks, "return", p.return),
@@ -63,8 +63,8 @@ export function generateSetup(
                 );
             }
         }
-        if (this.xgChorusParams && this.xgChorusParams !== "clear") {
-            const p = this.xgChorusParams;
+        if (options.xgChorusParams && options.xgChorusParams !== "clear") {
+            const p = options.xgChorusParams;
             output.push(
                 MIDIUtils.setXGChorusParameter(targetTicks, "type", p.type),
                 MIDIUtils.setXGChorusParameter(targetTicks, "return", p.return),
@@ -85,8 +85,11 @@ export function generateSetup(
                 );
             }
         }
-        if (this.xgVariationParams && this.xgVariationParams !== "clear") {
-            const p = this.xgVariationParams;
+        if (
+            options.xgVariationParams &&
+            options.xgVariationParams !== "clear"
+        ) {
+            const p = options.xgVariationParams;
             output.push(
                 MIDIUtils.setXGVariationParameter(targetTicks, "type", p.type),
                 MIDIUtils.setXGVariationParameter(
@@ -126,8 +129,11 @@ export function generateSetup(
                 );
             }
         }
-        if (this.xgInsertionParams) {
-            for (const [insertionNumber, snapshot] of this.xgInsertionParams) {
+        if (options.xgInsertionParams) {
+            for (const [
+                insertionNumber,
+                snapshot
+            ] of options.xgInsertionParams) {
                 if (snapshot === "clear") {
                     continue;
                 }
@@ -158,8 +164,8 @@ export function generateSetup(
             }
         }
     } else {
-        if (this.gsReverbParams && this.gsReverbParams !== "clear") {
-            const p = this.gsReverbParams;
+        if (options.gsReverbParams && options.gsReverbParams !== "clear") {
+            const p = options.gsReverbParams;
             output.push(
                 MIDIUtils.setGSReverbParameter(targetTicks, "level", p.level),
                 MIDIUtils.setGSReverbParameter(
@@ -185,8 +191,8 @@ export function generateSetup(
                 )
             );
         }
-        if (this.gsChorusParams && this.gsChorusParams !== "clear") {
-            const p = this.gsChorusParams;
+        if (options.gsChorusParams && options.gsChorusParams !== "clear") {
+            const p = options.gsChorusParams;
             output.push(
                 MIDIUtils.setGSChorusParameter(targetTicks, "level", p.level),
                 MIDIUtils.setGSChorusParameter(
@@ -214,8 +220,8 @@ export function generateSetup(
                 )
             );
         }
-        if (this.gsDelayParams && this.gsDelayParams !== "clear") {
-            const p = this.gsDelayParams;
+        if (options.gsDelayParams && options.gsDelayParams !== "clear") {
+            const p = options.gsDelayParams;
             output.push(
                 MIDIUtils.setGSDelayParameter(targetTicks, "level", p.level),
                 MIDIUtils.setGSDelayParameter(
@@ -265,8 +271,11 @@ export function generateSetup(
                 )
             );
         }
-        if (this.gsEqualizerParams && this.gsEqualizerParams !== "clear") {
-            const p = this.gsEqualizerParams;
+        if (
+            options.gsEqualizerParams &&
+            options.gsEqualizerParams !== "clear"
+        ) {
+            const p = options.gsEqualizerParams;
             for (const name of Object.keys(
                 GSEqualizerAddressMap
             ) as (keyof typeof GSEqualizerAddressMap)[]) {
@@ -279,8 +288,11 @@ export function generateSetup(
                 );
             }
         }
-        if (this.gsInsertionParams && this.gsInsertionParams !== "clear") {
-            const p = this.gsInsertionParams;
+        if (
+            options.gsInsertionParams &&
+            options.gsInsertionParams !== "clear"
+        ) {
+            const p = options.gsInsertionParams;
             // This adds them in order
             // The order is:
             // Type (resets the params and sends)
@@ -311,8 +323,8 @@ export function generateSetup(
     }
 
     // User Drum parameters
-    if (this.userDrumSetParams)
-        for (const [drumSet, params] of this.userDrumSetParams) {
+    if (options.userDrumParams)
+        for (const [drumSet, params] of options.userDrumParams) {
             if (params !== "clear") {
                 for (const [midiNote, noteParams] of params) {
                     // Note cleared

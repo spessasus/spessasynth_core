@@ -3,36 +3,44 @@ import { ConsoleColors } from "../../../utils/other";
 import { MIDIMessage } from "../../midi_message";
 import { MIDI_DRUM_CHANNEL } from "../../../synthesizer/audio_engine/synth_constants";
 import * as BankSelectHacks from "../../../utils/bank_select_hacks";
-import { type MIDIController, MIDIControllers } from "../../enums";
+import {
+    type MIDIController,
+    MIDIControllers,
+    MIDIMessageTypes
+} from "../../enums";
 import * as MIDIUtils from "../midi_utils";
-import type { DrumParameter, UserDrumSetParameter } from "../../types";
 import { RP_15_RESET_CC_NUMS } from "../../../synthesizer/audio_engine/channel/reset";
 import type { AnalyzedMIDIMessage } from "../analyzed_message";
 import { MELODIC_MAP } from "../sysex_data";
-import type { MIDIEditor } from "./midi_editor";
+import type { ChannelStatus, EditContext } from "./types";
+import type { PortTracker } from "../port_tracker";
+import { deleteCurrentEvent } from "./delete_event";
+import { clearedSelection, unmodifiedSelection } from "./channel_status";
+import { shouldClearChannelDrum } from "./locks";
 
 /**
  * Handles a channel MIDI parameter change, from an RPN or a SysEx.
  * Deletes it if the parameter (or the drum mode, through a locked patch) is locked,
  * adds the relative fine tune to the file's fine tune, and tracks the drum map.
+ * @param ctx The edit context.
  * @param channel The channel, with the port offset.
  * @param data The analyzed parameter change.
  * @param isRPN If the change comes from an RPN (data entry), not a SysEx.
  */
 export function handleChannelMIDIParam(
-    this: MIDIEditor,
+    ctx: EditContext,
     channel: number,
     data: Extract<AnalyzedMIDIMessage, { type: "Channel MIDI Param" }>,
     isRPN = false
 ) {
-    const channelStatus = this.channelStatuses[channel];
+    const channelStatus = ctx.channels[channel];
     if (!channelStatus) return;
-    const channelChange = this.channelChanges.get(channel);
+    const channelChange = ctx.options.channelChanges.get(channel);
 
     // Locked, remove
     // The first note on inserts the locked value with the relative tune added, so we delete it here
     if (channelChange?.midiParams?.[data.parameter] !== undefined) {
-        this.deleteCurrentEvent();
+        deleteCurrentEvent(ctx);
         return;
     }
     // A locked patch owns the drum mode too, like bank select.
@@ -42,29 +50,27 @@ export function handleChannelMIDIParam(
         channelChange?.patch &&
         channelChange.patch !== "clear"
     ) {
-        this.deleteCurrentEvent();
+        deleteCurrentEvent(ctx);
         return;
     }
     // Track the drum map, only if the message stays
     if (data.parameter === "drumMap") {
         // Like the synth's part mode on XG (and GM2): the bank follows the mode
         // Before the next program change, and the XG drum part refuses to turn melodic
-        if (BankSelectHacks.isSystemXG(this.system)) {
+        if (BankSelectHacks.isSystemXG(ctx.system)) {
             const isDrum = data.value !== MELODIC_MAP;
             if (
                 !isDrum &&
-                this.system === "xg" &&
+                ctx.system === "xg" &&
                 channel % 16 === MIDI_DRUM_CHANNEL
             )
                 return;
             if (!isDrum)
                 channelStatus.bankMSB = BankSelectHacks.getDefaultBank(
-                    this.system
+                    ctx.system
                 );
             else if (!BankSelectHacks.isXGDrum(channelStatus.bankMSB))
-                channelStatus.bankMSB = BankSelectHacks.getDrumBank(
-                    this.system
-                );
+                channelStatus.bankMSB = BankSelectHacks.getDrumBank(ctx.system);
         }
         channelStatus.drumMap = data.value;
     }
@@ -97,10 +103,9 @@ export function handleChannelMIDIParam(
     );
 
     // And update this tuning
-    const index = this.eventIndexes[this.trackNum];
-    const e = this.midi.tracks[this.trackNum].events[index];
+    const e = ctx.cursor.event;
 
-    this.deleteCurrentEvent();
+    deleteCurrentEvent(ctx);
 
     // Don't update tuning if no notes have played.
     if (channelStatus.isFirstNoteOn) {
@@ -111,7 +116,7 @@ export function handleChannelMIDIParam(
     const newRPN = MIDIUtils.setChannelMIDIParameter(
         e.ticks,
         channel % 16,
-        this.system,
+        ctx.system,
         "fineTune",
         targetTune
     );
@@ -132,7 +137,7 @@ export function handleChannelMIDIParam(
     }
 
     // And update this tuning
-    this.addEventsBefore(...newRPN);
+    ctx.cursor.insertBefore(...newRPN);
     // Track after adding, only for RPN change.
     // A not-RPN message voids any pending pair instead:
     // A later half belongs to a new message, not the old one.
@@ -140,79 +145,16 @@ export function handleChannelMIDIParam(
 }
 
 /**
- * Checks if the options lock or clear a User Drum Set parameter of a note.
- * @param drumSet The User Drum Set number, 0 based.
- * @param midiNote The MIDI note number.
- * @param parameter The User Drum Set parameter.
- * @returns True if the file's message for it should be removed.
- */
-export function isUserDrumLocked(
-    this: MIDIEditor,
-    drumSet: number,
-    midiNote: number,
-    parameter: keyof UserDrumSetParameter
-) {
-    const params = this.userDrumSetParams?.get(drumSet);
-    if (!params) return false;
-    if (params === "clear") return true;
-    const noteParams = params.get(midiNote);
-    return noteParams === "clear" || noteParams?.[parameter] !== undefined;
-}
-
-/**
- * Checks if the options lock or clear a drum parameter of a note on this channel.
- * @param channel The channel, with the port offset.
- * @param key The MIDI note number.
- * @param parameter The drum parameter.
- * @returns True if the file's message for it should be removed.
- */
-export function shouldClearChannelDrum(
-    this: MIDIEditor,
-    channel: number,
-    key: number,
-    parameter: keyof DrumParameter
-) {
-    const drumParams = this.channelChanges.get(channel)?.drumParams;
-    if (drumParams === undefined) return false;
-    // "clear" removes all drum edits for this channel
-    if (drumParams === "clear") return true;
-    const noteParams = drumParams.get(key);
-    // Either "clear" or a set value removes the file's message
-    return (
-        noteParams !== undefined &&
-        (noteParams === "clear" || noteParams[parameter] !== undefined)
-    );
-}
-
-/**
- * This checks the sysEx version of drum setup, which specifies a map rather than a channel.
- */
-export function shouldClearMapDrum(
-    this: MIDIEditor,
-    drumMap: number,
-    key: number,
-    parameter: keyof DrumParameter
-) {
-    // The synth applies map edits to the channels of every port
-    for (let channel = 0; channel < this.channelStatuses.length; channel++) {
-        if (this.channelStatuses[channel].drumMap !== drumMap) continue;
-        if (this.shouldClearChannelDrum(channel, key, parameter)) {
-            return true;
-        }
-    }
-    return false;
-}
-
-/**
  * Handles a controller change, from a CC message or a SysEx.
  * Deletes locked controllers, tracks the RPN/NRPN selection and data entry
  * (a locked parameter deletes the whole RPN/NRPN message) and handles Reset All Controllers.
+ * @param ctx The edit context.
  * @param ccNum The controller number.
  * @param value The controller value.
  * @param channel The channel, with the port offset.
  */
 export function handleControllerChange(
-    this: MIDIEditor,
+    ctx: EditContext,
     ccNum: MIDIController,
     value: number,
     channel: number
@@ -220,14 +162,14 @@ export function handleControllerChange(
     // Change may be undefined but don't check, because we may encounter a "clear Drum param" request while the channel is not changed
     // This still involves removing the drum NRPN
     // Also param tracking
-    const channelChange = this.channelChanges.get(channel);
-    const channelStatus = this.channelStatuses[channel];
+    const channelChange = ctx.options.channelChanges.get(channel);
+    const channelStatus = ctx.channels[channel];
 
-    const index = this.eventIndexes[this.trackNum];
+    const index = ctx.cursor.index;
     const change = channelChange?.controllers?.get(ccNum);
     if (change !== undefined) {
         // This controller is locked, BEGONE CHANGE!
-        this.deleteCurrentEvent();
+        deleteCurrentEvent(ctx);
         return;
     }
     switch (ccNum) {
@@ -235,7 +177,7 @@ export function handleControllerChange(
         case MIDIControllers.bankSelectLSB: {
             if (channelChange?.patch) {
                 // BEGONE!
-                this.deleteCurrentEvent();
+                deleteCurrentEvent(ctx);
                 return;
             }
             if (ccNum === MIDIControllers.bankSelect)
@@ -246,7 +188,7 @@ export function handleControllerChange(
         case MIDIControllers.pan: {
             if (channelChange?.midiParams?.randomPan === true) {
                 // Random pan gets disabled by regular pan, prevent that here
-                this.deleteCurrentEvent();
+                deleteCurrentEvent(ctx);
             }
             return;
         }
@@ -268,7 +210,7 @@ export function handleControllerChange(
             channelStatus.param.controllerChange(
                 ccNum,
                 value,
-                this.trackNum,
+                ctx.cursor.track,
                 index
             );
             return;
@@ -280,30 +222,32 @@ export function handleControllerChange(
             const data = channelStatus.param.controllerChange(
                 ccNum,
                 value,
-                this.trackNum,
+                ctx.cursor.track,
                 index
             );
-            this.currentParameterChannel = channel;
+            ctx.cursor.parameterChannel = channel;
 
             // Unrecognized parameters are kept as-is
             switch (data?.type) {
                 case "Channel Drum Setup": {
                     if (
-                        this.shouldClearChannelDrum(
+                        shouldClearChannelDrum(
+                            ctx.options.channelChanges,
                             data.channel,
                             data.key,
                             data.parameter
                         )
                     ) {
                         // Drum param, BEGONE!
-                        this.deleteCurrentEvent();
+                        deleteCurrentEvent(ctx);
                     }
                     break;
                 }
 
                 case "Controller Change": {
                     // NRPN can change controllers too!
-                    this.handleControllerChange(
+                    handleControllerChange(
+                        ctx,
                         data.controller,
                         data.value,
                         data.channel
@@ -312,7 +256,7 @@ export function handleControllerChange(
                 }
 
                 case "Channel MIDI Param": {
-                    this.handleChannelMIDIParam(channel, data, true);
+                    handleChannelMIDIParam(ctx, channel, data, true);
                     break;
                 }
             }
@@ -339,7 +283,7 @@ export function handleControllerChange(
             //   NRPN MSB, LSB, Data, (inserted RPN on first note on), Data (needs the NRPN back)
             // After that, the selection is unchanged, so following data entries don't need it again.
             // Testcase: midi_editor_nrpn_test.ts (Case: shared NRPN MSB, cleared then kept)
-            if (this.currentEventDeleted) return;
+            if (ctx.cursor.deleted) return;
             const p = channelStatus.param;
             // A mode switch restores both, as a device may not remember the other mode's selection
             const modeSwitch =
@@ -349,17 +293,14 @@ export function handleControllerChange(
             );
             if (restore.length === 0) return;
 
-            const current =
-                this.midi.tracks[this.trackNum].events[
-                    this.eventIndexes[this.trackNum]
-                ];
+            const current = ctx.cursor.event;
             const midiChannel = current.statusByte & 0xf;
             for (const cc of restore) {
                 // Point the tracker at the restored event, it's the one in use now
                 const tracked = p.getParameterSelect(cc);
-                tracked.track = this.trackNum;
-                tracked.event = this.eventIndexes[this.trackNum];
-                this.addEventsBefore(
+                tracked.track = ctx.cursor.track;
+                tracked.event = ctx.cursor.index;
+                ctx.cursor.insertBefore(
                     MIDIMessage.controllerChange(
                         current.ticks,
                         midiChannel,
@@ -370,7 +311,7 @@ export function handleControllerChange(
             }
             // A selection resets the data MSB, so the LSB would apply to a zeroed MSB
             if (ccNum === MIDIControllers.dataEntryLSB && p.dataMSB.v !== 0) {
-                this.addEventsBefore(
+                ctx.cursor.insertBefore(
                     MIDIMessage.controllerChange(
                         current.ticks,
                         midiChannel,
@@ -392,20 +333,10 @@ export function handleControllerChange(
             // RP-15: the selection is set to null, both in the file and the output.
             channelStatus.param.resetAllControllers();
             channelStatus.pendingParam = undefined;
-            channelStatus.clearedParams.selection = {
-                [MIDIControllers.registeredParameterMSB]: true,
-                [MIDIControllers.registeredParameterLSB]: true,
-                [MIDIControllers.nonRegisteredParameterMSB]: true,
-                [MIDIControllers.nonRegisteredParameterLSB]: true
-            };
-            channelStatus.selectionModified = {
-                [MIDIControllers.registeredParameterMSB]: false,
-                [MIDIControllers.registeredParameterLSB]: false,
-                [MIDIControllers.nonRegisteredParameterMSB]: false,
-                [MIDIControllers.nonRegisteredParameterLSB]: false
-            };
+            channelStatus.clearedParams.selection = clearedSelection();
+            channelStatus.selectionModified = unmodifiedSelection();
             channelStatus.outputRegistered = channelStatus.param.isRegistered;
-            this.handleResetAllControllers(channel);
+            handleResetAllControllers(ctx, channel);
             return;
         }
 
@@ -446,13 +377,13 @@ export function handleControllerChange(
  *
  *  Note:
  *  GS/XG only reset the specified CCs above.
+ * @param ctx The edit context.
+ * @param channel The channel, with the port offset.
  */
-export function handleResetAllControllers(this: MIDIEditor, channel: number) {
-    const track = this.midi.tracks[this.trackNum];
+export function handleResetAllControllers(ctx: EditContext, channel: number) {
     // Add after this event, on the same tick.
-    const index = this.eventIndexes[this.trackNum];
-    const ticks = track.events[index].ticks;
-    const channelChange = this.channelChanges.get(channel);
+    const ticks = ctx.cursor.event.ticks;
+    const channelChange = ctx.options.channelChanges.get(channel);
     if (!channelChange) return;
 
     // Restore MIDI parameters
@@ -460,11 +391,11 @@ export function handleResetAllControllers(this: MIDIEditor, channel: number) {
         channelChange.midiParams?.pitchWheel !== undefined &&
         channelChange.midiParams?.pitchWheel !== "clear"
     ) {
-        this.addEventsAfter(
+        ctx.cursor.insertAfter(
             ...MIDIUtils.setChannelMIDIParameter(
                 ticks,
                 channel,
-                this.system,
+                ctx.system,
                 "pitchWheel",
                 channelChange.midiParams.pitchWheel
             )
@@ -474,11 +405,11 @@ export function handleResetAllControllers(this: MIDIEditor, channel: number) {
         channelChange.midiParams?.pressure !== undefined &&
         channelChange.midiParams?.pressure !== "clear"
     ) {
-        this.addEventsAfter(
+        ctx.cursor.insertAfter(
             ...MIDIUtils.setChannelMIDIParameter(
                 ticks,
                 channel,
-                this.system,
+                ctx.system,
                 "pressure",
                 channelChange.midiParams.pressure
             )
@@ -487,9 +418,43 @@ export function handleResetAllControllers(this: MIDIEditor, channel: number) {
     for (const cc of RP_15_RESET_CC_NUMS) {
         const value = channelChange.controllers?.get(cc);
         if (value !== undefined && value !== "clear") {
-            this.addEventsAfter(
+            ctx.cursor.insertAfter(
                 MIDIMessage.controllerChange(ticks, channel, cc, value)
             );
         }
     }
+}
+
+/**
+ * Tracks the N/RPN selection controllers inserted by the editor.
+ * They change the output's selection, which may no longer match what the file selected.
+ * Testcase: midi_editor_nrpn_test.ts (Case: inserted RPN before a file's LSB-only NRPN)
+ * @param ports The port tracker, for the channel of the event.
+ * @param channels The tracked state of every channel.
+ * @param e The inserted event.
+ * @param track The track the event was inserted on.
+ */
+export function trackInsertedSelection(
+    ports: PortTracker,
+    channels: ChannelStatus[],
+    e: MIDIMessage,
+    track: number
+) {
+    if ((e.statusByte & 0xf0) !== MIDIMessageTypes.controllerChange) return;
+    const cc = e.data[0];
+    if (
+        // eslint-disable-next-line unicorn/prefer-includes-over-repeated-comparisons -- the comparisons narrow cc to ParameterCC
+        cc !== MIDIControllers.registeredParameterMSB &&
+        cc !== MIDIControllers.registeredParameterLSB &&
+        cc !== MIDIControllers.nonRegisteredParameterMSB &&
+        cc !== MIDIControllers.nonRegisteredParameterLSB
+    )
+        return;
+    const portOffset = ports.offset(track) ?? channels.length;
+    const ch = channels[(e.statusByte & 0xf) + portOffset];
+    if (!ch) return;
+    ch.selectionModified[cc] = e.data[1] !== ch.param.getParameterSelect(cc).v;
+    ch.outputRegistered =
+        cc === MIDIControllers.registeredParameterMSB ||
+        cc === MIDIControllers.registeredParameterLSB;
 }

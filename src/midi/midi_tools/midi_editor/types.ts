@@ -4,6 +4,8 @@ import type { MIDISystem } from "../../../soundbank/types";
 import type { ChannelMIDIParameter } from "../../../synthesizer/audio_engine/channel/parameters/midi";
 import type { GlobalMIDIParameter } from "../../../synthesizer/audio_engine/parameters/midi";
 import type { MIDIController } from "../../enums";
+import type { PortTracker } from "../port_tracker";
+import type { EventCursor } from "./event_cursor";
 import type { ParameterCC, ParameterTracker } from "../parameter_tracker";
 import type { DrumParameter, UserDrumSetParameter } from "../../types";
 import type {
@@ -421,6 +423,7 @@ export interface ChannelStatus {
 
 /**
  * A position surviving additions and deletions for tracking resets.
+ * @internal
  */
 export interface ResetPosition {
     /**
@@ -437,4 +440,99 @@ export interface ResetPosition {
      * The track containing the event.
      */
     track: number;
+}
+
+/**
+ * The modify options, parsed once for the whole edit.
+ * @internal
+ */
+export interface EditOptions extends Omit<ModifyMIDIOptions, "channels"> {
+    /**
+     * The modified channels, without the cleared ones.
+     */
+    readonly channelChanges: Map<number, ChannelModification>;
+    /**
+     * The cleared channels, all their messages get deleted.
+     */
+    readonly clearedChannels: Set<number>;
+    /**
+     * If new GS effect settings are requested.
+     */
+    readonly hasGSEffects: boolean;
+    /**
+     * If new XG effect settings are requested.
+     */
+    readonly hasXGEffects: boolean;
+    /**
+     * The system replacing meaningful GM resets, when GM is not requested.
+     */
+    readonly gmReplacement: MIDISystem;
+}
+
+/**
+ * The resets found by the main loop.
+ * @internal
+ */
+export interface ResetState {
+    /**
+     * All resets which will have a setup inserted after them.
+     * A reset is defined as meaningful only if:
+     * - It has notes coming after it.
+     * - It is the last reset of a file without notes (such file is defined as a setup file, the state it leaves is the one that matters).
+     * For example, many MIDIs do:
+     *
+     * GM -> GS -> note data
+     *
+     * That GM reset is meaningless, so it can stay unmodified as the actual reset that matters is GS.
+     * Meaningful GM ones are replaced with the fallback reset in-place
+     * (unless the `system` parameter is explicitly set).
+     */
+    readonly meaningful: ResetPosition[];
+    /**
+     * Meaningful GM resets found during the main loop (see {@link meaningful}).
+     * They are replaced with the GM replacement in place, unless GM is requested,
+     * then they stay GM and only get the setup after them.
+     */
+    readonly gm: ResetPosition[];
+    /**
+     * The most recent reset, still awaiting notes.
+     * Discarded as meaningless whenever another reset is encountered.
+     * Removed and added to meaningful resets if a note is encountered.
+     */
+    pending: ResetPosition | undefined;
+    /**
+     * If the current pending reset is GM.
+     * This is used to track meaningful GM resets for replacements
+     */
+    isPendingGM: boolean;
+    /**
+     * If the main loop has seen a note on (velocity above 0) anywhere in the file so far.
+     * A file without notes (a setup file) keeps its last pending reset as meaningful after the loop.
+     */
+    sawNote: boolean;
+}
+
+/**
+ * Everything the event handlers work with, passed to each of them.
+ * @internal
+ */
+export interface EditContext {
+    /**
+     * The position in the file, with the inserts and deletes.
+     */
+    readonly cursor: EventCursor;
+    readonly options: EditOptions;
+    /**
+     * The tracked state of every channel, indexed by the channel with the port offset.
+     */
+    readonly channels: ChannelStatus[];
+    /**
+     * Follows the MIDI port of each track, like the sequencer.
+     */
+    readonly ports: PortTracker;
+    readonly resets: ResetState;
+    /**
+     * The current system, the channel setups are written for it.
+     */
+    system: MIDISystem;
 }

@@ -9,20 +9,20 @@ import { MIDIControllers } from "../../enums";
 import * as MIDIUtils from "../midi_utils";
 import type { DrumParameter } from "../../types";
 import { DEFAULT_XG_DRUM_MAP, MELODIC_MAP } from "../sysex_data";
-import type { ClearableParameter } from "./types";
-import type { MIDIEditor } from "./midi_editor";
+import type { ClearableParameter, EditContext } from "./types";
 
 /**
  * Inserts the locked state of a channel before its first note on (after a reset).
  * The order is the patch, the controllers, the MIDI parameters, the relative fine tune, then the drum setup.
+ * @param ctx The edit context.
  * @param ticks The tick of the note on.
  * @param channel The channel, with the port offset.
  */
-export function firstNoteOn(this: MIDIEditor, ticks: number, channel: number) {
-    const channelChange = this.channelChanges.get(channel);
+export function firstNoteOn(ctx: EditContext, ticks: number, channel: number) {
+    const channelChange = ctx.options.channelChanges.get(channel);
     // Make sure that we want to modify this channel at all
     if (!channelChange) return;
-    const channelStatus = this.channelStatuses[channel];
+    const channelStatus = ctx.channels[channel];
     const midiChannel = channel % 16;
 
     // All right, so this is the first note on for this channel
@@ -37,7 +37,7 @@ export function firstNoteOn(this: MIDIEditor, ticks: number, channel: number) {
     const patch = channelChange.patch;
     if (patch && patch !== "clear") {
         SpessaLog.info(
-            `%cSetting %c${channel}%c to %c${MIDIPatchTools.toMIDIString(patch)}%c. Track num: %c${this.trackNum}`,
+            `%cSetting %c${channel}%c to %c${MIDIPatchTools.toMIDIString(patch)}%c. Track num: %c${ctx.cursor.track}`,
             ConsoleColors.info,
             ConsoleColors.recognized,
             ConsoleColors.info,
@@ -54,15 +54,15 @@ export function firstNoteOn(this: MIDIEditor, ticks: number, channel: number) {
         if (
             midiChannel !== MIDI_DRUM_CHANNEL &&
             patch.isGMGSDrum &&
-            !BankSelectHacks.isSystemXG(this.system)
+            !BankSelectHacks.isSystemXG(ctx.system)
         ) {
             // Add gs drum change first
             SpessaLog.info(
-                `%cAdding GS Drum change on track %c${this.trackNum}`,
+                `%cAdding GS Drum change on track %c${ctx.cursor.track}`,
                 ConsoleColors.recognized,
                 ConsoleColors.value
             );
-            this.addEventsBefore(
+            ctx.cursor.insertBefore(
                 ...MIDIUtils.setChannelMIDIParameter(
                     ticks,
                     midiChannel,
@@ -75,16 +75,16 @@ export function firstNoteOn(this: MIDIEditor, ticks: number, channel: number) {
             channelStatus.drumMap = 1;
         } else if (
             !patch.isGMGSDrum &&
-            !BankSelectHacks.isSystemXG(this.system) &&
+            !BankSelectHacks.isSystemXG(ctx.system) &&
             channelStatus.drumMap !== MELODIC_MAP
         ) {
             // A melodic patch on a drum channel, turn the drums off
             SpessaLog.info(
-                `%cAdding GS melodic change on track %c${this.trackNum}`,
+                `%cAdding GS melodic change on track %c${ctx.cursor.track}`,
                 ConsoleColors.recognized,
                 ConsoleColors.value
             );
-            this.addEventsBefore(
+            ctx.cursor.insertBefore(
                 ...MIDIUtils.setChannelMIDIParameter(
                     ticks,
                     midiChannel,
@@ -96,24 +96,25 @@ export function firstNoteOn(this: MIDIEditor, ticks: number, channel: number) {
             channelStatus.drumMap = MELODIC_MAP;
         }
 
-        if (BankSelectHacks.isSystemXG(this.system) && patch.isGMGSDrum) {
+        if (BankSelectHacks.isSystemXG(ctx.system) && patch.isGMGSDrum) {
             // Best I can do is XG drums
             SpessaLog.info(
-                `%cAdding XG Drum change on track %c${this.trackNum}`,
+                `%cAdding XG Drum change on track %c${ctx.cursor.track}`,
                 ConsoleColors.recognized,
                 ConsoleColors.value
             );
-            desiredBankMSB = BankSelectHacks.getDrumBank(this.system);
+            desiredBankMSB = BankSelectHacks.getDrumBank(ctx.system);
             desiredBankLSB = 0;
         }
         // The program change below assigns the XG drum setup like the file's own
-        this.trackXGDrumSetup(
+        trackXGDrumSetup(
+            ctx,
             channel,
             patch.isGMGSDrum || BankSelectHacks.selectsXGDrumKit(desiredBankMSB)
         );
 
         // Add bank change (MSB first)
-        this.addEventsBefore(
+        ctx.cursor.insertBefore(
             MIDIMessage.controllerChange(
                 ticks,
                 midiChannel,
@@ -129,7 +130,7 @@ export function firstNoteOn(this: MIDIEditor, ticks: number, channel: number) {
         );
 
         // Add program change
-        this.addEventsBefore(
+        ctx.cursor.insertBefore(
             MIDIMessage.programChange(ticks, midiChannel, desiredProgram)
         );
     }
@@ -164,7 +165,7 @@ export function firstNoteOn(this: MIDIEditor, ticks: number, channel: number) {
                 cc,
                 value
             );
-            this.addEventsBefore(ccChange);
+            ctx.cursor.insertBefore(ccChange);
             // A locked bank select replaces the file's, the next program change uses it
             if (cc === MIDIControllers.bankSelect)
                 channelStatus.bankMSB = value;
@@ -194,11 +195,11 @@ export function firstNoteOn(this: MIDIEditor, ticks: number, channel: number) {
                     ) === "number")
             )
                 continue;
-            this.addEventsBefore(
+            ctx.cursor.insertBefore(
                 ...MIDIUtils.setChannelMIDIParameter(
                     ticks,
                     midiChannel,
-                    this.system,
+                    ctx.system,
                     param,
                     value
                 )
@@ -212,11 +213,11 @@ export function firstNoteOn(this: MIDIEditor, ticks: number, channel: number) {
 
     // Insert the target fine tune
     if (finalTune !== undefined) {
-        this.addEventsBefore(
+        ctx.cursor.insertBefore(
             ...MIDIUtils.setChannelMIDIParameter(
                 ticks,
                 midiChannel,
-                this.system,
+                ctx.system,
                 "fineTune",
                 finalTune
             )
@@ -229,7 +230,7 @@ export function firstNoteOn(this: MIDIEditor, ticks: number, channel: number) {
     // Match the synthesizer's drum pitch resolution:
     // XG and the SC-55 map (bank LSB 1) use 100 cents, otherwise 50 cents
     const drumPitchStep =
-        this.system === "xg" ||
+        ctx.system === "xg" ||
         (patch !== undefined && patch !== "clear" && patch.bankLSB === 1)
             ? 1
             : 0.5;
@@ -244,7 +245,7 @@ export function firstNoteOn(this: MIDIEditor, ticks: number, channel: number) {
         }[keyof DrumParameter][]) {
             // Parameter cleared
             if (value === "clear" || value === undefined) continue;
-            this.addEventsBefore(
+            ctx.cursor.insertBefore(
                 ...MIDIUtils.setDrumChannelParameter(
                     ticks,
                     midiChannel,
@@ -262,31 +263,32 @@ export function firstNoteOn(this: MIDIEditor, ticks: number, channel: number) {
  * Tracks the XG drum setup a program change assigns, like the synth.
  * A part in normal mode switched to a drum kit uses Drum Setup 2, and a melodic voice brings it back to normal.
  * Part 10 keeps Drum Setup 1. A part set to the plain drum mode (no setup) is left alone.
+ * @param ctx The edit context.
  * @param channel The channel of the program change.
  * @param isDrum If the program change selects a drum kit.
  * @param programChange The file's program change message. A locked drum map is written again after it.
  * @returns The messages that lock the drum map again, to insert right after the program change.
  */
 export function trackXGDrumSetup(
-    this: MIDIEditor,
+    ctx: EditContext,
     channel: number,
     isDrum: boolean,
     programChange?: MIDIMessage
 ) {
-    if (this.system !== "xg" || channel % 16 === MIDI_DRUM_CHANNEL) return [];
-    const channelStatus = this.channelStatuses[channel];
+    if (ctx.system !== "xg" || channel % 16 === MIDI_DRUM_CHANNEL) return [];
+    const channelStatus = ctx.channels[channel];
     const drumSetup2 = DEFAULT_XG_DRUM_MAP + 1;
     let map = channelStatus.drumMap;
     if (isDrum && map === MELODIC_MAP) map = drumSetup2;
     else if (!isDrum && map === drumSetup2) map = MELODIC_MAP;
     if (map === channelStatus.drumMap) return [];
     // A locked drum map stays locked: it is written again right after the file's program change that switched it
-    const locked = this.channelChanges.get(channel)?.midiParams?.drumMap;
+    const locked = ctx.options.channelChanges.get(channel)?.midiParams?.drumMap;
     if (programChange && locked !== undefined && locked !== "clear") {
         return MIDIUtils.setChannelMIDIParameter(
             programChange.ticks,
             channel % 16,
-            this.system,
+            ctx.system,
             "drumMap",
             locked
         );
