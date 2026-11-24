@@ -20,10 +20,8 @@ import { MIDIMessage } from "./midi_message";
 import { PortTracker } from "./midi_tools/port_tracker";
 import { applySnapshotInternal } from "./midi_tools/apply_snapshot";
 import { getNoteTimesInternal } from "./midi_tools/get_note_times";
-import {
-    MIDIEditor,
-    type ModifyMIDIOptions
-} from "./midi_tools/midi_editor/midi_editor";
+import { MIDIEditor } from "./midi_tools/midi_editor/midi_editor";
+import type { ModifyMIDIOptions } from "./midi_tools/midi_editor/types";
 import { getUsedProgramsAndKeys } from "./midi_tools/used_programs_and_keys";
 import { MIDITrack } from "./midi_track";
 import { parseSMFInternal } from "./read/midi";

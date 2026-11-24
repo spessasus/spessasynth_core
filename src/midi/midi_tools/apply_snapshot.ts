@@ -7,7 +7,7 @@ import type {
     ChannelModification,
     ClearableParameter,
     UserDrumModification
-} from "./midi_editor/midi_editor";
+} from "./midi_editor/types";
 import type { ChannelMIDIParameter } from "../../synthesizer/audio_engine/channel/parameters/midi";
 import type { GlobalMIDIParameter } from "../../synthesizer/audio_engine/parameters/midi";
 import * as DrumParameterUtils from "../drum_parameter_utils";

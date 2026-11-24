@@ -47,8 +47,7 @@ The `write/` directory.
 The `midi_tools/` directory.
 
 - `midi_builder.ts` - `MIDIBuilder`, inherits from `BasicMIDI`. Used for building MIDI files from scratch.
-- `midi_editor/midi_editor.ts` - `MIDIEditor`, the event-level editor behind `BasicMIDI.modify`.
-  Tracks the GS/XG/GM system state and rewrites or inserts events.
+- `midi_editor/` - `MIDIEditor`, the event-level editor behind `BasicMIDI.modify`.
 - `midi_utils.ts` - `MIDIUtils`, analyzes and creates MIDI messages (RPN/NRPN, GS/XG/universal System Exclusives, resets).
 - `analyzed_message.ts` - the types of the messages returned by the `MIDIUtils` analysis.
 - `sysex_data.ts` - the GS/XG System Exclusive address maps and constants.
