@@ -82,7 +82,7 @@ export function generateSetup(
     // The effects and User Drum Sets are always written as GS or XG,
     // Only the global MIDI parameters follow the system (Universal for GM)
     const add = (
-        message: AnalyzedMessage.SysEx,
+        message: AnalyzedMessage.Encodable,
         messageSystem: MIDISystem = "gs"
     ) => {
         output.push(

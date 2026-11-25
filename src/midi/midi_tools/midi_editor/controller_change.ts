@@ -14,18 +14,19 @@ import type * as AnalyzedMessage from "../analyzed_message";
 import { MELODIC_MAP } from "../sysex_data";
 import type { ChannelStatus, EditContext } from "./types";
 import type { PortTracker } from "../port_tracker";
-import { deleteCurrentEvent } from "./delete_event";
 import { clearedSelection, unmodifiedSelection } from "./channel_status";
 import { shouldClearChannelDrum } from "./locks";
 
 /**
  * Handles a channel MIDI parameter change, from an RPN or a SysEx.
- * Deletes it if the parameter (or the drum mode, through a locked patch) is locked,
- * adds the relative fine tune to the file's fine tune, and tracks the drum map.
+ * Removes it if the parameter (or the drum mode, through a locked patch) is locked,
+ * replaces it with the relative fine tune added to the file's fine tune, and tracks the drum map.
  * @param ctx The edit context.
  * @param channel The channel, with the port offset.
  * @param data The analyzed parameter change.
  * @param isRPN If the change comes from an RPN (data entry), not a SysEx.
+ * @returns Undefined to keep the change, or the messages that replace it (empty to remove it).
+ * The caller removes it and inserts them in its place, so a SysEx can keep its other entries.
  */
 export function handleChannelMIDIParam(
     ctx: EditContext,
@@ -39,20 +40,15 @@ export function handleChannelMIDIParam(
 
     // Locked, remove
     // The first note on inserts the locked value with the relative tune added, so we delete it here
-    if (channelChange?.midiParams?.[data.parameter] !== undefined) {
-        deleteCurrentEvent(ctx);
-        return;
-    }
+    if (channelChange?.midiParams?.[data.parameter] !== undefined) return [];
     // A locked patch owns the drum mode too, like bank select.
     // A cleared patch only removes program changes and bank selects, the drum mode stays
     if (
         data.parameter === "drumMap" &&
         channelChange?.patch &&
         channelChange.patch !== "clear"
-    ) {
-        deleteCurrentEvent(ctx);
-        return;
-    }
+    )
+        return [];
     // Track the drum map, only if the message stays
     if (data.parameter === "drumMap") {
         // Like the synth's part mode on XG (and GM2): the bank follows the mode
@@ -102,15 +98,12 @@ export function handleChannelMIDIParam(
         ConsoleColors.value
     );
 
-    // And update this tuning
-    const e = ctx.cursor.event;
-
-    deleteCurrentEvent(ctx);
-
+    // And update this tuning: the file's change is removed, the corrected one is written instead.
     // Don't update tuning if no notes have played.
     if (channelStatus.isFirstNoteOn) {
-        return;
+        return [];
     }
+    const e = ctx.cursor.event;
 
     // Build the replacement rpn
     const newRPN = MIDIUtils.fromAnalyzedMessage(
@@ -135,25 +128,28 @@ export function handleChannelMIDIParam(
         pending.events[2].data[1] = newRPN[2].data[1];
         pending.events[3].data[1] = newRPN[3].data[1];
         channelStatus.pendingParam = undefined;
-        return;
+        return [];
     }
 
-    // And update this tuning
-    ctx.cursor.insertBefore(...newRPN);
-    // Track after adding, only for RPN change.
+    // Track the replacement, only for RPN change.
     // A not-RPN message voids any pending pair instead:
     // A later half belongs to a new message, not the old one.
     channelStatus.pendingParam = isRPN ? { events: newRPN } : undefined;
+    // For a data entry, the caller inserts it after removing the file's change:
+    // Removing marks the selection as modified, then inserting the RPN marks it as restored again
+    return newRPN;
 }
 
 /**
  * Handles a controller change, from a CC message or a SysEx.
- * Deletes locked controllers, tracks the RPN/NRPN selection and data entry
- * (a locked parameter deletes the whole RPN/NRPN message) and handles Reset All Controllers.
+ * Removes locked controllers, tracks the RPN/NRPN selection and data entry
+ * (a locked parameter removes the whole RPN/NRPN message) and handles Reset All Controllers.
  * @param ctx The edit context.
  * @param ccNum The controller number.
  * @param value The controller value.
  * @param channel The channel, with the port offset.
+ * @returns Undefined to keep the change, or the messages that replace it (empty to remove it).
+ * The caller removes it and inserts them in its place, so a SysEx can keep its other entries.
  */
 export function handleControllerChange(
     ctx: EditContext,
@@ -171,16 +167,14 @@ export function handleControllerChange(
     const change = channelChange?.controllers?.get(ccNum);
     if (change !== undefined) {
         // This controller is locked, BEGONE CHANGE!
-        deleteCurrentEvent(ctx);
-        return;
+        return [];
     }
     switch (ccNum) {
         case MIDIControllers.bankSelect:
         case MIDIControllers.bankSelectLSB: {
             if (channelChange?.patch) {
                 // BEGONE!
-                deleteCurrentEvent(ctx);
-                return;
+                return [];
             }
             if (ccNum === MIDIControllers.bankSelect)
                 channelStatus.bankMSB = value;
@@ -188,11 +182,10 @@ export function handleControllerChange(
         }
 
         case MIDIControllers.pan: {
-            if (channelChange?.midiParams?.randomPan === true) {
-                // Random pan gets disabled by regular pan, prevent that here
-                deleteCurrentEvent(ctx);
-            }
-            return;
+            // Random pan gets disabled by regular pan, prevent that here
+            return channelChange?.midiParams?.randomPan === true
+                ? []
+                : undefined;
         }
 
         case MIDIControllers.registeredParameterLSB:
@@ -230,6 +223,7 @@ export function handleControllerChange(
             ctx.cursor.parameterChannel = channel;
 
             // Unrecognized parameters are kept as-is
+            let replacement: MIDIMessage[] | undefined;
             switch (data?.type) {
                 case "Channel Drum Setup": {
                     if (
@@ -241,14 +235,14 @@ export function handleControllerChange(
                         )
                     ) {
                         // Drum param, BEGONE!
-                        deleteCurrentEvent(ctx);
+                        replacement = [];
                     }
                     break;
                 }
 
                 case "Controller Change": {
                     // NRPN can change controllers too!
-                    handleControllerChange(
+                    replacement = handleControllerChange(
                         ctx,
                         data.controller,
                         data.value,
@@ -258,10 +252,18 @@ export function handleControllerChange(
                 }
 
                 case "Channel MIDI Param": {
-                    handleChannelMIDIParam(ctx, channel, data, true);
+                    replacement = handleChannelMIDIParam(
+                        ctx,
+                        channel,
+                        data,
+                        true
+                    );
                     break;
                 }
             }
+            // The caller removes the whole parameter (parameterChannel is set above),
+            // Which also marks its selection as cleared, so the rest of this case does not apply
+            if (replacement) return replacement;
 
             // If the parameters (MSB, LSB and the first data) were cleared.
             // Some MIDIs send param MSB once and then set via LSB only, like:
@@ -285,7 +287,6 @@ export function handleControllerChange(
             //   NRPN MSB, LSB, Data, (inserted RPN on first note on), Data (needs the NRPN back)
             // After that, the selection is unchanged, so following data entries don't need it again.
             // Testcase: midi_editor_nrpn_test.ts (Case: shared NRPN MSB, cleared then kept)
-            if (ctx.cursor.deleted) return;
             const p = channelStatus.param;
             // A mode switch restores both, as a device may not remember the other mode's selection
             const modeSwitch =

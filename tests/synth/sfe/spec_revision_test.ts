@@ -752,7 +752,9 @@ for (const [label, sourceEnum] of [
         `TONE MAP-0 NUMBER does not set the bank LSB (${synth.midiChannels[0].patch.bankLSB})`
     );
     check(
-        MIDIUtils.analyzeSysEx(toneMap0).every((m) => m.type === "Other"),
+        MIDIUtils.analyzeSysEx(toneMap0).every(
+            (m) => m.type === "Other With Data"
+        ),
         "the analyzer does not report TONE MAP-0 NUMBER either"
     );
 }

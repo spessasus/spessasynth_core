@@ -287,6 +287,7 @@ export interface MIDIEncodeOptions {
     /**
      * The device ID byte of System Exclusive messages. Leave it undefined for the default:
      * 16 (`0x10`) for Roland and Yamaha, 127 (`0x7F`, broadcast) for Universal messages.
+     * For Yamaha, the high nibble is the message type, so keep it at 1 (`0x1n`, parameter change).
      * It is written into whichever message the preferred system picks, so keep it undefined when that can be a Universal one
      * (the XG master pan, the GM2 reverb and chorus).
      *

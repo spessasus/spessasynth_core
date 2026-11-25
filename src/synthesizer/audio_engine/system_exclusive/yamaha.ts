@@ -33,8 +33,10 @@ export function yamahaSystemExclusive(
     syx: SysExAcceptedArray,
     channelOffset = 0
 ) {
-    // XG sysex
-    if (syx[2] === 0x4c) {
+    // XG parameter change (1n).
+    // Bulk dumps (0n) and requests (2n, 3n) are laid out differently
+    // TODO: XG Bulk dumps
+    if (syx[2] === 0x4c && (syx[1] & 0xf0) === 0x10) {
         const a1 = syx[3]; // Address 1
         const a2 = syx[4]; // Address 2
         const a3 = syx[5]; // Address 3

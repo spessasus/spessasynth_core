@@ -149,12 +149,17 @@ export function handleEvent(
         }
 
         case MIDIMessageTypes.controllerChange: {
-            handleControllerChange(
+            const replacement = handleControllerChange(
                 ctx,
                 e.data[0] as MIDIController,
                 e.data[1],
                 channel
             );
+            if (replacement) {
+                // Removed first, so the selection the replacement restores is tracked after the removal
+                deleteCurrentEvent(ctx);
+                ctx.cursor.insertBefore(...replacement);
+            }
             break;
         }
 

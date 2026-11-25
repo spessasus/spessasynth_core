@@ -4,14 +4,14 @@
 // The RPNs and the NRPNs.
 // Usage: npx tsx tests/midi/encoder_round_trip_test.ts
 import {
+    type AnalyzedMessage,
     type MIDIController,
+    MIDIControllers,
     type MIDIEncodeOptions,
     type MIDIMessage,
-    MIDIControllers,
     MIDIMessageTypes,
     MIDIUtils,
-    SpessaLog,
-    type AnalyzedMessage
+    SpessaLog
 } from "../../src";
 
 SpessaLog.setLogLevel(false, false, false);
@@ -132,7 +132,13 @@ function roundTrip(
     source: string,
     options: Partial<MIDIEncodeOptions>
 ) {
-    if (result.type === "Other" || result.type === "Display Data") return;
+    // Other With Data is a plain copy of its bytes, checked once below instead of for every address
+    if (
+        result.type === "Other" ||
+        result.type === "Other With Data" ||
+        result.type === "Display Data"
+    )
+        return;
     checked++;
     let reanalyzed: string;
     let encoded = "";
@@ -246,7 +252,8 @@ for (const a1 of XG_A1) {
 
 // Other device IDs are kept
 roundTripSysEx(MIDIUtils.gs(0x40, 0x01, 0x33, [100], 0x13), "gs");
-roundTripSysEx(MIDIUtils.xg(0x08, 0x02, 0x0b, [100], 0x00), "xg");
+// For XG the high nibble is the message type (1n parameter change), only the device number changes
+roundTripSysEx(MIDIUtils.xg(0x08, 0x02, 0x0b, [100], 0x11), "xg");
 roundTripSysEx(MIDIUtils.deviceControl(0x01, [0x12, 0x34], 0x00), "gm");
 
 // Universal: device control with 14-bit values, GM2 global parameter control and the GM system messages
@@ -323,7 +330,29 @@ function throws(name: string, run: () => unknown) {
     failed++;
     failures.set(`throws: ${name}`, "did not throw");
 }
+// @ts-expect-error Testing if it throws
 throws("Other", () => MIDIUtils.fromAnalyzedMessage({ type: "Other" }));
+
+// An unrecognized message is written back as it came, device ID and all
+{
+    const syx = [0x41, 0x11, 0x42, 0x11, 0x40, 0x00, 0x7f, 0x00, 0x41, 0xf7];
+    const [result] = MIDIUtils.analyzeSysEx(syx);
+    checked++;
+    const encoded = MIDIUtils.fromAnalyzedMessage(result, { ticks: 5 });
+    const bytes = encoded.map((m) => Array.from(m.toBytes()).join(","));
+    const expected = [[0xf0, ...syx].join(",")];
+    if (
+        result.type !== "Other With Data" ||
+        encoded[0].ticks !== 5 ||
+        JSON.stringify(bytes) !== JSON.stringify(expected)
+    ) {
+        failed++;
+        failures.set(
+            "Other With Data",
+            `${result.type}: ${bytes.join(" | ")} at ${encoded[0]?.ticks}`
+        );
+    }
+}
 throws("Display Data", () =>
     MIDIUtils.fromAnalyzedMessage({ type: "Display Data" })
 );

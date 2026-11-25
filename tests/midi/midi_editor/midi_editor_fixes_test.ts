@@ -772,15 +772,17 @@ function newFile() {
     );
 }
 
-// 21. Bulk dumps that can't be split exactly are deleted whole, like before.
+// 21. The flags packet and a dump for another device ID are split too.
+// Every entry but the locked one stays, written with the dump's device ID.
 {
-    const levels = Array.from({ length: 40 }, () => 70);
-    for (const [name, a2, a3, device] of [
-        ["the flags packet", 0x06, 0, 0x10],
-        ["for another device ID", 0x01, 0, 0x11]
+    // 0x11 sets both Rx flags in the flags packet
+    const values = Array.from({ length: 40 }, () => 0x11);
+    for (const [name, a2, device, parameters, expected] of [
+        ["the flags packet", 0x06, 0x10, ["rxNoteOff", "rxNoteOn"], 79],
+        ["for another device ID", 0x01, 0x11, ["level"], 39]
     ] as const) {
         const midi = newFile();
-        const dump = MIDIUtils.gsMessage(0, 0x29, a2, a3, levels);
+        const dump = MIDIUtils.gsMessage(0, 0x29, a2, 0, values);
         dump.data[1] = device;
         midi.tracks[0].pushEvents(dump);
         midi.noteOn(480, 1, 9, 36, 100);
@@ -790,13 +792,29 @@ function newFile() {
                 [0, new Map([[38, { level: 100, rxNoteOff: "clear" }]])]
             ])
         });
-        const userDrum = sysExResults(midi).filter((r) =>
-            r.results.some((x) => x.type === "User Drum Setup")
+        const all = sysExResults(midi);
+        // The dump's entries, not the locked level 100 the setup writes
+        const fromDump = all
+            .filter((r) => r.e.data[1] === device)
+            .flatMap((r) => r.results)
+            .filter(
+                (x) =>
+                    x.type === "User Drum Setup" &&
+                    (parameters as readonly string[]).includes(x.parameter) &&
+                    x.value !== 100
+            );
+        const lockedLeft = fromDump.filter(
+            (x) =>
+                x.type === "User Drum Setup" &&
+                x.midiNote === 38 &&
+                x.parameter !== "rxNoteOn"
         );
         check(
-            `21. a bulk dump ${name} is deleted whole`,
-            userDrum.length === 1,
-            `${userDrum.length} user drum messages`
+            `21. a bulk dump ${name} keeps all but the locked entry`,
+            all.every((r) => r.results.length === 1) &&
+                fromDump.length === expected &&
+                lockedLeft.length === 0,
+            `${fromDump.length} entries, ${lockedLeft.length} locked left`
         );
     }
 }
@@ -984,7 +1002,7 @@ function newFile() {
     );
     check(
         "28. the name packet is a single message, not per key",
-        name.length === 1 && name[0].type === "Other",
+        name.length === 1 && name[0].type === "Other With Data",
         JSON.stringify(name)
     );
 
@@ -1115,6 +1133,170 @@ for (const lockPatch of [false, true]) {
             rx[0].type === "Channel MIDI Param" &&
             rx[0].value === 4,
         JSON.stringify(rx)
+    );
+}
+
+// 32. A GS tone number (bank select + program change) with only the bank select locked.
+// The program change stays, written as a standard one.
+{
+    const midi = newFile();
+    // Part 1 is channel 0
+    midi.tracks[0].pushEvents(
+        MIDIUtils.gsMessage(10, 0x40, 0x11, 0x00, [5, 33])
+    );
+    midi.noteOn(480, 1, 0, 60, 100);
+    midi.noteOff(720, 1, 0, 60);
+    midi.flush();
+    midi.modify({
+        channels: new Map([
+            [0, { controllers: new Map([[MIDIControllers.bankSelect, 8]]) }]
+        ])
+    });
+    const events = midi.tracks.flatMap((t) => t.events);
+    const program = events.filter(
+        (e) =>
+            e.statusByte === MIDIMessageTypes.programChange && e.data[0] === 33
+    );
+    const fileBank = events.filter(
+        (e) => isCC(e, MIDIControllers.bankSelect) && e.data[1] === 5
+    );
+    check(
+        "32. the tone number keeps its program change without the locked bank select",
+        program.length === 1 &&
+            program[0].ticks === 10 &&
+            fileBank.length === 0 &&
+            sysExResults(midi).every((r) =>
+                r.results.every((x) => x.type !== "Program Change")
+            ),
+        `${program.length} programs at ${program[0]?.ticks}, ${fileBank.length} file banks`
+    );
+}
+
+// 33. The same on block B (channel 16), which a channel message on this track can't reach.
+// The whole message is deleted instead of throwing.
+{
+    const midi = newFile();
+    midi.tracks[0].pushEvents(
+        MIDIUtils.gsMessage(10, 0x50, 0x11, 0x00, [5, 33])
+    );
+    midi.noteOn(480, 1, 0, 60, 100);
+    midi.noteOff(720, 1, 0, 60);
+    midi.addTrack("port B");
+    midi.addEvent(0, 2, MIDIMessageTypes.midiPort, [1]);
+    midi.noteOn(480, 2, 0, 62, 100);
+    midi.noteOff(720, 2, 0, 62);
+    midi.flush();
+    let error = "";
+    try {
+        midi.modify({
+            channels: new Map([
+                [
+                    16,
+                    { controllers: new Map([[MIDIControllers.bankSelect, 8]]) }
+                ]
+            ])
+        });
+    } catch (error_) {
+        error = String(error_);
+    }
+    const toneNumbers = sysExResults(midi).filter((r) =>
+        r.results.some((x) => x.type === "Program Change")
+    );
+    check(
+        "33. a block B tone number with a locked bank select is deleted whole",
+        error === "" && toneNumbers.length === 0,
+        error || `${toneNumbers.length} tone numbers left`
+    );
+}
+
+// 34. A relative fine tune replaces the file's fine tune RPN with a corrected one.
+// The next data entry uses the same RPN MSB, it must not get a redundant MSB restore,
+// The corrected RPN already put the selection back.
+{
+    const midi = newFile();
+    const cc = (ticks: number, controller: number, value: number) =>
+        midi.addEvent(ticks, 1, MIDIMessageTypes.controllerChange, [
+            controller,
+            value
+        ]);
+    midi.noteOn(0, 1, 0, 60, 100);
+    midi.noteOff(120, 1, 0, 60);
+    cc(240, MIDIControllers.registeredParameterMSB, 0);
+    cc(240, MIDIControllers.registeredParameterLSB, 1);
+    cc(240, MIDIControllers.dataEntryMSB, 70);
+    cc(360, MIDIControllers.registeredParameterLSB, 0);
+    cc(360, MIDIControllers.dataEntryMSB, 12);
+    midi.noteOn(480, 1, 0, 60, 100);
+    midi.noteOff(600, 1, 0, 60);
+    midi.flush();
+    midi.modify({ channels: new Map([[0, { fineTune: -56 }]]) });
+    const events = midi.tracks[1].events;
+    const range = events.findIndex(
+        (e) => isCC(e, MIDIControllers.dataEntryMSB) && e.data[1] === 12
+    );
+    const before = events[range - 1];
+    check(
+        "34. no redundant RPN MSB before the data entry after a corrected fine tune",
+        range > 0 && isCC(before, MIDIControllers.registeredParameterLSB),
+        `before the range: CC ${before?.data[0]}`
+    );
+}
+
+// 35. A GS tone number with a single data byte only sets the bank, its next byte is the checksum.
+// With the bank select locked, nothing is left, no program change is made up from the checksum.
+{
+    const midi = newFile();
+    midi.tracks[0].pushEvents(MIDIUtils.gsMessage(10, 0x40, 0x11, 0x00, [5]));
+    midi.noteOn(480, 1, 0, 60, 100);
+    midi.noteOff(720, 1, 0, 60);
+    midi.flush();
+    midi.modify({
+        channels: new Map([
+            [0, { controllers: new Map([[MIDIControllers.bankSelect, 8]]) }]
+        ])
+    });
+    const programs = midi.tracks.flatMap((t) =>
+        t.events.filter((e) => e.statusByte === MIDIMessageTypes.programChange)
+    );
+    check(
+        "35. a one-byte tone number does not turn its checksum into a program change",
+        programs.length === 0,
+        programs.map((e) => e.data[0]).join(",")
+    );
+}
+
+// 36. In GM mode the synth ignores a GS tone number, so a split must not turn its program into a channel message.
+// The system is locked to GM, otherwise the editor upgrades the GM reset to GS for the channel changes.
+{
+    const midi = new MIDIBuilder({ name: "fixes", format: 1 });
+    midi.addTrack("track 1");
+    midi.tracks[0].pushEvents(MIDIUtils.reset(0, "gm"));
+    midi.tracks[0].pushEvents(
+        MIDIUtils.gsMessage(10, 0x40, 0x11, 0x00, [5, 33])
+    );
+    midi.noteOn(480, 1, 0, 60, 100);
+    midi.noteOff(720, 1, 0, 60);
+    midi.flush();
+    midi.modify({
+        midiParams: { system: "gm" },
+        channels: new Map([
+            [0, { controllers: new Map([[MIDIControllers.bankSelect, 8]]) }]
+        ])
+    });
+    const programs = midi.tracks.flatMap((t) =>
+        t.events.filter(
+            (e) =>
+                e.statusByte === MIDIMessageTypes.programChange &&
+                e.data[0] === 33
+        )
+    );
+    check(
+        "36. a GS tone number in GM mode is not split into a program change",
+        programs.length === 0 &&
+            sysExResults(midi).every((r) =>
+                r.results.every((x) => x.type !== "Program Change")
+            ),
+        `${programs.length} program changes`
     );
 }
 

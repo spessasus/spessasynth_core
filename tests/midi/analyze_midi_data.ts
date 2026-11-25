@@ -179,12 +179,12 @@ for (const t of timeline) {
                         break;
                     }
 
-                    case "Other": {
+                    case "Other With Data": {
                         recognized--;
                         unrecognized++;
                         console.info(
                             "[UNREC] SysEx:",
-                            arrayToHexString(e.data)
+                            arrayToHexString(analyzed.data)
                         );
                         break;
                     }

@@ -16,7 +16,11 @@ import type {
 } from "../../synthesizer/audio_engine/effects/gs/types";
 import type { GlobalMIDIParameter } from "../../synthesizer/audio_engine/parameters/midi";
 import type { MIDIController } from "../enums";
-import type { DrumParameter, UserDrumSetParameter } from "../types";
+import type {
+    DrumParameter,
+    SysExAcceptedArray,
+    UserDrumSetParameter
+} from "../types";
 import type { ChannelMIDIParameter } from "../../synthesizer/audio_engine/channel/parameters/midi";
 import type { XGVariationConnection } from "../../synthesizer/audio_engine/effects/xg/interface/xg_variation_block";
 
@@ -548,14 +552,32 @@ export type MapDrumSetup = {
 export type Parameter =
     ChannelMIDIParam | ChannelDrumSetup | Other | ControllerChange;
 /**
- * Represents an unhandled or unrecognized analyzed message.
+ * Represents an unrecognized RPN or NRPN parameter, from {@link MIDIUtils.analyzeRPN} and {@link MIDIUtils.analyzeNRPN}.
+ * An unrecognized System Exclusive message is an {@link OtherWithData} instead.
  */
 export interface Other {
     /**
-     * An unhandled or unrecognized parameter message.
+     * The message type identifier.
      */
     type: "Other";
 }
+
+/**
+ * Represents an unrecognized System Exclusive message with its data.
+ */
+export interface OtherWithData {
+    /**
+     * The message type identifier.
+     */
+    type: "Other With Data";
+
+    /**
+     * The data of the System Exclusive message, excluding the starting F0 byte.
+     * It is the array that was analyzed, not a copy.
+     */
+    data: SysExAcceptedArray;
+}
+
 /**
  * Represents an analyzed controller change, set via NRPN or System Exclusive.
  */
@@ -585,6 +607,7 @@ export interface ControllerChange {
  */
 export type Any =
     | Parameter
+    | OtherWithData
     | GSReverbParam
     | GSChorusParam
     | GSDelayParam
@@ -599,6 +622,13 @@ export type Any =
     | MapDrumSetup
     | ProgramChange
     | DisplayData;
+
+/**
+ * The messages {@link MIDIUtils.fromAnalyzedMessage} accepts: everything but the `Other` of an unknown RPN or NRPN.
+ * `Display Data` does not carry its letters or bitmap yet, so encoding it still throws.
+ */
+export type Encodable = Exclude<Any, Other>;
+
 /**
  * Represents an analyzed User Drum Set parameter change, set via System Exclusive.
  */
@@ -656,4 +686,4 @@ export interface DisplayData {
 /**
  * The analysis result of a System Exclusive (SysEx) MIDI message.
  */
-export type SysEx = Exclude<Any, ChannelDrumSetup>;
+export type SysEx = Exclude<Any, ChannelDrumSetup | Other>;

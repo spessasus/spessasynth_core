@@ -783,7 +783,9 @@ export function rolandSystemExclusive(
                                     MIDIControllers.bankSelect,
                                     data
                                 );
-                                ch.programChange(syx[8]);
+                                // With a single data byte, syx[8] is the checksum and only the bank is set.
+                                // Like every length check here, this counts the closing F7
+                                if (syx.length >= 11) ch.programChange(syx[8]);
                                 break;
                             }
 

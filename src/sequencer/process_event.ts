@@ -41,7 +41,9 @@ export function processEventInternal(
             // Every part must be recognized and none may target a channel
             if (
                 analyzed.length === 0 ||
-                analyzed.some((r) => r.type === "Other" || "channel" in r)
+                analyzed.some(
+                    (r) => r.type === "Other With Data" || "channel" in r
+                )
             )
                 return;
         }

@@ -8,11 +8,12 @@ import { MIDIMessage } from "../midi_message";
 import {
     type MIDIController,
     MIDIControllers,
+    MIDIMessageTypes,
     NonRegisteredParameterTypesMSB,
     RegisteredParameterTypes
 } from "../enums";
 
-import type { SysExAcceptedArray, MIDIEncodeOptions } from "../types";
+import type { MIDIEncodeOptions, SysExAcceptedArray } from "../types";
 import type { MIDISystem } from "../../soundbank/types";
 import type * as AnalyzedMessage from "./analyzed_message";
 import {
@@ -60,6 +61,41 @@ const OTHER = Object.freeze({ type: "Other" as const }) as {
     type: "Other";
 };
 
+// The analysis result of a message the analyzer does not recognize
+const unrecognized = (syx: SysExAcceptedArray): AnalyzedMessage.SysEx[] => [
+    { type: "Other With Data", data: syx }
+];
+
+const UNIVERSAL_NON_REALTIME_ID = 0x7e;
+const UNIVERSAL_REALTIME_ID = 0x7f;
+const ROLAND_ID = 0x41;
+const YAMAHA_ID = 0x43;
+
+/**
+ * Finds the MIDI system of a MIDI system exclusive message, from its manufacturer ID.
+ * Universal messages (GM and GM2) are reported as `"gm2"`, the system that has all of them.
+ * @param syx The message.
+ * @returns The MIDI system.
+ * @throws If it is not a System Exclusive message or the manufacturer can't be recognized.
+ */
+export function systemOf(syx: MIDIMessage): MIDISystem {
+    // The return type is needed, without it the literals widen to string in an options object
+    if (
+        syx.statusByte !== MIDIMessageTypes.systemExclusive ||
+        syx.data.length === 0
+    )
+        throw new Error("Not a System Exclusive message.");
+    const manufacturer = syx.data[0];
+    if (
+        manufacturer === UNIVERSAL_NON_REALTIME_ID ||
+        manufacturer === UNIVERSAL_REALTIME_ID
+    )
+        return "gm2";
+    if (manufacturer === YAMAHA_ID) return "xg";
+    if (manufacturer === ROLAND_ID) return "gs";
+    throw new Error(`Unrecognized manufacturer: ${manufacturer.toString(16)}`);
+}
+
 /**
  * Analyzes a MIDI System Exclusive message
  * and returns an identification and data for it.
@@ -73,26 +109,22 @@ const OTHER = Object.freeze({ type: "Other" as const }) as {
  */
 export function analyzeSysEx(syx: SysExAcceptedArray): AnalyzedMessage.SysEx[] {
     // At least Manufacturer ID, Device ID and XG/GS model ID
-    if (syx.length < 3) return [OTHER];
+    if (syx.length < 3) return unrecognized(syx);
     switch (syx[0]) {
         default: {
-            return [OTHER];
+            return unrecognized(syx);
         }
 
-        // Non realtime GM
-        case 0x7e:
-        // Realtime GM
-        case 0x7f: {
+        case UNIVERSAL_NON_REALTIME_ID:
+        case UNIVERSAL_REALTIME_ID: {
             return analyzeGM(syx);
         }
 
-        // Roland
-        case 0x41: {
+        case ROLAND_ID: {
             return analyzeGS(syx);
         }
 
-        // Yamaha
-        case 0x43: {
+        case YAMAHA_ID: {
             return analyzeXG(syx);
         }
     }
@@ -240,7 +272,12 @@ export const DEFAULT_MIDI_ENCODE_OPTIONS: MIDIEncodeOptions = {
  * > This matters for the messages both systems have, like `Map Drum Setup` (the GS map numbers and the XG setup
  * > numbers overlap) and the part parameters.
  *
- * @param message The analyzed message, for example a result of {@link analyzeSysEx} or {@link analyzeRPN}.
+ * > **Important**
+ * >
+ * > {@link AnalyzedMessage.OtherWithData} ignores device ID and preferred system.
+ *
+ * @param message The analyzed message, for example a result of {@link analyzeSysEx},
+ * or of {@link analyzeRPN} without its `Other` (an unknown parameter, which can't be encoded).
  * @param options The encoding options: the preferred system for System Exclusive messages
  * that exist in more than one system (a message the system does not have uses the one it has),
  * the device ID, the tick time and the drum pitch resolution for the drum NRPNs.
@@ -270,17 +307,20 @@ export const DEFAULT_MIDI_ENCODE_OPTIONS: MIDIEncodeOptions = {
  * );
  * ```
  * @throws Error if the message can not be encoded at all
- * (like `Other`, `Display Data`, or a drum parameter that has no NRPN),
+ * (like `Display Data`, or a drum parameter that has no NRPN),
  * a channel message is for a channel above 15 (put it on the port of the channel and pass `channel % 16`,
  * this includes analyzed GS block B and XG part 17 and up results that have a standard form),
  * or a value does not fit in it.
  */
 export function fromAnalyzedMessage(
-    message: AnalyzedMessage.Any,
+    message: AnalyzedMessage.Encodable,
     options: Partial<MIDIEncodeOptions> = DEFAULT_MIDI_ENCODE_OPTIONS
 ) {
     const { preferredSystem, deviceID, ticks, drumPitchStep } =
         fillWithDefaults(options, DEFAULT_MIDI_ENCODE_OPTIONS);
+    if (message.type === "Other With Data") {
+        return [MIDIMessage.systemExclusive(ticks, [...message.data])];
+    }
     const name = `${message.type}${"parameter" in message ? ` (${message.parameter})` : ""}`;
     const channelMessages = encodeChannelMessage(message, ticks, drumPitchStep);
     if (channelMessages) {
@@ -625,7 +665,6 @@ const GM2_CHORUS_PARAMETERS: Partial<
 function encodeSysEx(msg: AnalyzedMessage.SysEx, system: MIDISystem) {
     const universal = system === "gm" || system === "gm2";
     switch (msg.type) {
-        case "Other":
         case "Display Data": {
             throw new Error(`${msg.type} can not be encoded.`);
         }
@@ -1294,7 +1333,7 @@ function resetData(system: MIDISystem) {
 }
 
 function analyzeGM(syx: SysExAcceptedArray): AnalyzedMessage.SysEx[] {
-    if (syx.length < 4) return [OTHER];
+    if (syx.length < 4) return unrecognized(syx);
     const isRealtime = syx[0] === 0x7f;
 
     if (
@@ -1304,7 +1343,7 @@ function analyzeGM(syx: SysExAcceptedArray): AnalyzedMessage.SysEx[] {
     )
         switch (syx[3]) {
             default: {
-                return [OTHER];
+                return unrecognized(syx);
             }
 
             case 0x01: {
@@ -1367,13 +1406,13 @@ function analyzeGM(syx: SysExAcceptedArray): AnalyzedMessage.SysEx[] {
                     syx[6] !== 0x01 || // Value Width
                     syx[7] !== 0x01 // Slot Path MSB
                 ) {
-                    return [OTHER];
+                    return unrecognized(syx);
                 }
 
                 // Slot Path LSB
                 switch (syx[8]) {
                     default: {
-                        return [OTHER];
+                        return unrecognized(syx);
                     }
 
                     case 0x01: {
@@ -1382,7 +1421,7 @@ function analyzeGM(syx: SysExAcceptedArray): AnalyzedMessage.SysEx[] {
                         // Parameter
                         switch (syx[9]) {
                             default: {
-                                return [OTHER];
+                                return unrecognized(syx);
                             }
 
                             case 0x00: {
@@ -1417,7 +1456,7 @@ function analyzeGM(syx: SysExAcceptedArray): AnalyzedMessage.SysEx[] {
                         // Parameter
                         switch (syx[9]) {
                             default: {
-                                return [OTHER];
+                                return unrecognized(syx);
                             }
 
                             case 0x00: {
@@ -1479,10 +1518,10 @@ function analyzeGM(syx: SysExAcceptedArray): AnalyzedMessage.SysEx[] {
         }
 
     // General MIDI (non-realtime)
-    if (isRealtime || syx[2] !== 0x09) return [OTHER];
+    if (isRealtime || syx[2] !== 0x09) return unrecognized(syx);
     switch (syx[3]) {
         default: {
-            return [OTHER];
+            return unrecognized(syx);
         }
 
         case 0x01: {
@@ -1519,8 +1558,9 @@ function analyzeGM(syx: SysExAcceptedArray): AnalyzedMessage.SysEx[] {
 }
 
 function analyzeXG(syx: SysExAcceptedArray): AnalyzedMessage.SysEx[] {
-    // Ensure XG
-    if (syx[2] !== 0x4c || syx.length < 7) return [OTHER];
+    // Ensure XG, and a parameter change (1n). Bulk dumps (0n) and requests (2n, 3n) are laid out differently
+    if (syx[2] !== 0x4c || (syx[1] & 0xf0) !== 0x10 || syx.length < 7)
+        return unrecognized(syx);
     const a1 = syx[3]; // Address 1
     if (
         a1 === 0x06 || // Display letters
@@ -1538,7 +1578,7 @@ function analyzeXG(syx: SysExAcceptedArray): AnalyzedMessage.SysEx[] {
         // XG SYSTEM
         switch (a3) {
             default: {
-                return [OTHER];
+                return unrecognized(syx);
             }
 
             case 0x00: {
@@ -1611,7 +1651,7 @@ function analyzeXG(syx: SysExAcceptedArray): AnalyzedMessage.SysEx[] {
         switch (a3) {
             case 0x00: {
                 // Reverb type: 2 bytes MSB, LSB
-                if (syx.length < 9) return [OTHER];
+                if (syx.length < 9) return unrecognized(syx);
                 return [
                     {
                         type: "XG Reverb Param",
@@ -1676,7 +1716,7 @@ function analyzeXG(syx: SysExAcceptedArray): AnalyzedMessage.SysEx[] {
 
             case 0x20: {
                 // Chorus type: 2 bytes MSB, LSB
-                if (syx.length < 9) return [OTHER];
+                if (syx.length < 9) return unrecognized(syx);
                 return [
                     {
                         type: "XG Chorus Param",
@@ -1750,7 +1790,7 @@ function analyzeXG(syx: SysExAcceptedArray): AnalyzedMessage.SysEx[] {
 
             case 0x40: {
                 // Variation type: 2 bytes MSB, LSB
-                if (syx.length < 9) return [OTHER];
+                if (syx.length < 9) return unrecognized(syx);
                 return [
                     {
                         type: "XG Variation Param",
@@ -1771,7 +1811,7 @@ function analyzeXG(syx: SysExAcceptedArray): AnalyzedMessage.SysEx[] {
             case 0x52:
             case 0x54: {
                 // Variation params 1-10: 14-bit! Not 16-bit!
-                if (syx.length < 9) return [OTHER];
+                if (syx.length < 9) return unrecognized(syx);
                 return [
                     {
                         type: "XG Variation Param",
@@ -1838,7 +1878,7 @@ function analyzeXG(syx: SysExAcceptedArray): AnalyzedMessage.SysEx[] {
                         }
                     ];
                 }
-                return [OTHER];
+                return unrecognized(syx);
             }
             case 0x5b: {
                 return [
@@ -1866,7 +1906,7 @@ function analyzeXG(syx: SysExAcceptedArray): AnalyzedMessage.SysEx[] {
             }
 
             default: {
-                return [OTHER];
+                return unrecognized(syx);
             }
         }
     }
@@ -1877,7 +1917,7 @@ function analyzeXG(syx: SysExAcceptedArray): AnalyzedMessage.SysEx[] {
         switch (a3) {
             case 0x00: {
                 // Insertion type: 2 bytes MSB, LSB
-                if (syx.length < 9) return [OTHER];
+                if (syx.length < 9) return unrecognized(syx);
                 return [
                     {
                         type: "XG Insertion Param",
@@ -1946,7 +1986,7 @@ function analyzeXG(syx: SysExAcceptedArray): AnalyzedMessage.SysEx[] {
             case 0x40:
             case 0x42: {
                 // Insertion params 1-10, full MSB/LSB form (14-bit)
-                if (syx.length < 9) return [OTHER];
+                if (syx.length < 9) return unrecognized(syx);
                 return [
                     {
                         type: "XG Insertion Param",
@@ -1959,7 +1999,7 @@ function analyzeXG(syx: SysExAcceptedArray): AnalyzedMessage.SysEx[] {
             }
 
             default: {
-                return [OTHER];
+                return unrecognized(syx);
             }
         }
     }
@@ -1969,7 +2009,7 @@ function analyzeXG(syx: SysExAcceptedArray): AnalyzedMessage.SysEx[] {
         const channel = a2;
         switch (a3) {
             default: {
-                return [OTHER];
+                return unrecognized(syx);
             }
 
             case 0x01: {
@@ -2487,7 +2527,7 @@ function analyzeXG(syx: SysExAcceptedArray): AnalyzedMessage.SysEx[] {
         }
     }
 
-    return [OTHER];
+    return unrecognized(syx);
 }
 
 function analyzeGS(syx: SysExAcceptedArray): AnalyzedMessage.SysEx[] {
@@ -2496,7 +2536,7 @@ function analyzeGS(syx: SysExAcceptedArray): AnalyzedMessage.SysEx[] {
         // 0x12: DT1 (Device Transmit)
         syx[3] !== 0x12
     )
-        return [OTHER]; // Corrupted?
+        return unrecognized(syx); // Corrupted?
 
     if (
         // Model ID (Display Data)
@@ -2508,7 +2548,7 @@ function analyzeGS(syx: SysExAcceptedArray): AnalyzedMessage.SysEx[] {
         // Model ID (GS)
         syx[2] !== 0x42
     )
-        return [OTHER];
+        return unrecognized(syx);
 
     // Address
     const a1 = syx[4];
@@ -2549,7 +2589,7 @@ function analyzeGS(syx: SysExAcceptedArray): AnalyzedMessage.SysEx[] {
                 ];
             }
         }
-        return [OTHER];
+        return unrecognized(syx);
     }
 
     // Patch common parameters
@@ -2727,60 +2767,65 @@ function analyzeGS(syx: SysExAcceptedArray): AnalyzedMessage.SysEx[] {
                 ];
             }
         }
-        return [OTHER];
+        return unrecognized(syx);
     }
 
     // User Drum Set
     if (a1 === 0x21) {
-        return [handleSingleUserDrum(a2, a3, value)];
+        const result = handleSingleUserDrum(a2, a3, value);
+        return result ? [result] : unrecognized(syx);
     }
 
     // User Drum Set Bulk Dump (SC-88 and up)
     // Each packet carries one raw byte per key, starting at key a3
     if (a1 === 0x29) {
         // Packet B is the 12 character name (plus 4 zero bytes), not per key
-        if ((a2 & 0x0f) === 0xb) return [OTHER];
+        if ((a2 & 0x0f) === 0xb) return unrecognized(syx);
         const dataLength = syx.length - 9;
         // Packets 0 to A match the real time parameters, packet 6 holds both Rx flags
         const actualDrumParam = [1, 2, 3, 4, 5, 6, -1, 9, 0xa, 0xb, 0xc][
             a2 & 0x0f
         ];
-        if (actualDrumParam === undefined) return [OTHER];
+        if (actualDrumParam === undefined) return unrecognized(syx);
         const analyzed = new Array<AnalyzedMessage.SysEx>();
         for (let i = 0; i < dataLength && a3 + i < 128; i++) {
             const value = syx[i + 7];
             const midiNote = a3 + i;
             if (actualDrumParam === -1) {
-                // Bit 0 is Rx NOTE OFF and bit 4 Rx NOTE ON, bit 3 is internal
-                analyzed.push(
-                    handleSingleUserDrum((a2 & 0xf0) | 7, midiNote, value & 1),
-                    handleSingleUserDrum(
-                        (a2 & 0xf0) | 8,
-                        midiNote,
-                        (value >> 4) & 1
-                    )
+                const noteOff = handleSingleUserDrum(
+                    (a2 & 0xf0) | 7,
+                    midiNote,
+                    value & 1
                 );
+                const noteOn = handleSingleUserDrum(
+                    (a2 & 0xf0) | 8,
+                    midiNote,
+                    (value >> 4) & 1
+                );
+                if (!noteOff || !noteOn) return unrecognized(syx);
+                // Bit 0 is Rx NOTE OFF and bit 4 Rx NOTE ON, bit 3 is internal
+                analyzed.push(noteOff, noteOn);
                 continue;
             }
-            analyzed.push(
-                handleSingleUserDrum(
-                    (a2 & 0xf0) | actualDrumParam,
-                    midiNote,
-                    value
-                )
+            const result = handleSingleUserDrum(
+                (a2 & 0xf0) | actualDrumParam,
+                midiNote,
+                value
             );
+            if (!result) return unrecognized(syx);
+            analyzed.push(result);
         }
         return analyzed;
     }
 
     // 0x40 -> Part Parameters, 0x50 -> Part Parameters (BLOCK B) Testcase: 95043-2.KYC.mid
-    if (a1 !== 0x40 && a1 !== 0x50) return [OTHER];
+    if (a1 !== 0x40 && a1 !== 0x50) return unrecognized(syx);
 
     // Effects
     if (a2 === 0x01) {
         switch (a3) {
             default: {
-                return [{ type: "Other" }];
+                return unrecognized(syx);
             }
             case 0x30: {
                 return [{ type: "GS Reverb Param", parameter: "macro", value }];
@@ -3040,7 +3085,7 @@ function analyzeGS(syx: SysExAcceptedArray): AnalyzedMessage.SysEx[] {
     // Equalizer
     if (a2 === 0x02) {
         const parameter = GS_EQUALIZER_PARAMETER_BY_ADDRESS.get(a3);
-        if (parameter === undefined) return [OTHER];
+        if (parameter === undefined) return unrecognized(syx);
         return [
             {
                 type: "GS Equalizer Param",
@@ -3094,7 +3139,7 @@ function analyzeGS(syx: SysExAcceptedArray): AnalyzedMessage.SysEx[] {
                 }
             ];
         }
-        return [{ type: "Other" }];
+        return unrecognized(syx);
     }
 
     // Block B is the second 16-channel set
@@ -3105,18 +3150,22 @@ function analyzeGS(syx: SysExAcceptedArray): AnalyzedMessage.SysEx[] {
             const channel = gsPartToChannel(a2 & 0x0f) + channelOffset;
             switch (a3) {
                 default: {
-                    return [OTHER];
+                    return unrecognized(syx);
                 }
 
                 case 0x00: {
                     // Tone number
+                    const bank: AnalyzedMessage.ControllerChange = {
+                        type: "Controller Change",
+                        channel,
+                        controller: MIDIControllers.bankSelect,
+                        value
+                    };
+                    // With a single data byte, syx[8] is the checksum and only the bank is set.
+                    // Like every length check here, this counts the closing F7
+                    if (syx.length < 11) return [bank];
                     return [
-                        {
-                            type: "Controller Change",
-                            channel,
-                            controller: MIDIControllers.bankSelect,
-                            value
-                        },
+                        bank,
                         {
                             type: "Program Change",
                             channel,
@@ -3462,7 +3511,7 @@ function analyzeGS(syx: SysExAcceptedArray): AnalyzedMessage.SysEx[] {
             const channel = gsPartToChannel(a2 & 0x0f) + channelOffset;
             switch (a3) {
                 default: {
-                    return [OTHER];
+                    return unrecognized(syx);
                 }
 
                 // TONE MAP-0 NUMBER (01) is not handled, like in the synth
@@ -3503,17 +3552,17 @@ function analyzeGS(syx: SysExAcceptedArray): AnalyzedMessage.SysEx[] {
         }
     }
 
-    return [OTHER];
+    return unrecognized(syx);
 }
 
 function handleSingleUserDrum(
     a2: number,
     a3: number,
     data: number
-): AnalyzedMessage.SysEx {
+): AnalyzedMessage.SysEx | undefined {
     const drumSet = a2 >> 4;
     // The SC-88 and up have two User Drum Sets
-    if (drumSet > 1) return OTHER;
+    if (drumSet > 1) return undefined;
     switch (a2 & 0xf) {
         // Play Note
         case 0x1: {
@@ -3647,5 +3696,5 @@ function handleSingleUserDrum(
             };
         }
     }
-    return OTHER;
+    return undefined;
 }
