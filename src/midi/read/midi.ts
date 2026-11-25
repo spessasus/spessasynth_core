@@ -40,23 +40,29 @@ export function parseSMFInternal(
     SpessaLog.groupCollapsed(`%cParsing MIDI File...`, ConsoleColors.info);
     outputMIDI.fileName = fileName;
 
+    // Damaged files are read as far as they make sense, each problem is logged here
+    let damaged = false;
+    const warnDamaged = (message: string) => {
+        damaged = true;
+        SpessaLog.warn(message);
+    };
+
     const readMIDIChunk = (): MIDIChunk => {
         const type = readBinaryStringIndexed(smfFileBinary, 4);
         const size = readBigEndianIndexed(smfFileBinary, 4);
-        const data = new IndexedByteArray(size);
-        const chunk: MIDIChunk = {
-            type,
-            size,
-            data
-        };
-
-        const dataSlice = smfFileBinary.slice(
+        // A truncated file has a chunk size past its end.
+        // Only the bytes that exist are read, padding them would turn the zeros into events
+        const data = smfFileBinary.slice(
             smfFileBinary.currentIndex,
-            smfFileBinary.currentIndex + chunk.size
+            smfFileBinary.currentIndex + size
         );
-        chunk.data.set(dataSlice, 0);
-        smfFileBinary.currentIndex += chunk.size;
-        return chunk;
+        if (data.length < size) {
+            warnDamaged(
+                `${type} chunk is truncated: ${size} bytes declared, ${data.length} left in the file.`
+            );
+        }
+        smfFileBinary.currentIndex += size;
+        return { type, size, data };
     };
 
     const headerChunk = readMIDIChunk();
@@ -67,10 +73,10 @@ export function parseSMFInternal(
         );
     }
 
-    if (headerChunk.size !== 6) {
+    if (headerChunk.size !== 6 || headerChunk.data.length < 6) {
         SpessaLog.groupEnd();
         throw new RangeError(
-            `Invalid MIDI header chunk size! Expected 6, got ${headerChunk.size}`
+            `Invalid MIDI header chunk size! Expected 6, got ${headerChunk.size} (${headerChunk.data.length} in the file)`
         );
     }
 
@@ -82,6 +88,14 @@ export function parseSMFInternal(
     outputMIDI.timeDivision = readBigEndianIndexed(headerChunk.data, 2);
     // Read all the tracks
     for (let i = 0; i < trackCount; i++) {
+        // A file cut before its last tracks keeps the ones that are there.
+        // Less than a chunk header left is a cut or junk at the end
+        if (smfFileBinary.currentIndex + 8 > smfFileBinary.length) {
+            warnDamaged(
+                `The file ends after ${i} of ${trackCount} tracks, the rest are missing.`
+            );
+            break;
+        }
         const track = new MIDITrack();
         const trackChunk = readMIDIChunk();
 
@@ -104,9 +118,25 @@ export function parseSMFInternal(
             totalTicks += previousEvents[previousEvents.length - 1]?.ticks ?? 0;
         }
         const trackData = trackChunk.data;
+        const trackEnd = trackData.length;
+
+        // The length of a SysEx or meta event, or -1 when the track ends inside it
+        const readLength = () => {
+            if (trackData.currentIndex >= trackEnd) return -1;
+            const length = readVariableLengthQuantity(trackData);
+            // The last byte still has the continuation bit: the end of the track cut the length
+            return trackData[trackData.currentIndex - 1] >= 0x80 ? -1 : length;
+        };
+
         // Loop until we reach the end of track
-        while (trackData.currentIndex < trackChunk.size) {
+        while (trackData.currentIndex < trackEnd) {
             totalTicks += readVariableLengthQuantity(trackData);
+
+            // A track that ends after a delta time is truncated
+            if (trackData.currentIndex >= trackEnd) {
+                warnDamaged(`Track ${i} ends without an event.`);
+                break;
+            }
 
             // Check if the status byte is valid (IE. larger than 127)
             const statusByteCheck = trackData[trackData.currentIndex];
@@ -129,6 +159,10 @@ export function parseSMFInternal(
             }
 
             let dataSize;
+            // A note message cut by the end of the track is kept, its missing bytes read as 0
+            // (a velocity of 0 is a note off, and the note may need it to end).
+            // Any other cut message is dropped, a 0 there would apply a real value (a full pitch bend down)
+            let keepIfCut = false;
 
             // Determine the message's length
             if (
@@ -138,11 +172,14 @@ export function parseSMFInternal(
                 statusByte < MIDIMessageTypes.systemExclusive
             ) {
                 // Voice message
-                // Gets the midi message length
+                // Gets the midi message length.
+                // A data byte of 0x80 or higher is a broken value (a key with its top bit set, a volume of 128).
+                // The delta times around it show it is still data, so the message keeps its length
                 dataSize =
                     DataBytesAmount[
                         (statusByte >> 4) as keyof typeof DataBytesAmount
                     ];
+                keepIfCut = statusByte < MIDIMessageTypes.polyPressure;
                 // Save the status byte
                 runningByte = statusByte;
             } else if (
@@ -150,22 +187,41 @@ export function parseSMFInternal(
                 statusByte === MIDIMessageTypes.systemExclusiveEscape
             ) {
                 // Sysex or sysex escape/continuation, both have a length
-                dataSize = readVariableLengthQuantity(trackData);
+                dataSize = readLength();
             } else if (statusByte === 0xff) {
                 // Meta message (the next is the actual status byte)
-                statusByte = trackData[
-                    trackData.currentIndex++
-                ] as MIDIMessageType;
-                dataSize = readVariableLengthQuantity(trackData);
+                if (trackData.currentIndex < trackEnd) {
+                    statusByte = trackData[
+                        trackData.currentIndex++
+                    ] as MIDIMessageType;
+                    dataSize = readLength();
+                } else dataSize = -1;
             } else {
                 // System common/realtime (no length)
                 dataSize = 0;
             }
 
+            // The end of the track cut this event
+            if (
+                dataSize === -1 ||
+                (!keepIfCut && trackData.currentIndex + dataSize > trackEnd)
+            ) {
+                warnDamaged(
+                    `Track ${i} ends inside an event (${dataSize === -1 ? "its header" : `${dataSize} bytes declared, ${trackEnd - trackData.currentIndex} left`}), dropping it.`
+                );
+                break;
+            }
+
+            if (trackData.currentIndex + dataSize > trackEnd) {
+                warnDamaged(
+                    `Track ${i} ends inside a note message, its missing data bytes are 0.`
+                );
+            }
+
             // Put the event data into the array
             const eventData = new IndexedByteArray(dataSize);
             eventData.set(
-                trackData.slice(
+                trackData.subarray(
                     trackData.currentIndex,
                     trackData.currentIndex + dataSize
                 )
@@ -188,7 +244,20 @@ export function parseSMFInternal(
         );
     }
 
-    SpessaLog.info(`%cAll tracks parsed correctly!`, ConsoleColors.recognized);
+    // A file cut right after its header has nothing to play
+    if (trackCount > 0 && outputMIDI.tracks.length === 0) {
+        SpessaLog.groupEnd();
+        throw new RangeError("The MIDI file ends before its first track.");
+    }
+
+    if (damaged) {
+        SpessaLog.warn("The MIDI file is damaged, parsed what was readable.");
+    } else {
+        SpessaLog.info(
+            `%cAll tracks parsed correctly!`,
+            ConsoleColors.recognized
+        );
+    }
     // Parse the events (no need to sort as they are already sorted by the SMF specification)
     outputMIDI.flush(false);
     SpessaLog.groupEnd();
