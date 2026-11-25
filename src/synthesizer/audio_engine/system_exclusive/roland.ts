@@ -20,6 +20,11 @@ function handleUserDrum(
 ) {
     if (this.systemParameters.userDrumLock) return;
     const drumSet = a2 >> 4;
+    // The address allows sets 0 to 7, but the Sound Canvas only has two (programs 65 and 66)
+    if (drumSet >= this.soundBankManager.userDrumSets.length) {
+        SpessaLog.gsFail("User Drum set", syx, `Invalid set ${drumSet}`);
+        return;
+    }
     const midiNote = a3;
     const command = a2 & 0xf;
     switch (command) {
@@ -1373,6 +1378,15 @@ export function rolandSystemExclusive(
                         ConsoleColors.recognized,
                         ConsoleColors.value
                     );
+                    // Checked once here, the loop below would warn for every key
+                    if (a2 >> 4 >= this.soundBankManager.userDrumSets.length) {
+                        SpessaLog.gsFail(
+                            "User Drum Bulk Dump",
+                            syx,
+                            `Invalid set ${a2 >> 4}`
+                        );
+                        return;
+                    }
                     const packet = a2 & 0x0f;
                     // Packet B is the 12 character name (plus 4 zero bytes), handled once
                     if (packet === 0xb) {

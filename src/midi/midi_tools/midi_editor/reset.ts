@@ -69,7 +69,11 @@ export function trackReset(
         ConsoleColors.info
     );
     // A GM reset with notes after it gets replaced with the fallback after the loop,
-    // So the setups use the fallback already
+    // So the setups use the fallback already.
+    // A GM reset followed by another reset before any note stays GM in the file,
+    // So the SysEx between the two is handled as if the synth were in the fallback system.
+    // We keep it that way because nothing between them can be heard: GM ignores GS and XG SysEx,
+    // There are no notes, and the next reset clears the controllers, effects, user drums and the tracked state.
     const effectiveSystem =
         system === "gm" ? ctx.options.gmReplacement : system;
     ctx.system = effectiveSystem;

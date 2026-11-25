@@ -1321,4 +1321,43 @@ console.info(
     );
 }
 
+// A User Drum message for a set that doesn't exist is ignored instead of crashing
+{
+    const synth = new SpessaSynthProcessor(SAMPLE_RATE, {
+        effectsEnabled: false,
+        eventsEnabled: false
+    });
+    await synth.ready;
+    // Level 80 for key 60
+    const gsUserDrum = (set: number) => {
+        const body = [0x21, (set << 4) | 0x02, 60, 80];
+        const sum = body.reduce((a, b) => a + b, 0);
+        synth.systemExclusive([
+            0x41,
+            0x10,
+            0x42,
+            0x12,
+            ...body,
+            (128 - (sum % 128)) % 128,
+            0xf7
+        ]);
+    };
+    let crashed = false;
+    try {
+        for (let set = 2; set < 8; set++) gsUserDrum(set);
+    } catch {
+        crashed = true;
+    }
+    const sets = synth.soundBankManager.userDrumSets;
+    // Nothing leaks into the two real sets
+    const untouched =
+        sets[0].keyParams[60].level !== 80 &&
+        sets[1].keyParams[60].level !== 80;
+    gsUserDrum(1);
+    check(
+        !crashed && untouched && sets[1].keyParams[60].level === 80,
+        "User Drum messages for sets 2 to 7 are ignored, set 1 still works"
+    );
+}
+
 finish("midi_behavior_test");
