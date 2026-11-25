@@ -34,11 +34,12 @@ export class MIDIEditor {
      */
     public constructor(midi: BasicMIDI, opts: ModifyMIDIOptions) {
         this.midi = midi;
+        // Parsed before the log group opens, invalid options throw
+        const options = parseEditOptions(opts);
         SpessaLog.groupCollapsed(
             "%cApplying changes to the MIDI file...",
             ConsoleColors.info
         );
-        const options = parseEditOptions(opts);
 
         // The channel offsets come from the file (BasicMIDI.portChannelOffsetMap), like in the sequencer.
         // Always at least 16 channels, even if the file has no notes
@@ -84,7 +85,7 @@ export class MIDIEditor {
      * 1. Add a reset at the start if the setup needs one and the file has none that will be kept.
      * 2. The main loop ({@link handleEvent}) edits every event and collects the meaningful resets.
      * 3. A file without notes keeps its last reset as meaningful.
-     * 4. Meaningful GM resets are replaced (or kept if GM is requested).
+     * 4. Meaningful GM resets are replaced.
      * 5. A cleared system has no resets left, so the setup goes in once on the first track.
      * 6. The setup goes in after every meaningful reset.
      */
@@ -118,14 +119,8 @@ export class MIDIEditor {
             resets.pending = undefined;
         }
 
-        // Step 4: the meaningful GM resets.
-        // With GM requested they stay GM and only get the setup after them,
-        // Otherwise they are replaced in place with the GM replacement.
+        // Step 4: the meaningful GM resets are replaced in place with the GM replacement.
         for (const gmReset of resets.gm) {
-            if (requestedSystem === "gm") {
-                resets.meaningful.push({ ...gmReset, system: "gm" });
-                continue;
-            }
             const events = this.midi.tracks[gmReset.track].events;
             const index = events.indexOf(gmReset.event);
             if (index === -1) continue;

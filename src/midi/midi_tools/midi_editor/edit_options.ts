@@ -7,6 +7,15 @@ import type { ChannelModification, ModifyMIDIOptions } from "./types";
  */
 export function parseEditOptions(opts: ModifyMIDIOptions) {
     const { channels, ...globalOptions } = opts;
+    // The types already exclude GM, this catches JavaScript callers
+    if (
+        (opts.midiParams?.system as string | undefined) === "gm" ||
+        (opts.fallbackReset as string | undefined) === "gm"
+    ) {
+        throw new Error(
+            "GM can't be requested as the system, it ignores the bank selects and setups the editor writes."
+        );
+    }
 
     // Track only channels to change here
     const channelChanges = new Map<number, ChannelModification>();
@@ -43,7 +52,7 @@ export function parseEditOptions(opts: ModifyMIDIOptions) {
         clearedChannels,
         hasGSEffects,
         hasXGEffects,
-        // A meaningful GM reset gets replaced (unless GM is requested).
+        // A meaningful GM reset always gets replaced.
         // XG when only XG setups are requested, otherwise they would never be written
         gmReplacement: opts.fallbackReset ?? (xgOnly ? "xg" : "gs")
     };

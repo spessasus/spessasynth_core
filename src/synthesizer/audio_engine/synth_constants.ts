@@ -18,7 +18,7 @@ export const MIDI_DRUM_CHANNEL = 9;
  *
  * @group Synthesizer.Constants
  */
-export const DEFAULT_SYNTH_MODE: MIDISystem = "gs";
+export const DEFAULT_SYNTH_MODE: Exclude<MIDISystem, "gm"> = "gs";
 
 /**
  * Used globally to identify the embedded sound bank

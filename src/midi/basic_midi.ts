@@ -712,6 +712,8 @@ export class BasicMIDI {
      * This modifies the MIDI sequence _in-place_.
      *
      * @param opts The modifications to apply.
+     * @throws Error if GM is requested as `midiParams.system` or `fallbackReset`.
+     * The editor does not write for GM, which ignores bank selects and the GS and XG setups.
      */
     public modify(opts: Partial<ModifyMIDIOptions>) {
         const editor = new MIDIEditor(this, opts);

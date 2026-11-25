@@ -68,12 +68,10 @@ export function trackReset(
         `%c${system.toUpperCase()} system on detected`,
         ConsoleColors.info
     );
-    // A GM reset with notes after it gets replaced with the fallback after the loop
-    // (unless GM is requested), so the setups use the fallback already
+    // A GM reset with notes after it gets replaced with the fallback after the loop,
+    // So the setups use the fallback already
     const effectiveSystem =
-        system === "gm" && ctx.options.midiParams?.system === undefined
-            ? ctx.options.gmReplacement
-            : system;
+        system === "gm" ? ctx.options.gmReplacement : system;
     ctx.system = effectiveSystem;
 
     // A new reset makes the previous one meaningless.

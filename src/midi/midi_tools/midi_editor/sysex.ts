@@ -49,19 +49,13 @@ export function handleSysEx(
     // The entries to keep, or the messages that replace one (like a corrected fine tune), in entry order
     const kept = new Array<AnalyzedMessage.SysEx | MIDIMessage[]>();
     let replaced = false;
-    // We delete some messages whole instead of splitting them, at their first changed entry
-    // (so the entries after it are not tracked either):
-    // - An entry on a channel above 15 (like a GS block B part) would go back as a channel message
-    //   (or a corrected fine tune RPN as channel % 16), which can't reach that channel from this track.
-    //   Writing those entries to a track on that channel's port would fix it.
-    // - In GM mode the synth ignores GS and XG part messages, but not the channel messages
-    //   Their entries would come back as.
-    const splittable = syxs.every(
-        (s) =>
-            !("channel" in s) ||
-            (s.channel < 16 &&
-                (ctx.system !== "gm" || MIDIUtils.systemOf(e) === "gm2"))
-    );
+    // We delete a message whole instead of splitting it when it has an entry on a channel above 15
+    // (like a GS block B part), at its first changed entry, so the entries after it are not tracked either.
+    // That entry would go back as a channel message (or a corrected fine tune RPN as channel % 16),
+    // Which can't reach that channel from this track.
+    // Writing those entries to a track on that channel's port would fix it.
+    // GM mode needs no check: the editor never writes for GM, a GM reset is always replaced.
+    const splittable = syxs.every((s) => !("channel" in s) || s.channel < 16);
     // A "continue" in this loop drops the entry, everything else reaches kept.push at the bottom
     for (const [index, syx] of syxs.entries()) {
         // Only a cleared reset deletes the message here, and a reset is always the only result

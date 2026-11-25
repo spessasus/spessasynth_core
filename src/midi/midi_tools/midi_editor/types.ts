@@ -207,20 +207,21 @@ export interface ModifyMIDIOptions {
      *   before the first note on without any reset.
      *   Without a reset, the synth stays in GS, so the setup and the locked patches are written for GS.
      *   XG setups are not written.
-     * - `specific value` - replaces every system reset with the desired one.
+     * - `specific value` - replaces every system reset with the desired one. GM can't be requested.
      *
      * > **Note**
      * >
-     * > By default, a meaningful GM reset (one with notes after it, or the last reset of a file without notes)
-     * > is replaced with a GS reset (or `fallbackReset`, if set, or XG if only XG setups are requested).
-     * > Set the `system` parameter to `gm`
-     * > to keep the GM reset (and replace all others with GM).
-     * > This is done to allow the bank selections and other parameters to work.
+     * > A meaningful GM reset (one with notes after it, or the last reset of a file without notes)
+     * > is **always** replaced with a GS reset (or `fallbackReset`, if set, or XG if only XG setups are requested).
+     * > GM ignores bank selects and the GS and XG messages the editor writes,
+     * > so the locked patches and setups would not work in GM mode.
      */
     midiParams?: {
-        [P in keyof GlobalMIDIParameter]?: ClearableParameter<
-            GlobalMIDIParameter[P]
-        >;
+        [
+            P in Exclude<keyof GlobalMIDIParameter, "system">
+        ]?: ClearableParameter<GlobalMIDIParameter[P]>;
+    } & {
+        system?: ClearableParameter<Exclude<MIDISystem, "gm">>;
     };
     /**
      * The desired GS reverb parameters.
@@ -299,8 +300,9 @@ export interface ModifyMIDIOptions {
      *
      * If GM resets are replaced, they use this system if provided,
      * otherwise `"xg"` if only XG setups are requested, otherwise `"gs"`.
+     * GM can't be used, a GM reset is the one that gets replaced.
      */
-    fallbackReset?: MIDISystem;
+    fallbackReset?: Exclude<MIDISystem, "gm">;
 }
 
 /**
@@ -464,9 +466,9 @@ export interface EditOptions extends Omit<ModifyMIDIOptions, "channels"> {
      */
     readonly hasXGEffects: boolean;
     /**
-     * The system replacing meaningful GM resets, when GM is not requested.
+     * The system replacing meaningful GM resets.
      */
-    readonly gmReplacement: MIDISystem;
+    readonly gmReplacement: Exclude<MIDISystem, "gm">;
 }
 
 /**
@@ -490,8 +492,7 @@ export interface ResetState {
     readonly meaningful: ResetPosition[];
     /**
      * Meaningful GM resets found during the main loop (see {@link meaningful}).
-     * They are replaced with the GM replacement in place, unless GM is requested,
-     * then they stay GM and only get the setup after them.
+     * They are replaced with the GM replacement in place.
      */
     readonly gm: ResetPosition[];
     /**
@@ -533,6 +534,7 @@ export interface EditContext {
     readonly resets: ResetState;
     /**
      * The current system, the channel setups are written for it.
+     * Never GM: a GM reset is tracked as its replacement, the editor does not write for GM.
      */
-    system: MIDISystem;
+    system: Exclude<MIDISystem, "gm">;
 }

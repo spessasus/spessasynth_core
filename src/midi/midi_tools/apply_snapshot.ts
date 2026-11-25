@@ -6,6 +6,7 @@ import { CONTROLLER_TABLE_SIZE } from "../../synthesizer/audio_engine/synth_cons
 import type {
     ChannelModification,
     ClearableParameter,
+    ModifyMIDIOptions,
     UserDrumModification
 } from "./midi_editor/types";
 import type { ChannelMIDIParameter } from "../../synthesizer/audio_engine/channel/parameters/midi";
@@ -88,20 +89,21 @@ export function applySnapshotInternal(
         });
     }
 
-    const midiParams = {} as {
-        [P in keyof GlobalMIDIParameter]?: ClearableParameter<
-            GlobalMIDIParameter[P]
-        >;
-    };
+    const midiParams: NonNullable<ModifyMIDIOptions["midiParams"]> = {};
 
     for (const [parameter, value] of Object.entries(
         snapshot.midiParameters
     ) as {
         [K in keyof GlobalMIDIParameter]: [K, GlobalMIDIParameter[K]];
     }[keyof GlobalMIDIParameter][]) {
-        if (snapshot.lockedMIDIParameters[parameter])
-            // Strange cast, but works?
-            midiParams[parameter] = value as never;
+        if (!snapshot.lockedMIDIParameters[parameter]) continue;
+        // A synth locked to GM counts as not locked. The editor can't write GM (it ignores the bank selects
+        // And setups), so the file is handled like with an unlocked system: its GM resets get the usual fallback.
+        // The exported file can sound different from the locked GM playback then,
+        // As the file's bank selects and GS or XG messages take effect
+        if (parameter === "system" && value === "gm") continue;
+        // Strange cast, but works?
+        midiParams[parameter] = value as never;
     }
 
     // User Drum set

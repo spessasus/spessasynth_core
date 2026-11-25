@@ -633,16 +633,19 @@ function newFile() {
     midi.addTrack("track 1");
     midi.tracks[0].pushEvents(MIDIUtils.reset(0, "gm"));
     midi.flush();
-    midi.modify({ midiParams: { system: "gm", volume: 0.5 } });
-    const systems = sysExResults(midi)
-        .flatMap((r) => r.results)
-        .filter((x) => x.type === "Global MIDI Param")
-        .filter((x) => x.parameter === "system")
-        .map((x) => x.value);
+    // The types exclude GM, this is what a JavaScript caller gets
+    let error = "";
+    try {
+        midi.modify({
+            midiParams: { system: "gm" as "gs", volume: 0.5 }
+        });
+    } catch (error_) {
+        error = String(error_);
+    }
     check(
-        "15. with GM requested, the GM reset of a setup file stays GM",
-        systems.join(",") === "gm",
-        systems.join(",")
+        "15b. GM can't be requested as the system",
+        error.includes("GM can't be requested"),
+        error
     );
 }
 
@@ -1265,38 +1268,35 @@ for (const lockPatch of [false, true]) {
     );
 }
 
-// 36. In GM mode the synth ignores a GS tone number, so a split must not turn its program into a channel message.
-// The system is locked to GM, otherwise the editor upgrades the GM reset to GS for the channel changes.
+// 36. A synth locked to GM counts as not locked when applying its snapshot.
+// The editor can't write GM, so the file's GM reset gets the usual GS fallback instead of throwing.
 {
     const midi = new MIDIBuilder({ name: "fixes", format: 1 });
     midi.addTrack("track 1");
     midi.tracks[0].pushEvents(MIDIUtils.reset(0, "gm"));
-    midi.tracks[0].pushEvents(
-        MIDIUtils.gsMessage(10, 0x40, 0x11, 0x00, [5, 33])
-    );
     midi.noteOn(480, 1, 0, 60, 100);
     midi.noteOff(720, 1, 0, 60);
     midi.flush();
-    midi.modify({
-        midiParams: { system: "gm" },
-        channels: new Map([
-            [0, { controllers: new Map([[MIDIControllers.bankSelect, 8]]) }]
-        ])
-    });
-    const programs = midi.tracks.flatMap((t) =>
-        t.events.filter(
-            (e) =>
-                e.statusByte === MIDIMessageTypes.programChange &&
-                e.data[0] === 33
-        )
-    );
+    const synth = new SpessaSynthProcessor(44_100);
+    synth.processMessage(MIDIUtils.reset(0, "gm"));
+    synth.lockMIDIParameter("system", true);
+    let error = "";
+    try {
+        midi.applySnapshot(synth.getSnapshot());
+    } catch (error_) {
+        error = String(error_);
+    }
+    const systems = sysExResults(midi)
+        .flatMap((r) => r.results)
+        .filter((x) => x.type === "Global MIDI Param")
+        .filter((x) => x.parameter === "system")
+        .map((x) => x.value);
     check(
-        "36. a GS tone number in GM mode is not split into a program change",
-        programs.length === 0 &&
-            sysExResults(midi).every((r) =>
-                r.results.every((x) => x.type !== "Program Change")
-            ),
-        `${programs.length} program changes`
+        "36. a snapshot locked to GM applies, the GM reset gets the GS fallback",
+        error === "" &&
+            synth.midiParameters.system === "gm" &&
+            systems.join(",") === "gs",
+        error || `${synth.midiParameters.system}: ${systems.join(",")}`
     );
 }
 
