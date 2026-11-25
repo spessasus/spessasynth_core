@@ -1,4 +1,5 @@
 import type { MIDIMessage } from "../../midi_message";
+import { SpessaLog } from "../../../utils/loggin";
 import * as BankSelectHacks from "../../../utils/bank_select_hacks";
 import * as MIDIUtils from "../midi_utils";
 import type * as AnalyzedMessage from "../analyzed_message";
@@ -46,21 +47,16 @@ export function handleSysEx(
     const syxs = MIDIUtils.analyzeSysEx(e.data);
     // Drum map locks to write again, inserted after all the results (inserting moves the current index)
     const relock = new Array<MIDIMessage>();
-    // The entries to keep, or the messages that replace one (like a corrected fine tune), in entry order
-    const kept = new Array<AnalyzedMessage.SysEx | MIDIMessage[]>();
+    // The entries to keep, or the channel messages that replace one (like a corrected fine tune) with their channel,
+    // In entry order
+    const kept = new Array<
+        AnalyzedMessage.SysEx | { channel: number; messages: MIDIMessage[] }
+    >();
     let replaced = false;
-    // We delete a message whole instead of splitting it when it has an entry on a channel above 15
-    // (like a GS block B part), at its first changed entry, so the entries after it are not tracked either.
-    // That entry would go back as a channel message (or a corrected fine tune RPN as channel % 16),
-    // Which can't reach that channel from this track.
-    // Writing those entries to a track on that channel's port would fix it.
-    // GM mode needs no check: the editor never writes for GM, a GM reset is always replaced.
-    const splittable = syxs.every((s) => !("channel" in s) || s.channel < 16);
     // A "continue" in this loop drops the entry, everything else reaches kept.push at the bottom
-    for (const [index, syx] of syxs.entries()) {
+    for (const syx of syxs) {
         // Only a cleared reset deletes the message here, and a reset is always the only result
         if (ctx.cursor.deleted) return;
-        if (!splittable && (replaced || kept.length < index)) break;
 
         // Clear channel sysExes too
         if (
@@ -135,9 +131,7 @@ export function handleSysEx(
                         BankSelectHacks.selectsXGDrumKit(
                             ctx.channels[sysExChannel].bankMSB
                         ),
-                        // Note: a block B part (17 and up) does not get its locked drum map written again.
-                        // The written message addresses channel % 16 on this track's port, so it would hit the wrong part
-                        syx.channel < 16 ? e : undefined
+                        { ticks: e.ticks, partChannel: syx.channel }
                     )
                 );
                 break;
@@ -162,7 +156,10 @@ export function handleSysEx(
                     syx
                 );
                 if (replacement) {
-                    kept.push(replacement);
+                    kept.push({
+                        channel: syx.channel + portOffset,
+                        messages: replacement
+                    });
                     replaced = true;
                     continue;
                 }
@@ -178,7 +175,10 @@ export function handleSysEx(
                     syx.channel + portOffset
                 );
                 if (replacement) {
-                    kept.push(replacement);
+                    kept.push({
+                        channel: syx.channel + portOffset,
+                        messages: replacement
+                    });
                     replaced = true;
                     continue;
                 }
@@ -211,22 +211,85 @@ export function handleSysEx(
     // (a GS drum setup at address 51 comes back at 41, the flags packet loses its internal bit 3).
     // That's fine because it only happens when something in the message is locked,
     // Untouched messages keep their bytes.
-    if (splittable) {
-        const system = MIDIUtils.systemOf(e);
-        const options = {
-            // XG keeps the message type in the high nibble (1n parameter change), only the device number carries over
-            deviceID: system === "xg" ? 0x10 | (e.data[1] & 0x0f) : e.data[1],
-            ticks: e.ticks,
-            preferredSystem: system
-        };
-        for (const keep of kept) {
-            ctx.cursor.insertBefore(
-                ...(Array.isArray(keep)
-                    ? keep
-                    : MIDIUtils.fromAnalyzedMessage(keep, options))
-            );
+    const system = MIDIUtils.systemOf(e);
+    const options = {
+        // XG keeps the message type in the high nibble (1n parameter change), only the device number carries over
+        deviceID: system === "xg" ? 0x10 | (e.data[1] & 0x0f) : e.data[1],
+        ticks: e.ticks,
+        preferredSystem: system
+    };
+    for (const keep of kept) {
+        if ("messages" in keep) {
+            insertOnChannelPort(ctx, keep.channel, keep.messages);
+            continue;
         }
+        // A channel message reaches only its channel's port, so one for another port (like GS block B) goes there.
+        // A SysEx reaches its part from this track like the file's message
+        if ("channel" in keep) {
+            const channelMessages = MIDIUtils.encodeChannelMessage(
+                { ...keep, channel: keep.channel % 16 },
+                e.ticks,
+                MIDIUtils.DEFAULT_MIDI_ENCODE_OPTIONS.drumPitchStep
+            );
+            if (channelMessages) {
+                insertOnChannelPort(
+                    ctx,
+                    keep.channel + portOffset,
+                    channelMessages
+                );
+                continue;
+            }
+        }
+        ctx.cursor.insertBefore(
+            ...MIDIUtils.fromAnalyzedMessage(keep, options)
+        );
     }
     deleteCurrentEvent(ctx);
     ctx.cursor.insertAfter(...relock);
+}
+
+/**
+ * Inserts channel messages before the current event, on the port of their channel.
+ * Drops them when that is not possible, see the comments below.
+ * @param ctx The edit context.
+ * @param channel The channel, with the port offset.
+ * @param messages The messages, written for channel % 16.
+ */
+function insertOnChannelPort(
+    ctx: EditContext,
+    channel: number,
+    messages: MIDIMessage[]
+) {
+    // A locked entry comes back as no messages
+    if (messages.length === 0) return;
+    const track = ctx.cursor.track;
+    const offset = channel - (channel % 16);
+    // A port without notes has the channel count as its offset
+    if ((ctx.ports.offset(track) ?? ctx.channels.length) === offset) {
+        ctx.cursor.insertBefore(...messages);
+        return;
+    }
+    const port = ctx.ports.portWithOffset(offset);
+    // The two drops below lose an entry the file applied, and the channel state was already updated as if
+    // It stayed. We keep dropping instead of writing the entry back as a part SysEx because both cases are rare
+    // And the port model rework (one port map for the whole file) removes them
+    if (port === undefined) {
+        // No port with notes has that channel. Usually the file's message reached nothing either,
+        // But a GS Double Module mode set gives a single port file 32 synth channels, so block B did play.
+        // A message from a port without notes played nothing at all, it needs no warning
+        if (ctx.ports.offset(track) === undefined) return;
+        SpessaLog.warn(
+            `Dropping a message for channel ${channel}, no port with notes has that channel.`
+        );
+        return;
+    }
+    if (
+        !ctx.cursor.insertBeforeOnPort(port, ctx.ports.port(track), ...messages)
+    )
+        // A port event on this track would change the port channels of the whole file.
+        // This needs a note track without any port event sending a part message for another port,
+        // Like the name-routed Yamaha MU demos
+        SpessaLog.warn(
+            `Dropping a message for channel ${channel}: writing it on its port would change the file's port routing.`
+        );
 }

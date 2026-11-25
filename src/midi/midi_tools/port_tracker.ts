@@ -89,4 +89,16 @@ export class PortTracker {
     public offset(track: number) {
         return this.midi.getPortOffset(this.port(track));
     }
+
+    /**
+     * The port whose channels start at an offset, the inverse of {@link offset}.
+     * @param offset The channel offset, a multiple of 16.
+     * @returns The lowest port with notes that has the offset, or undefined if there is none.
+     */
+    public portWithOffset(offset: number) {
+        const port = this.midi.portChannelOffsetMap.findIndex(
+            (_, p) => this.midi.getPortOffset(p) === offset
+        );
+        return port === -1 ? undefined : port;
+    }
 }

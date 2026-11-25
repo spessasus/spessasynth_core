@@ -1,5 +1,15 @@
-import type { MIDIMessage } from "../../midi_message";
+import { MIDIMessage } from "../../midi_message";
 import type { BasicMIDI } from "../../basic_midi";
+import { MIDIMessageTypes } from "../../enums";
+import { PortTracker } from "../port_tracker";
+
+/**
+ * A MIDI Port meta event.
+ * @param ticks The ticks.
+ * @param port The port number.
+ */
+const portEvent = (ticks: number, port: number) =>
+    new MIDIMessage(ticks, MIDIMessageTypes.midiPort, new Uint8Array([port]));
 
 /**
  * The editor's position in `BasicMIDI.iterate`, with the inserts and deletes around the current event.
@@ -36,16 +46,25 @@ export class EventCursor {
     private eventIndexes = [0];
     private currentTrack = 0;
     private currentDeleted = false;
+    /**
+     * The port and the closing MIDI Port event of the last {@link insertBeforeOnPort}, so the next one can join it.
+     */
+    private lastWrap?: { port: number; restore: MIDIMessage };
 
     /**
      * @param midi The file being edited.
      * @param onDelete Called after an event was deleted, with its track and its index before the delete.
-     * @param onInsert Called after an event was inserted, with the event and its track.
+     * @param onInsert Called after an event was inserted, with the event, its track
+     * and the port it was put on with {@link insertBeforeOnPort} (undefined for the track's own port).
      */
     public constructor(
         midi: BasicMIDI,
         onDelete: (track: number, index: number) => unknown,
-        onInsert: (e: MIDIMessage, track: number) => unknown
+        onInsert: (
+            e: MIDIMessage,
+            track: number,
+            port: number | undefined
+        ) => unknown
     ) {
         this.midi = midi;
         this.onDelete = onDelete;
@@ -105,7 +124,72 @@ export class EventCursor {
         // After deleting the current event, the index points at the event before it,
         // So the current event's place is one further
         const offset = this.currentDeleted ? 1 : 0;
-        this.insertAt(this.currentTrack, this.index + offset, ...events);
+        this.insertAt(this.currentTrack, this.index + offset, events);
+    }
+
+    /**
+     * Adds channel messages for another port before the current event, like {@link insertBefore}.
+     * They are written as `MIDI Port <port>`, the messages, `MIDI Port <trackPort>`, on the ticks of the messages,
+     * so the track's port stays the same for everything else.
+     * A wrap right after the previous one for the same port joins it, as nothing sits between them.
+     * A joined wrap can span several ticks, the track is on the other port in between.
+     * That's fine because the cursor only inserts around the current event, never inside an earlier wrap.
+     * The setup for a cleared system goes in after the walk, after the meta events at its tick,
+     * so it can land inside a wrap there. That's fine too because it only has global parameters.
+     * @param port The port the messages are for.
+     * @param trackPort The current port of the track.
+     * @param events The messages to insert.
+     * @returns False if nothing was inserted because a port event would change the file's port routing.
+     */
+    public insertBeforeOnPort(
+        port: number,
+        trackPort: number,
+        ...events: MIDIMessage[]
+    ) {
+        if (events.length === 0) return true;
+        const ticks = events[0].ticks;
+        const trackEvents = this.midi.tracks[this.currentTrack].events;
+        // Where insertBefore puts the events
+        const index = this.index + (this.currentDeleted ? 1 : 0);
+        const last = this.lastWrap;
+        const joins =
+            last?.port === port && trackEvents[index - 1] === last.restore;
+        // A track starts on its first MIDI Port event, the events before it included
+        const firstPort = joins
+            ? 0
+            : trackEvents.findIndex((e) => PortTracker.isPortEvent(e));
+        // A track with notes and no port event at all gets its port from the file
+        // (the lowest port with notes, or its track name). Its first port event would change how
+        // `BasicMIDI` assigns the port channels for the whole file, track-name routing switches off entirely
+        if (
+            firstPort === -1 &&
+            trackEvents.some(
+                (e) =>
+                    (e.statusByte & 0xf0) === MIDIMessageTypes.noteOn &&
+                    e.data[1] > 0
+            )
+        )
+            return false;
+        const restore = portEvent(ticks, trackPort);
+        this.lastWrap = { port, restore };
+        let at = index;
+        if (joins) {
+            // The events go in place of the old restore. A new one closes the wrap,
+            // The old one could have earlier ticks and would sort before the events
+            this.deleteAt(this.currentTrack, index - 1);
+            at--;
+        } else {
+            const start = [portEvent(ticks, port)];
+            // Without a port event before this one, the track would start on the wrapped port,
+            // So the track's port goes first. That's safe for a track without notes, it plays nothing.
+            if (firstPort === -1 || firstPort >= index)
+                start.unshift(portEvent(ticks, trackPort));
+            this.insertAt(this.currentTrack, at, start);
+            at += start.length;
+        }
+        this.insertAt(this.currentTrack, at, events, port);
+        this.insertAt(this.currentTrack, at + events.length, [restore]);
+        return true;
     }
 
     /**
@@ -114,7 +198,7 @@ export class EventCursor {
      * @param events The events to insert.
      */
     public insertAfter(...events: MIDIMessage[]) {
-        this.insertAt(this.currentTrack, this.index + 1, ...events);
+        this.insertAt(this.currentTrack, this.index + 1, events);
     }
 
     /**
@@ -167,14 +251,20 @@ export class EventCursor {
      * @param track The track to insert into.
      * @param index The index the first event goes to.
      * @param events The events to insert.
+     * @param port The port the events are for, if not the track's current one.
      */
-    private insertAt(track: number, index: number, ...events: MIDIMessage[]) {
+    private insertAt(
+        track: number,
+        index: number,
+        events: MIDIMessage[],
+        port?: number
+    ) {
         for (const item of events) {
             this.midi.tracks[track].addEvents(index, item);
             // Move the loop past it, so it is not visited
             if (index <= this.nextIndex(track)) this.eventIndexes[track]++;
             index++;
-            this.onInsert(item, track);
+            this.onInsert(item, track, port);
         }
     }
 

@@ -57,8 +57,14 @@ export class MIDIEditor {
                     channelStatus.param.deleteEvent(track, index);
                 }
             },
-            (e, track) =>
-                trackInsertedSelection(ports, channelStatuses, e, track)
+            (e, track, port) =>
+                trackInsertedSelection(
+                    channelStatuses,
+                    e,
+                    port === undefined
+                        ? ports.offset(track)
+                        : midi.getPortOffset(port)
+                )
         );
 
         this.ctx = {

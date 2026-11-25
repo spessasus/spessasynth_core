@@ -124,7 +124,7 @@ export function handleEvent(
                     ctx,
                     channel,
                     BankSelectHacks.selectsXGDrumKit(channelStatus.bankMSB),
-                    e
+                    { ticks: e.ticks, partChannel: midiChannel }
                 )
             );
             break;

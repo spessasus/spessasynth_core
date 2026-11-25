@@ -389,8 +389,9 @@ function check7Bit(name: string, value: number) {
  * @param ticks The tick time of the messages.
  * @param drumPitchStep The drum pitch coarse resolution in semitones, for the drum NRPN.
  * @returns The messages, or undefined if the message has no channel message form.
+ * @internal
  */
-function encodeChannelMessage(
+export function encodeChannelMessage(
     msg: AnalyzedMessage.Any,
     ticks: number,
     drumPitchStep: number

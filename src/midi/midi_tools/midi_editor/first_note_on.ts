@@ -281,14 +281,15 @@ export function firstNoteOn(ctx: EditContext, ticks: number, channel: number) {
  * @param ctx The edit context.
  * @param channel The channel of the program change.
  * @param isDrum If the program change selects a drum kit.
- * @param programChange The file's program change message. A locked drum map is written again after it.
+ * @param programChange The ticks of the file's program change, and its channel relative to the track's port
+ * (16 and up for a block B part). A locked drum map is written again after it.
  * @returns The messages that lock the drum map again, to insert right after the program change.
  */
 export function trackXGDrumSetup(
     ctx: EditContext,
     channel: number,
     isDrum: boolean,
-    programChange?: MIDIMessage
+    programChange?: { ticks: number; partChannel: number }
 ) {
     if (ctx.system !== "xg" || channel % 16 === MIDI_DRUM_CHANNEL) return [];
     const channelStatus = ctx.channels[channel];
@@ -303,7 +304,8 @@ export function trackXGDrumSetup(
         return MIDIUtils.fromAnalyzedMessage(
             {
                 type: "Channel MIDI Param",
-                channel: channel % 16,
+                // A part SysEx, it reaches a part on another port from this track like the file's message
+                channel: programChange.partChannel,
                 parameter: "drumMap",
                 value: locked
             },

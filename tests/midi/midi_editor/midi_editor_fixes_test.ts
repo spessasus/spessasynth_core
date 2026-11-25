@@ -37,6 +37,19 @@ const sysExResults = (midi: BasicMIDI) =>
             .map((e) => ({ e, results: MIDIUtils.analyzeSysEx(e.data) }))
     );
 
+/**
+ * The events of track 0 (where the tests put the part SysEx) with the port each one plays on,
+ * following the MIDI Port events from the track's port.
+ */
+function withPorts(midi: BasicMIDI) {
+    let port = midi.tracks[0].port;
+    return midi.tracks[0].events.map((e) => {
+        if (e.statusByte === MIDIMessageTypes.midiPort) port = e.data[0];
+        return { e, port };
+    });
+}
+const isPort = (e: MIDIMessage) => e.statusByte === MIDIMessageTypes.midiPort;
+
 function newFile() {
     const midi = new MIDIBuilder({ name: "fixes", format: 1 });
     midi.addTrack("track 1");
@@ -1176,16 +1189,17 @@ for (const lockPatch of [false, true]) {
 }
 
 // 33. The same on block B (channel 16), which a channel message on this track can't reach.
-// The whole message is deleted instead of throwing.
+// The program change goes to port B, wrapped in MIDI Port events.
+// Track 0 has no port event, so its own port goes first and it still starts on port A.
 {
     const midi = newFile();
     midi.tracks[0].pushEvents(
         MIDIUtils.gsMessage(10, 0x50, 0x11, 0x00, [5, 33])
     );
+    midi.tracks[0].events = midi.tracks[0].events.filter((e) => !isPort(e));
     midi.noteOn(480, 1, 0, 60, 100);
     midi.noteOff(720, 1, 0, 60);
-    midi.addTrack("port B");
-    midi.addEvent(0, 2, MIDIMessageTypes.midiPort, [1]);
+    midi.addTrack("port B", 1);
     midi.noteOn(480, 2, 0, 62, 100);
     midi.noteOff(720, 2, 0, 62);
     midi.flush();
@@ -1205,10 +1219,25 @@ for (const lockPatch of [false, true]) {
     const toneNumbers = sysExResults(midi).filter((r) =>
         r.results.some((x) => x.type === "Program Change")
     );
+    const track0 = withPorts(midi);
+    const program = track0.filter(
+        ({ e }) => e.statusByte === MIDIMessageTypes.programChange
+    );
+    const ports = track0.filter(({ e }) => isPort(e)).map(({ e }) => e.data[0]);
     check(
-        "33. a block B tone number with a locked bank select is deleted whole",
-        error === "" && toneNumbers.length === 0,
-        error || `${toneNumbers.length} tone numbers left`
+        "33. a block B tone number with a locked bank select keeps its program change on port B",
+        error === "" &&
+            toneNumbers.length === 0 &&
+            program.length === 1 &&
+            program[0].e.data[0] === 33 &&
+            program[0].e.ticks === 10 &&
+            midi.getPortOffset(program[0].port) === 16 &&
+            ports.join(",") === "0,1,0" &&
+            track0.find(({ e }) => isPort(e))?.e.ticks === 10 &&
+            midi.tracks[0].port === 0 &&
+            midi.getPortOffset(1) === 16,
+        error ||
+            `${program.length} programs on port ${program[0]?.port}, ports ${ports.join(",")}, track port ${midi.tracks[0].port}`
     );
 }
 
@@ -1297,6 +1326,235 @@ for (const lockPatch of [false, true]) {
             synth.midiParameters.system === "gm" &&
             systems.join(",") === "gs",
         error || `${synth.midiParameters.system}: ${systems.join(",")}`
+    );
+}
+
+// 37. A relative fine tune on block B: the file's GS part fine tune is replaced by a corrected RPN on port B.
+// The RPN changes the output's selection of that channel, so the file's next NRPN data entry gets its selection back.
+{
+    const midi = newFile();
+    midi.addTrack("port B", 1);
+    const cc = (ticks: number, controller: number, value: number) =>
+        midi.addEvent(ticks, 2, MIDIMessageTypes.controllerChange, [
+            controller,
+            value
+        ]);
+    midi.noteOn(480, 1, 0, 60, 100);
+    midi.noteOff(720, 1, 0, 60);
+    midi.noteOn(480, 2, 0, 62, 100);
+    midi.noteOff(720, 2, 0, 62);
+    cc(800, MIDIControllers.nonRegisteredParameterMSB, 1);
+    cc(800, MIDIControllers.nonRegisteredParameterLSB, 8);
+    cc(800, MIDIControllers.dataEntryMSB, 64);
+    // Part 1 of block B is channel 16, fine tune 0 cents
+    midi.addEvent(
+        900,
+        0,
+        MIDIMessageTypes.systemExclusive,
+        MIDIUtils.gs(0x50, 0x11, 0x2a, [0x40, 0x00])
+    );
+    cc(1000, MIDIControllers.dataEntryMSB, 70);
+    midi.noteOn(1100, 2, 0, 62, 100);
+    midi.noteOff(1200, 2, 0, 62);
+    midi.flush();
+    midi.modify({ channels: new Map([[16, { fineTune: -56 }]]) });
+    const track0 = withPorts(midi);
+    const rpn = track0.filter(
+        ({ e }) =>
+            e.ticks === 900 &&
+            (e.statusByte & 0xf0) === MIDIMessageTypes.controllerChange
+    );
+    const fineTunes = sysExResults(midi).filter((r) =>
+        r.results.some(
+            (x) => x.type === "Channel MIDI Param" && x.parameter === "fineTune"
+        )
+    );
+    const events = midi.tracks[2].events;
+    const data = events.findIndex(
+        (e) => isCC(e, MIDIControllers.dataEntryMSB) && e.data[1] === 70
+    );
+    check(
+        "37. a block B fine tune is replaced by a corrected RPN on port B",
+        fineTunes.length === 0 &&
+            rpn.length === 4 &&
+            rpn.every(({ port }) => midi.getPortOffset(port) === 16) &&
+            isCC(rpn[0].e, MIDIControllers.registeredParameterMSB),
+        `${fineTunes.length} fine tunes, RPN ${rpn.map(({ e, port }) => `${e.data[0]}@${port}`).join(" ")}`
+    );
+    check(
+        "37. the NRPN data entry after it gets its selection back",
+        data > 1 &&
+            isCC(events[data - 2], MIDIControllers.nonRegisteredParameterMSB) &&
+            isCC(events[data - 1], MIDIControllers.nonRegisteredParameterLSB),
+        `before the data entry: CC ${events[data - 2]?.data[0]}, ${events[data - 1]?.data[0]}`
+    );
+}
+
+// 38. Consecutive wraps for the same port join, also across ticks: one MIDI Port pair around both program changes.
+{
+    const midi = newFile();
+    // Parts 1 and 2 of block B are channels 16 and 17
+    midi.tracks[0].pushEvents(
+        MIDIUtils.gsMessage(10, 0x50, 0x11, 0x00, [5, 33]),
+        MIDIUtils.gsMessage(20, 0x50, 0x12, 0x00, [5, 34])
+    );
+    midi.noteOn(480, 1, 0, 60, 100);
+    midi.noteOff(720, 1, 0, 60);
+    midi.addTrack("port B", 1);
+    midi.noteOn(480, 2, 0, 62, 100);
+    midi.noteOn(480, 2, 1, 62, 100);
+    midi.noteOff(720, 2, 0, 62);
+    midi.noteOff(720, 2, 1, 62);
+    midi.flush();
+    const bank = { controllers: new Map([[MIDIControllers.bankSelect, 8]]) };
+    midi.modify({
+        channels: new Map([
+            [16, bank],
+            [17, bank]
+        ])
+    });
+    const wrapped = withPorts(midi).filter(
+        ({ e }) =>
+            isPort(e) ||
+            (e.statusByte & 0xf0) === MIDIMessageTypes.programChange
+    );
+    const summary = wrapped
+        .map(({ e }) =>
+            isPort(e)
+                ? `port ${e.data[0]}@${e.ticks}`
+                : `PC ${e.data[0]}@${e.ticks}`
+        )
+        .join(", ");
+    check(
+        "38. two block B program changes share one wrap",
+        summary === "port 0@0, port 1@10, PC 33@10, PC 34@20, port 0@20",
+        summary
+    );
+}
+
+// 39. A block B part switched to a drum kit by an XG part program change gets its locked drum map back,
+// As a part SysEx that addresses part 17 from this track like the file's message.
+{
+    const midi = new MIDIBuilder({ name: "fixes", format: 1 });
+    midi.addTrack("track 1");
+    midi.tracks[0].pushEvents(
+        MIDIUtils.reset(0, "xg"),
+        // Part 17 (channel 16): drum kit bank, then the program change
+        MIDIUtils.xgMessage(10, 0x08, 16, 0x01, [127]),
+        MIDIUtils.xgMessage(20, 0x08, 16, 0x03, [0])
+    );
+    midi.noteOn(480, 1, 0, 60, 100);
+    midi.noteOff(720, 1, 0, 60);
+    midi.addTrack("port B", 1);
+    midi.noteOn(480, 2, 0, 62, 100);
+    midi.noteOff(720, 2, 0, 62);
+    midi.flush();
+    midi.modify({ channels: new Map([[16, { midiParams: { drumMap: 2 } }]]) });
+    const relock = sysExResults(midi)
+        .filter(({ e }) => e.ticks === 20)
+        .flatMap(({ results }) => results)
+        .filter(
+            (x) => x.type === "Channel MIDI Param" && x.parameter === "drumMap"
+        );
+    check(
+        "39. the locked drum map of a block B part is written again for that part",
+        relock.length === 1 &&
+            relock[0].type === "Channel MIDI Param" &&
+            relock[0].channel === 16 &&
+            relock[0].value === 2,
+        JSON.stringify(relock)
+    );
+}
+
+// 40. A note track without any port event can't get a port wrap.
+// Its first port event would change how the file's ports get their channels.
+// The kept block B program change is dropped, the routing stays the same.
+{
+    const midi = newFile();
+    midi.tracks[1].events = midi.tracks[1].events.filter((e) => !isPort(e));
+    midi.noteOn(0, 1, 0, 60, 100);
+    midi.addEvent(
+        10,
+        1,
+        MIDIMessageTypes.systemExclusive,
+        MIDIUtils.gs(0x50, 0x11, 0x00, [5, 33])
+    );
+    midi.noteOff(720, 1, 0, 60);
+    // Port A comes first, so the portless track 1 joins it (the lowest port with notes)
+    midi.addTrack("port A", 0);
+    midi.noteOn(480, 2, 1, 62, 100);
+    midi.noteOff(720, 2, 1, 62);
+    midi.addTrack("port B", 1);
+    midi.noteOn(480, 3, 0, 62, 100);
+    midi.noteOff(720, 3, 0, 62);
+    midi.flush();
+    const offsetsBefore = midi.tracks.map((t) => midi.getPortOffset(t.port));
+    midi.modify({
+        channels: new Map([
+            [16, { controllers: new Map([[MIDIControllers.bankSelect, 8]]) }]
+        ])
+    });
+    const track1 = midi.tracks[1].events;
+    const offsetsAfter = midi.tracks.map((t) => midi.getPortOffset(t.port));
+    check(
+        "40. no port wrap on a note track without a port event, the entry is dropped",
+        !track1.some((e) => isPort(e)) &&
+            !track1.some(
+                (e) => (e.statusByte & 0xf0) === MIDIMessageTypes.programChange
+            ) &&
+            sysExResults(midi).every((r) =>
+                r.results.every((x) => x.type !== "Program Change")
+            ) &&
+            offsetsBefore.join(",") === offsetsAfter.join(","),
+        `ports ${track1.filter((e) => isPort(e)).length}, offsets ${offsetsBefore.join(",")} -> ${offsetsAfter.join(",")}`
+    );
+}
+
+// 41. Wraps with a kept event between them don't join, the event stays on the track's own port.
+{
+    const midi = newFile();
+    midi.tracks[0].pushEvents(
+        MIDIUtils.gsMessage(10, 0x50, 0x11, 0x00, [5, 33]),
+        // Master volume, kept as it is
+        MIDIUtils.gsMessage(15, 0x40, 0x00, 0x04, [100]),
+        MIDIUtils.gsMessage(20, 0x50, 0x12, 0x00, [5, 34])
+    );
+    midi.noteOn(480, 1, 0, 60, 100);
+    midi.noteOff(720, 1, 0, 60);
+    midi.addTrack("port B", 1);
+    midi.noteOn(480, 2, 0, 62, 100);
+    midi.noteOn(480, 2, 1, 62, 100);
+    midi.noteOff(720, 2, 0, 62);
+    midi.noteOff(720, 2, 1, 62);
+    midi.flush();
+    const bank = { controllers: new Map([[MIDIControllers.bankSelect, 8]]) };
+    midi.modify({
+        channels: new Map([
+            [16, bank],
+            [17, bank]
+        ])
+    });
+    const summary = withPorts(midi)
+        .filter(
+            ({ e }) =>
+                isPort(e) ||
+                (e.statusByte & 0xf0) === MIDIMessageTypes.programChange ||
+                (e.statusByte === MIDIMessageTypes.systemExclusive &&
+                    e.ticks === 15)
+        )
+        .map(({ e, port }) =>
+            isPort(e)
+                ? `port ${e.data[0]}@${e.ticks}`
+                : e.statusByte === MIDIMessageTypes.systemExclusive
+                  ? `volume@${e.ticks} on ${port}`
+                  : `PC ${e.data[0]}@${e.ticks}`
+        )
+        .join(", ");
+    check(
+        "41. an event between two wraps keeps them apart",
+        summary ===
+            "port 0@0, port 1@10, PC 33@10, port 0@10, volume@15 on 0, port 1@20, PC 34@20, port 0@20",
+        summary
     );
 }
 

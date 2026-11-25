@@ -13,7 +13,6 @@ import { RP_15_RESET_CC_NUMS } from "../../../synthesizer/audio_engine/channel/r
 import type * as AnalyzedMessage from "../analyzed_message";
 import { MELODIC_MAP } from "../sysex_data";
 import type { ChannelStatus, EditContext } from "./types";
-import type { PortTracker } from "../port_tracker";
 import { clearedSelection, unmodifiedSelection } from "./channel_status";
 import { shouldClearChannelDrum } from "./locks";
 
@@ -436,16 +435,14 @@ export function handleResetAllControllers(ctx: EditContext, channel: number) {
  * Tracks the N/RPN selection controllers inserted by the editor.
  * They change the output's selection, which may no longer match what the file selected.
  * Testcase: midi_editor_nrpn_test.ts (Case: inserted RPN before a file's LSB-only NRPN)
- * @param ports The port tracker, for the channel of the event.
  * @param channels The tracked state of every channel.
  * @param e The inserted event.
- * @param track The track the event was inserted on.
+ * @param portOffset The channel offset of the port the event is on, undefined for a port without notes.
  */
 export function trackInsertedSelection(
-    ports: PortTracker,
     channels: ChannelStatus[],
     e: MIDIMessage,
-    track: number
+    portOffset: number | undefined
 ) {
     if ((e.statusByte & 0xf0) !== MIDIMessageTypes.controllerChange) return;
     const cc = e.data[0];
@@ -457,8 +454,7 @@ export function trackInsertedSelection(
         cc !== MIDIControllers.nonRegisteredParameterLSB
     )
         return;
-    const portOffset = ports.offset(track) ?? channels.length;
-    const ch = channels[(e.statusByte & 0xf) + portOffset];
+    const ch = channels[(e.statusByte & 0xf) + (portOffset ?? channels.length)];
     if (!ch) return;
     ch.selectionModified[cc] = e.data[1] !== ch.param.getParameterSelect(cc).v;
     ch.outputRegistered =
