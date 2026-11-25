@@ -115,7 +115,9 @@ export function handleSysEx(
             }
 
             case "Program Change": {
-                // SysEx can change programs
+                // SysEx can change programs.
+                // The editor follows the synth here, it ignores the GS/XG receive switches for program change
+                // And bank select (they analyze as Other With Data and stay in the file as they are)
                 // Do we delete it?
                 if (
                     ctx.options.channelChanges.get(syx.channel + portOffset)

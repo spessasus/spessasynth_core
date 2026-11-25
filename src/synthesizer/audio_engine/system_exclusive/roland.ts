@@ -770,6 +770,10 @@ export function rolandSystemExclusive(
                         switch (a3) {
                             default: {
                                 // This is some other GS sysex...
+                                // Rx. Program Change (05), Rx. Bank Select (23) and Rx. Bank Select LSB (24) land here too.
+                                // The synth always receives program changes and bank selects, so a file that turns
+                                // Them off for a part plays its later program changes anyway. Hardware would ignore them,
+                                // But these switches are rare and spessasynth is the target.
                                 SpessaLog.gsFail(
                                     `Patch Part Parameter for ${channel}`,
                                     [a3]

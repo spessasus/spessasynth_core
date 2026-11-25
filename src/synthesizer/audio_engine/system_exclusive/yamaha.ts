@@ -531,6 +531,10 @@ export function yamahaSystemExclusive(
 
             switch (a3) {
                 default: {
+                    // Rcv PROGRAM CHANGE (32) and Rcv BANK SELECT (40) go here too.
+                    // The synth always receives program changes and bank selects, so a file that turns
+                    // Them off for a part plays its later program changes anyway. Hardware would ignore them,
+                    // But these switches are rare and spessasynth is the target.
                     SpessaLog.xgFail("Part Setup", [syx[5]]);
                     break;
                 }
