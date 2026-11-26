@@ -33,19 +33,3 @@ export function readBigEndianIndexed(
     dataArray.currentIndex += bytesAmount;
     return res;
 }
-
-/**
- * Writes a number as Big endian.
- * @param number the number to write.
- * @param bytesAmount the amount of bytes to use. Excess bytes will be set to zero.
- * @returns the Big endian representation of the number.
- */
-export function writeBigEndian(number: number, bytesAmount: number) {
-    const bytes = new Array<number>(bytesAmount).fill(0);
-    for (let i = bytesAmount - 1; i >= 0; i--) {
-        bytes[i] = number & 0xff;
-        number >>= 8;
-    }
-
-    return bytes;
-}

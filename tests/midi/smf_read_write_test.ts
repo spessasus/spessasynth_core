@@ -22,10 +22,11 @@ const u32 = (n: number) => [
 ];
 
 // A file from track bodies. A declared size overrides the real length (a truncated file),
-// And the header can promise more tracks than there are. Format 1, 96 ticks per quarter note
+// And the header can promise more tracks than there are. 96 ticks per quarter note
 function smf(
     tracks: { body: number[]; declared?: number }[],
-    trackCount = tracks.length
+    trackCount = tracks.length,
+    format = 1
 ) {
     const bytes = [
         0x4d,
@@ -34,21 +35,16 @@ function smf(
         0x64,
         ...u32(6),
         0,
-        1,
+        format,
         0,
         trackCount,
         0,
         96
     ];
     for (const t of tracks) {
-        bytes.push(
-            0x4d,
-            0x54,
-            0x72,
-            0x6b,
-            ...u32(t.declared ?? t.body.length),
-            ...t.body
-        );
+        bytes.push(0x4d, 0x54, 0x72, 0x6b, ...u32(t.declared ?? t.body.length));
+        // A loop, a big body would overflow push's arguments
+        for (const b of t.body) bytes.push(b);
     }
     return BasicMIDI.fromArrayBuffer(new Uint8Array(bytes).buffer);
 }
@@ -226,6 +222,184 @@ const END = [0x00, 0xff, 0x2f, 0x00];
         events(midi)
             .map((e) => describe(e))
             .join(" ")
+    );
+}
+
+// Writing
+
+const reparse = (midi: BasicMIDI) =>
+    BasicMIDI.fromArrayBuffer(midi.writeMIDI());
+const allEvents = (midi: BasicMIDI) =>
+    midi.tracks
+        .map((t) => t.events.map((e) => describe(e)).join(" "))
+        .join(" | ");
+
+// End of Track keeps its tick, the silence after the last note is part of the song
+{
+    const midi = smf([
+        {
+            body: [
+                0x00, 0x90, 0x3c, 0x64, 0x60, 0x80, 0x3c, 0x40, 0x83, 0x00,
+                0xff, 0x2f, 0x00
+            ]
+        }
+    ]);
+    const back = reparse(midi);
+    const end = back.tracks[0].events.at(-1);
+    check(
+        "End of Track keeps its tick through a write",
+        end?.statusByte === 0x2f &&
+            end.ticks === 96 + 384 &&
+            back.duration === midi.duration,
+        allEvents(back)
+    );
+}
+
+// Writing is idempotent, also for a track without End of Track
+{
+    const midi = smf([
+        { body: [0x00, 0x90, 0x3c, 0x64, 0x60, 0x80, 0x3c, 0x40] },
+        {
+            body: [
+                0x00, 0xff, 0x51, 0x03, 0x07, 0xa1, 0x20, 0x81, 0x00, 0xff,
+                0x2f, 0x00
+            ]
+        }
+    ]);
+    const first = new Uint8Array(midi.writeMIDI());
+    const second = new Uint8Array(
+        BasicMIDI.fromArrayBuffer(first.buffer).writeMIDI()
+    );
+    check(
+        "a second write gives the same bytes",
+        first.length === second.length && first.every((b, i) => b === second[i])
+    );
+}
+
+// A data byte of 0x80 or higher (a broken value in the file) keeps its message through a write.
+// Running status would leave out the status byte and the reader would take the data byte for one
+{
+    const body = [
+        0x00,
+        0x91,
+        0x37,
+        0x6e,
+        0x30,
+        0x91,
+        0xb7,
+        0x00,
+        0x00,
+        0x91,
+        0x37,
+        0x6e,
+        0x30,
+        0x81,
+        0x37,
+        0x40,
+        ...END
+    ];
+    const midi = smf([{ body }]);
+    const back = reparse(midi);
+    check(
+        "a data byte of 0x80 or higher survives a write with running status",
+        allEvents(back) === allEvents(midi),
+        `${allEvents(midi)} -> ${allEvents(back)}`
+    );
+}
+
+// Format 2 tracks play one after another, a round trip keeps every tick
+{
+    const track = {
+        body: [0x00, 0x90, 0x3c, 0x64, 0x60, 0x80, 0x3c, 0x40, ...END]
+    };
+    const midi = smf([track, track, track], 3, 2);
+    const back = reparse(midi);
+    check(
+        "a format 2 round trip keeps every tick and the duration",
+        allEvents(back) === allEvents(midi) && back.duration === midi.duration,
+        `${allEvents(midi)} -> ${allEvents(back)}`
+    );
+}
+
+// A big SysEx (a sample dump) doesn't overflow the stack on write
+{
+    const length = 1_000_000;
+    const sysex = [
+        0x00,
+        0xf0,
+        0xbd,
+        0x84,
+        0x40,
+        ...new Array<number>(length - 1).fill(0x10),
+        0xf7
+    ];
+    for (const b of END) sysex.push(b);
+    const midi = smf([{ body: sysex }]);
+    let written: BasicMIDI | undefined;
+    try {
+        written = reparse(midi);
+    } catch {
+        written = undefined;
+    }
+    check(
+        "a 1 MB SysEx is written",
+        written?.tracks[0].events[0]?.data.length === length
+    );
+}
+
+// System realtime and common messages always get their status byte, running status doesn't cover them
+{
+    const body = [
+        0x00,
+        0x90,
+        0x3c,
+        0x64,
+        0x10,
+        0xf8,
+        0x10,
+        0xf8,
+        0x10,
+        0x80,
+        0x3c,
+        0x40,
+        ...END
+    ];
+    const midi = smf([{ body }]);
+    const back = reparse(midi);
+    check(
+        "two realtime messages in a row survive a write",
+        allEvents(back) === allEvents(midi),
+        `${allEvents(midi)} -> ${allEvents(back)}`
+    );
+}
+
+// A meta event with a type of 0x80 or higher is damage and is skipped, it would look like a voice message
+{
+    const body = [
+        0x00,
+        0xff,
+        0x90,
+        0x01,
+        0x3c,
+        0x10,
+        0x90,
+        0x40,
+        0x64,
+        0x10,
+        0x80,
+        0x40,
+        0x00,
+        ...END
+    ];
+    const midi = smf([{ body }]);
+    const voice = events(midi).filter((e) => e.statusByte >= 0x80);
+    check(
+        "a meta event with an invalid type is skipped and the events after it keep their timing",
+        allEvents(midi) === allEvents(reparse(midi)) &&
+            voice.length === 2 &&
+            voice[0].ticks === 16 &&
+            voice[1].ticks === 32,
+        allEvents(midi)
     );
 }
 

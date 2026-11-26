@@ -2,7 +2,10 @@ import { MIDIMessage } from "../midi_message";
 import { IndexedByteArray } from "../../utils/indexed_array";
 import { ConsoleColors } from "../../utils/other";
 import { SpessaLog } from "../../utils/loggin";
-import { readVariableLengthQuantity } from "../../utils/byte_functions/variable_length_quantity";
+import {
+    MAX_VLQ,
+    readVariableLengthQuantity
+} from "../../utils/byte_functions/variable_length_quantity";
 import { readBigEndianIndexed } from "../../utils/byte_functions/big_endian";
 import { readBinaryStringIndexed } from "../../utils/byte_functions/string";
 import { type MIDIMessageType, MIDIMessageTypes } from "../enums";
@@ -130,11 +133,15 @@ export function parseSMFInternal(
 
         // Loop until we reach the end of track
         while (trackData.currentIndex < trackEnd) {
-            totalTicks += readVariableLengthQuantity(trackData);
+            // A delta time is at most 4 bytes, a longer one only comes from a damaged file
+            totalTicks += Math.min(
+                readVariableLengthQuantity(trackData),
+                MAX_VLQ
+            );
 
             // A track that ends after a delta time is truncated
             if (trackData.currentIndex >= trackEnd) {
-                warnDamaged(`Track ${i} ends without an event.`);
+                warnDamaged(`Track ${i + 1} ends without an event.`);
                 break;
             }
 
@@ -163,6 +170,7 @@ export function parseSMFInternal(
             // (a velocity of 0 is a note off, and the note may need it to end).
             // Any other cut message is dropped, a 0 there would apply a real value (a full pitch bend down)
             let keepIfCut = false;
+            let isMeta = false;
 
             // Determine the message's length
             if (
@@ -194,6 +202,7 @@ export function parseSMFInternal(
                     statusByte = trackData[
                         trackData.currentIndex++
                     ] as MIDIMessageType;
+                    isMeta = true;
                     dataSize = readLength();
                 } else dataSize = -1;
             } else {
@@ -207,15 +216,24 @@ export function parseSMFInternal(
                 (!keepIfCut && trackData.currentIndex + dataSize > trackEnd)
             ) {
                 warnDamaged(
-                    `Track ${i} ends inside an event (${dataSize === -1 ? "its header" : `${dataSize} bytes declared, ${trackEnd - trackData.currentIndex} left`}), dropping it.`
+                    `Track ${i + 1} ends inside an event (${dataSize === -1 ? "its header" : `${dataSize} bytes declared, ${trackEnd - trackData.currentIndex} left`}), dropping it.`
                 );
                 break;
             }
 
             if (trackData.currentIndex + dataSize > trackEnd) {
                 warnDamaged(
-                    `Track ${i} ends inside a note message, its missing data bytes are 0.`
+                    `Track ${i + 1} ends inside a note message, its missing data bytes are 0.`
                 );
+            }
+
+            // A meta type of 0x80 or higher is damage, stored as it is it would look like a voice message
+            if (isMeta && statusByte >= 0x80) {
+                warnDamaged(
+                    `Track ${i + 1} has a meta event with the invalid type ${statusByte.toString(16)}, skipping it.`
+                );
+                trackData.currentIndex += dataSize;
+                continue;
             }
 
             // Put the event data into the array
