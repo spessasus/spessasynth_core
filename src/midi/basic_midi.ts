@@ -243,7 +243,12 @@ export class BasicMIDI {
     public isKaraokeFile = false;
 
     /**
-     * Indicates if this file is a Multi-Port MIDI file.
+     * Indicates if this file is a Multi-Port MIDI file (notes on more than one port).
+     *
+     * > **Note**
+     * >
+     * > A file that plays on one port can still use channels above 15:
+     * > ports keep their position on the device, so a file on port 2 (counted from 1, port B) plays on channels 16-31.
      */
     public isMultiPort = false;
 
@@ -1517,19 +1522,25 @@ export class BasicMIDI {
         const playingPorts = new Set(playedPorts.flatMap((p) => [...p]));
         // The ports map to the device's ports A, B, C... from the set of ports, never the track order,
         // So reordering tracks doesn't renumber the channels (a track on a new port can).
-        // With port 0 among them, ports 0 to 3 are the device's ports A to D as they are (a file for a 4 port device
-        // On A and C keeps C, where XG part numbers and GS block addresses expect it), higher ports follow them.
-        // Without port 0 the set is packed in order from A: port numbers counted from 1, or an output number like 9.
-        // Ports above D can't be reached by part SysEx, so packing them changes no addressing.
+        // The ports keep their position on a 4 port device (A to D), where XG part numbers and GS block addresses
+        // Expect them: with port 0 among them, ports 0 to 3 are A to D (a file on A and C keeps C),
+        // Otherwise ports 1 to 4 are A to D (numbered from 1). Higher ports follow the highest of them in order,
+        // Part SysEx can't reach them, so packing them changes no addressing.
+        // A set with no port up to 4 (an output number like 9 or 15) is packed from A.
         // Only notes on port 0 count as numbering from 0: a port 0 that only holds the setup or the tempo
-        // Also appears in files that play everything on port 1, which would leave block A empty
+        // Also appears in files that play everything on port 1, which would leave block A empty.
+        // A file numbered from 0 that leaves port A silent can't be told apart from one numbered from 1
         const sortedPorts = [...playingPorts];
         sortedPorts.sort((a, b) => a - b);
-        const countsFromZero = sortedPorts[0] === 0;
+        const lowest = sortedPorts[0] ?? 0;
+        const firstPort = lowest === 0 ? 0 : lowest <= 4 ? 1 : -1;
         this.portChannelOffsetMap = [];
         let nextPort = 0;
         for (const port of sortedPorts) {
-            const devicePort = countsFromZero && port <= 3 ? port : nextPort;
+            const devicePort =
+                firstPort !== -1 && port - firstPort <= 3
+                    ? port - firstPort
+                    : nextPort;
             this.portChannelOffsetMap[port] = devicePort * 16;
             nextPort = devicePort + 1;
         }

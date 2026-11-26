@@ -145,7 +145,12 @@ export function writeMIDIInternal(midi: BasicMIDI): ArrayBuffer {
         // A format 2 track that starts before the previous one ends (an edit made the previous track longer)
         // Starts right after it instead, as a whole, so its events keep their spacing.
         // The silence it had before its first event can't be kept, the file never stored where the track started
-        if (events.length > 0 && events[0].ticks < startTick) {
+        if (
+            midi.format === 2 &&
+            i > 0 &&
+            events.length > 0 &&
+            events[0].ticks < startTick
+        ) {
             SpessaLog.warn(
                 `Format 2 track ${i + 1} overlaps the track before it by ${startTick - events[0].ticks} ticks, it now starts right after it.`
             );

@@ -52,12 +52,12 @@ It seems to work with various multi-port files and might be helpful for others i
    If no track with notes has a port, the port numbers say nothing about routing and every port uses the first 16 channels.
 4. Map the ports that play notes to the device's ports A, B, C and so on, from the set of ports (never the track order),
    and give each the channel offset `16 * device port`:
-    - If the ports include port `0`, ports `0-3` are those device ports (`0` is A, `2` is C)
-      and any higher port follows the highest of them in order.
+    - If the ports include port `0`, ports `0-3` are those device ports (`0` is A, `2` is C).
       So a file for a four-port device that plays on ports `0` and `2` keeps port `2` on channels `32-47`,
-      where XG part numbers and GS block addresses expect it, and ports `0` and `15` get offsets `0` and `16`.
-    - Otherwise the ports are sorted by number and packed from A.
-      For example, ports `1` and `2` (counted from 1) get offsets `0` and `16`.
+      where XG part numbers and GS block addresses expect it.
+    - Otherwise ports `1-4` are the device ports counted from 1 (`1` is A, `3` is C).
+    - Any higher port follows the highest of those in order (ports `0` and `15` get offsets `0` and `16`),
+      and a file with no port up to `4` (like ports `7` and `9`) is packed from A.
     - Ports detected from track names keep their letter (`C01` is always C).
 5. When loading the file, add synthesizer channels up to the highest port's offset plus 16
    (a gap between device ports, like B for ports `0` and `2`, gets channels too).

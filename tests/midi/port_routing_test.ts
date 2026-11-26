@@ -481,8 +481,9 @@ const port = (m: MIDIBuilder, track: number, ticks: number, p: number) =>
     }
 }
 
-// 15. Ports map from the set of note ports, never the track order: sorted by number, and a set inside 0 to 3
-// With port 0 keeps its numbers (ports A to D of the device), any other set is packed from A
+// 15. Ports map from the set of note ports, never the track order. They keep their device position:
+// With port 0 among them ports 0 to 3 are A to D, otherwise ports 1 to 4 are (counted from 1),
+// Higher ports follow, and a set with no port up to 4 is packed from A
 {
     const offsets = (order: number[]) => {
         const m = new MIDIBuilder({ name: "ports", format: 1 });
@@ -534,6 +535,21 @@ const port = (m: MIDIBuilder, track: number, ticks: number, p: number) =>
         "15. a port above D follows D, port 3 stays D",
         offsets([0, 3, 4]) === "0,48,64",
         offsets([0, 3, 4])
+    );
+    check(
+        "15. ports 1 and 3 (counted from 1) stay A and C",
+        offsets([1, 3]) === "0,32",
+        offsets([1, 3])
+    );
+    check(
+        "15. port 2 alone (counted from 1) is B",
+        offsets([2]) === "16",
+        offsets([2])
+    );
+    check(
+        "15. a port above port 4 follows the ones counted from 1",
+        offsets([1, 5]) === "0,16",
+        offsets([1, 5])
     );
 }
 
