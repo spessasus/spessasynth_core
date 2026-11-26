@@ -303,7 +303,11 @@ export function getUsedProgramsAndKeys<T extends MIDIPatchFull>(
             case MIDIMessageTypes.systemExclusive: {
                 // Check for drum sysex
 
-                const syxs = MIDIUtils.analyzeSysEx(e.data);
+                // Resolved from the track's port like the playback (-1 for a port without notes)
+                const syxs = MIDIUtils.analyzeSysEx(
+                    e.data,
+                    portOffset === undefined ? -1 : portOffset / 16
+                );
                 // GM only receives the mode messages of GS and XG (0x41 and 0x43), as the synthesizer does
                 const isGMIgnored =
                     (system as MIDISystem) === "gm" &&
@@ -343,16 +347,14 @@ export function getUsedProgramsAndKeys<T extends MIDIPatchFull>(
 
                         case "Channel MIDI Param": {
                             if (syx.parameter === "keyShift") {
-                                const ch =
-                                    channels[syx.channel + channelOffset];
+                                const ch = channels[syx.channel];
                                 // Channel may be above 15
                                 if (!ch) break;
                                 // Drum channels ignore key shift
                                 // Testcase: th07_19_user_gm.mid
                                 ch.keyShift = ch.isDrum ? 0 : syx.value;
                             } else if (syx.parameter === "drumMap") {
-                                const sysexChannel =
-                                    syx.channel + channelOffset;
+                                const sysexChannel = syx.channel;
                                 // Channel may be above 15
                                 if (channels[sysexChannel] === undefined) break;
                                 channels[sysexChannel].isDrum = syx.value > 0;
@@ -361,7 +363,7 @@ export function getUsedProgramsAndKeys<T extends MIDIPatchFull>(
                         }
 
                         case "Program Change": {
-                            const sysexChannel = syx.channel + channelOffset;
+                            const sysexChannel = syx.channel;
                             const ch = channels[sysexChannel];
                             // Channel may be above 15
                             if (!ch) break;
@@ -378,7 +380,7 @@ export function getUsedProgramsAndKeys<T extends MIDIPatchFull>(
                         }
 
                         case "Controller Change": {
-                            const sysexChannel = syx.channel + channelOffset;
+                            const sysexChannel = syx.channel;
                             const ch = channels[sysexChannel];
                             // Channel may be above 15
                             if (!ch) break;

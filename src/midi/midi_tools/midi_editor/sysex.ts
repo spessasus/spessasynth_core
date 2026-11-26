@@ -44,7 +44,12 @@ export function handleSysEx(
     e: MIDIMessage,
     portOffset: number
 ) {
-    const syxs = MIDIUtils.analyzeSysEx(e.data);
+    // The analyzer resolves the part channels from the port, like the synth.
+    // A port without notes has no channels: its part entries are kept as they are, analyzed from the first port
+    // So they can be written back unchanged
+    const noChannels = portOffset >= ctx.channels.length;
+    const trackOffset = noChannels ? 0 : portOffset;
+    const syxs = MIDIUtils.analyzeSysEx(e.data, trackOffset / 16);
     // Drum map locks to write again, inserted after all the results (inserting moves the current index)
     const relock = new Array<MIDIMessage>();
     // The entries to keep, or the channel messages that replace one (like a corrected fine tune) with their channel,
@@ -58,10 +63,12 @@ export function handleSysEx(
         // Only a cleared reset deletes the message here, and a reset is always the only result
         if (ctx.cursor.deleted) return;
 
-        // Clear channel sysExes too
+        // Clear channel sysExes too.
+        // Not from a port without channels: its part entries reach no part, so no edit applies to them
         if (
+            !noChannels &&
             "channel" in syx &&
-            ctx.options.clearedChannels.has(syx.channel + portOffset)
+            ctx.options.clearedChannels.has(syx.channel)
         ) {
             // BEGONE, CHANNEL CHANGE!
             continue;
@@ -69,7 +76,7 @@ export function handleSysEx(
         // Testcase: XG_[Th07] (MU2000EX Arrangements)/th07_19.mid
         if (
             "channel" in syx &&
-            syx.channel + portOffset >= ctx.channels.length
+            (noChannels || syx.channel >= ctx.channels.length)
         ) {
             // Kept as it is, the file has no such channel to track
             kept.push(syx);
@@ -119,13 +126,10 @@ export function handleSysEx(
                 // The editor follows the synth here, it ignores the GS/XG receive switches for program change
                 // And bank select (they analyze as Other With Data and stay in the file as they are)
                 // Do we delete it?
-                if (
-                    ctx.options.channelChanges.get(syx.channel + portOffset)
-                        ?.patch
-                )
+                if (ctx.options.channelChanges.get(syx.channel)?.patch)
                     // This channel has program change. BEGONE!
                     continue;
-                const sysExChannel = syx.channel + portOffset;
+                const sysExChannel = syx.channel;
                 relock.push(
                     ...trackXGDrumSetup(
                         ctx,
@@ -133,7 +137,11 @@ export function handleSysEx(
                         BankSelectHacks.selectsXGDrumKit(
                             ctx.channels[sysExChannel].bankMSB
                         ),
-                        { ticks: e.ticks, partChannel: syx.channel }
+                        // The part message is written from this track, relative to its port
+                        {
+                            ticks: e.ticks,
+                            partChannel: syx.channel - trackOffset
+                        }
                     )
                 );
                 break;
@@ -154,12 +162,12 @@ export function handleSysEx(
             case "Channel MIDI Param": {
                 const replacement = handleChannelMIDIParam(
                     ctx,
-                    syx.channel + portOffset,
+                    syx.channel,
                     syx
                 );
                 if (replacement) {
                     kept.push({
-                        channel: syx.channel + portOffset,
+                        channel: syx.channel,
                         messages: replacement
                     });
                     replaced = true;
@@ -174,11 +182,11 @@ export function handleSysEx(
                     ctx,
                     syx.controller,
                     syx.value,
-                    syx.channel + portOffset
+                    syx.channel
                 );
                 if (replacement) {
                     kept.push({
-                        channel: syx.channel + portOffset,
+                        channel: syx.channel,
                         messages: replacement
                     });
                     replaced = true;
@@ -227,23 +235,26 @@ export function handleSysEx(
         }
         // A channel message reaches only its channel's port, so one for another port (like GS block B) goes there.
         // A SysEx reaches its part from this track like the file's message
-        if ("channel" in keep) {
+        // A port without channels writes its part entries back as SysEx on this track, as they were
+        if (!noChannels && "channel" in keep) {
             const channelMessages = MIDIUtils.encodeChannelMessage(
                 { ...keep, channel: keep.channel % 16 },
                 e.ticks,
                 MIDIUtils.DEFAULT_MIDI_ENCODE_OPTIONS.drumPitchStep
             );
             if (channelMessages) {
-                insertOnChannelPort(
-                    ctx,
-                    keep.channel + portOffset,
-                    channelMessages
-                );
+                insertOnChannelPort(ctx, keep.channel, channelMessages);
                 continue;
             }
         }
+        // The encoder writes the part for this track's port, so the channel goes back to being relative to it
         ctx.cursor.insertBefore(
-            ...MIDIUtils.fromAnalyzedMessage(keep, options)
+            ...MIDIUtils.fromAnalyzedMessage(
+                "channel" in keep
+                    ? { ...keep, channel: keep.channel - trackOffset }
+                    : keep,
+                options
+            )
         );
     }
     deleteCurrentEvent(ctx);

@@ -196,7 +196,11 @@ export function setTimeToInternal(
             }
 
             case MIDIMessageTypes.systemExclusive: {
-                const analyzedMessages = MIDIUtils.analyzeSysEx(event.data);
+                // Resolved from the track's port like the playback (-1 for a port without notes)
+                const analyzedMessages = MIDIUtils.analyzeSysEx(
+                    event.data,
+                    notePortOffset === undefined ? -1 : notePortOffset / 16
+                );
                 // The whole message is sent at most once, even if it has many results
                 let shouldProcess = false;
                 for (const analyzed of analyzedMessages)
@@ -215,10 +219,12 @@ export function setTimeToInternal(
 
                         case "Controller Change": {
                             const { controller, value } = analyzed;
-                            // The SysEx channel is relative to the port, like in the playback
-                            const channel = analyzed.channel + portOffset;
-                            // Channel number may be above 15
-                            if (channel >= this.synth.midiChannels.length)
+                            const channel = analyzed.channel;
+                            // A port without channels (-1) or a part above the existing channels
+                            if (
+                                channel < 0 ||
+                                channel >= this.synth.midiChannels.length
+                            )
                                 break;
                             channels[channel] ??= createChannelStatus(channel);
                             // No empty track check here. The playback always sends SysEx

@@ -105,9 +105,14 @@ export function systemOf(syx: MIDIMessage): MIDISystem {
  * > Bulk dump and other sysExes are supported so this method may return more than one result.
  *
  * @param syx The System Exclusive message, WITHOUT the first `0xF0` System Exclusive byte!
+ * @param port The MIDI port the message arrives on (0 is port A). The channels of part messages are resolved
+ * from it, like the synthesizer does. A port of -1 is a port without channels, its part messages get channel -1.
  * @returns The analysis result(s) of the message.
  */
-export function analyzeSysEx(syx: SysExAcceptedArray): AnalyzedMessage.SysEx[] {
+export function analyzeSysEx(
+    syx: SysExAcceptedArray,
+    port = 0
+): AnalyzedMessage.SysEx[] {
     // At least Manufacturer ID, Device ID and XG/GS model ID
     if (syx.length < 3) return unrecognized(syx);
     switch (syx[0]) {
@@ -121,11 +126,11 @@ export function analyzeSysEx(syx: SysExAcceptedArray): AnalyzedMessage.SysEx[] {
         }
 
         case ROLAND_ID: {
-            return analyzeGS(syx);
+            return analyzeGS(syx, port);
         }
 
         case YAMAHA_ID: {
-            return analyzeXG(syx);
+            return analyzeXG(syx, port);
         }
     }
 }
@@ -1613,7 +1618,10 @@ function analyzeGM(syx: SysExAcceptedArray): AnalyzedMessage.SysEx[] {
     }
 }
 
-function analyzeXG(syx: SysExAcceptedArray): AnalyzedMessage.SysEx[] {
+function analyzeXG(
+    syx: SysExAcceptedArray,
+    port: number
+): AnalyzedMessage.SysEx[] {
     // Ensure XG, and a parameter change (1n). Bulk dumps (0n) and requests (2n, 3n) are laid out differently
     if (syx[2] !== 0x4c || (syx[1] & 0xf0) !== 0x10 || syx.length < 7)
         return unrecognized(syx);
@@ -2062,8 +2070,8 @@ function analyzeXG(syx: SysExAcceptedArray): AnalyzedMessage.SysEx[] {
 
     // XG MULTI PART
     if (a1 === 0x08 /* A2 is the channel number*/) {
-        // The channels here are seen from the first port, the caller adds the sender's port offset
-        const channel = xgPartAddress(a2, 0);
+        // A port without channels reaches no part
+        const channel = port < 0 ? -1 : xgPartAddress(a2, port * 16);
         switch (a3) {
             default: {
                 return unrecognized(syx);
@@ -2587,7 +2595,10 @@ function analyzeXG(syx: SysExAcceptedArray): AnalyzedMessage.SysEx[] {
     return unrecognized(syx);
 }
 
-function analyzeGS(syx: SysExAcceptedArray): AnalyzedMessage.SysEx[] {
+function analyzeGS(
+    syx: SysExAcceptedArray,
+    port: number
+): AnalyzedMessage.SysEx[] {
     if (
         syx.length < 10 ||
         // 0x12: DT1 (Device Transmit)
@@ -3199,8 +3210,8 @@ function analyzeGS(syx: SysExAcceptedArray): AnalyzedMessage.SysEx[] {
         return unrecognized(syx);
     }
 
-    // The channels here are seen from the first port, the caller adds the sender's port offset
-    const channel = gsPartAddress(a1, a2 & 0x0f, 0);
+    // A port without channels reaches no part
+    const channel = port < 0 ? -1 : gsPartAddress(a1, a2 & 0x0f, port * 16);
     switch (a2 >> 4) {
         // Patch part parameter
         case 1: {

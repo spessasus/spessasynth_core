@@ -103,7 +103,11 @@ function correctBankOffsetInternal(
         const portOffset = notePortOffset ?? channelsAmount;
 
         if (status === MIDIMessageTypes.systemExclusive) {
-            const syxs = MIDIUtils.analyzeSysEx(e.data);
+            // Resolved from the track's port like the playback (-1 for a port without notes)
+            const syxs = MIDIUtils.analyzeSysEx(
+                e.data,
+                notePortOffset === undefined ? -1 : notePortOffset / 16
+            );
             // There's only one event to replace, so we might need to add more at the end.
             let replaced = false;
             for (const syx of syxs) {
@@ -115,7 +119,7 @@ function correctBankOffsetInternal(
                     case "Channel MIDI Param": {
                         if (syx.parameter === "drumMap") {
                             // Check for drum sysex
-                            const sysexChannel = syx.channel + portOffset;
+                            const sysexChannel = syx.channel;
                             // Ensure check as syx.channel may be above 15
                             if (channels[sysexChannel] === undefined) break;
                             channels[sysexChannel].isDrum = syx.value > 0;
@@ -138,14 +142,15 @@ function correctBankOffsetInternal(
                     }
 
                     case "Controller Change": {
-                        // Replace the system exclusive with a regular controller change
-                        // Channel number may be above 15, a port without notes is left as is
-                        if (notePortOffset === undefined || syx.channel >= 16)
-                            break;
+                        // Replace the system exclusive with a regular controller change on this track.
+                        // Only a part of this track's port can be, a port without notes is left as is
+                        if (notePortOffset === undefined) break;
+                        const ccChannel = syx.channel - notePortOffset;
+                        if (ccChannel < 0 || ccChannel >= 16) break;
                         const t = mid.tracks[trackNum];
                         const newEvent = MIDIMessage.controllerChange(
                             e.ticks,
-                            syx.channel,
+                            ccChannel,
                             syx.controller,
                             syx.value
                         );
@@ -165,14 +170,15 @@ function correctBankOffsetInternal(
                     }
 
                     case "Program Change": {
-                        // Channel number may be above 15, a port without notes is left as is
-                        if (notePortOffset === undefined || syx.channel >= 16)
-                            break;
+                        // Only a part of this track's port can be replaced, a port without notes is left as is
+                        if (notePortOffset === undefined) break;
+                        const pcChannel = syx.channel - notePortOffset;
+                        if (pcChannel < 0 || pcChannel >= 16) break;
                         // Replace the system exclusive with a regular program
                         const t = mid.tracks[trackNum];
                         const newEvent = MIDIMessage.programChange(
                             e.ticks,
-                            syx.channel,
+                            pcChannel,
                             syx.value
                         );
                         if (replaced) {

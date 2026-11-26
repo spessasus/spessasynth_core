@@ -553,5 +553,20 @@ const port = (m: MIDIBuilder, track: number, ticks: number, p: number) =>
     );
 }
 
+// 16. The analyzer resolves part channels from the port the message arrives on, like the synth
+{
+    // GS part 1 (channel 0) volume 100
+    const gs = [0x41, 0x10, 0x42, 0x12, 0x40, 0x11, 0x19, 0x64, 0x32, 0xf7];
+    const channelOf = (port: number) => {
+        const r = MIDIUtils.analyzeSysEx(gs, port)[0];
+        return "channel" in r ? r.channel : undefined;
+    };
+    check(
+        "16. a GS part message from port B reaches channel 16, from a port without channels none",
+        channelOf(0) === 0 && channelOf(1) === 16 && channelOf(-1) === -1,
+        `${channelOf(0)} ${channelOf(1)} ${channelOf(-1)}`
+    );
+}
+
 console.info(failed === 0 ? "\nAll passed." : `\n${failed} failed.`);
 if (failed > 0) process.exit(1);
