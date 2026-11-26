@@ -1116,7 +1116,7 @@ export function gsPartToChannel(part: number) {
 /**
  * The channel a GS part address reaches, seen from the sender's port.
  * The synthesizer and the SysEx analyzer resolve GS parts here.
- * The encoder (channel to part) still has its own mapping.
+ * The encoder maps channels to parts with {@link channelToGSPart}.
  * @param block The address byte: 0x40 (block A) or 0x50 (block B).
  * @param part The part number (the low nibble of the address).
  * @param senderOffset The channel offset of the port the message came from.

@@ -38,6 +38,34 @@ function writeTrackData(
 
     let currentTick = startTick;
     let runningByte: number | undefined;
+    // Writes the delta time to a tick. A gap longer than the 4 byte maximum is split with empty text events,
+    // So the timing stays exact (a reparse gets those events, a second write is then the same)
+    const putDeltaTo = (tick: number) => {
+        if (!Number.isFinite(tick)) {
+            throw new RangeError(`Can not write an event at tick ${tick}.`);
+        }
+        let delta = Math.max(0, tick - currentTick);
+        if (delta > MAX_VLQ) {
+            const fillers = Math.ceil(delta / MAX_VLQ) - 1;
+            // Each filler is the 4 byte delta and the empty text event (FF 01 00)
+            if (out) {
+                for (let f = 0; f < fillers; f++) {
+                    putVLQ(MAX_VLQ);
+                    put(0xff);
+                    put(MIDIMessageTypes.text);
+                    put(0);
+                }
+            } else {
+                // Only counting, so a gap too big for a track is rejected before anything is written
+                index += fillers * 7;
+            }
+            // Meta events cancel running status (RP-001)
+            runningByte = undefined;
+            delta -= fillers * MAX_VLQ;
+        }
+        putVLQ(delta);
+        currentTick = Math.max(currentTick, tick);
+    };
     for (const event of track.events) {
         // EndOfTrack is written once at the end, with its own tick.
         // A 0xFF status (System Reset) can't be stored in a file, there it starts a meta event
@@ -46,14 +74,8 @@ function writeTrackData(
             event.statusByte === MIDIMessageTypes.reset
         )
             continue;
-        // Ticks stored in MIDI are absolute, but SMF wants relative. Convert them here.
-        // A gap longer than the 4 byte maximum can't be written, the event comes earlier
-        const deltaTicks = Math.min(
-            Math.max(0, event.ticks - currentTick),
-            MAX_VLQ
-        );
-        putVLQ(deltaTicks);
-        currentTick += deltaTicks;
+        // Ticks stored in MIDI are absolute, but SMF wants relative. Convert them here
+        putDeltaTo(event.ticks);
         if (event.statusByte <= MIDIMessageTypes.sequenceSpecific) {
             // This is a meta-message
             // Syntax is FF<type><length><data>
@@ -96,7 +118,7 @@ function writeTrackData(
             putData(event.data);
         }
     }
-    putVLQ(Math.min(Math.max(0, endTick - currentTick), MAX_VLQ));
+    putDeltaTo(endTick);
     put(0xff);
     put(MIDIMessageTypes.endOfTrack);
     put(0);
@@ -121,7 +143,7 @@ export function writeMIDIInternal(midi: BasicMIDI): ArrayBuffer {
         const startTick = midi.format === 2 && i > 0 ? endTicks[i - 1] : 0;
         if (events.length > 0 && events[0].ticks < startTick) {
             SpessaLog.warn(
-                `Format 2 track ${i} starts before the end of the track before it, its early events are moved to tick ${startTick}.`
+                `Format 2 track ${i + 1} starts before the end of the track before it, its early events are moved to tick ${startTick}.`
             );
         }
         // The End of Track keeps its tick, the silence after the last note is part of the song
@@ -135,10 +157,22 @@ export function writeMIDIInternal(midi: BasicMIDI): ArrayBuffer {
             undefined,
             0
         );
+        // The chunk size is 32 bits, a longer track (a gap of trillions of ticks) can't be written
+        if (size > 0xff_ff_ff_ff) {
+            throw new RangeError(
+                `Track ${i + 1} is too long for a MIDI file (${size} bytes).`
+            );
+        }
         sizes.push(size);
         fileSize += 8 + size;
     }
 
+    // The header stores both in 16 bits
+    if (midi.tracks.length > 0xff_ff || midi.timeDivision > 0xff_ff) {
+        throw new RangeError(
+            `A MIDI file holds at most 65535 tracks and a time division of 65535, got ${midi.tracks.length} and ${midi.timeDivision}.`
+        );
+    }
     const out = new Uint8Array(fileSize);
     const view = new DataView(out.buffer);
     // Write header

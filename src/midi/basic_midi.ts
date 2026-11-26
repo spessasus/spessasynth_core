@@ -1308,8 +1308,11 @@ export class BasicMIDI {
                                     karaokeHasTitle = true;
                                     nameDetected = true;
                                 }
-                            } else if (!checkedText.startsWith("@")) {
-                                // Non @: the lyrics
+                            } else if (
+                                !checkedText.startsWith("@") &&
+                                e.data.length > 0
+                            ) {
+                                // Non @: the lyrics. An empty text event (the writer splits long gaps with them) isn't one
                                 this.lyrics.push(e);
                             }
                         }

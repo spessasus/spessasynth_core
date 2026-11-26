@@ -76,12 +76,17 @@ export function parseSMFInternal(
         );
     }
 
-    // The spec allows a longer header (the extra bytes are skipped), but a header that isn't 6 bytes is rejected.
-    // We keep it strict like the chunk check below, a wrong size here usually means the file isn't a MIDI file
-    if (headerChunk.size !== 6 || headerChunk.data.length < 6) {
+    // The header is 6 bytes, but the spec says to honor a longer length (future parameters), so those are skipped
+    if (headerChunk.size < 6 || headerChunk.data.length < 6) {
         SpessaLog.groupEnd();
         throw new RangeError(
             `Invalid MIDI header chunk size! Expected 6, got ${headerChunk.size} (${headerChunk.data.length} in the file)`
+        );
+    }
+    if (headerChunk.size > 6) {
+        SpessaLog.info(
+            `%cThe header has ${headerChunk.size - 6} extra bytes, skipping them.`,
+            ConsoleColors.info
         );
     }
 
@@ -93,7 +98,8 @@ export function parseSMFInternal(
     outputMIDI.timeDivision = readBigEndianIndexed(headerChunk.data, 2);
     let formatTwoStart = 0;
     // Read all the tracks
-    for (let i = 0; i < trackCount; i++) {
+    while (outputMIDI.tracks.length < trackCount) {
+        const i = outputMIDI.tracks.length;
         // A file cut before its last tracks keeps the ones that are there.
         // Less than a chunk header left is a cut or junk at the end
         if (smfFileBinary.currentIndex + 8 > smfFileBinary.length) {
@@ -105,15 +111,42 @@ export function parseSMFInternal(
         const track = new MIDITrack();
         const trackChunk = readMIDIChunk();
 
-        // Any other chunk ends the file with an error, including alien chunks the spec says to skip
-        // And junk after the last real track when the header promises more tracks.
-        // We keep it strict because a damaged chunk size also lands here, and guessing where the next track
-        // Starts (searching for "MTrk") could read garbage as events
-        if (trackChunk.type !== "MTrk") {
-            SpessaLog.groupEnd();
-            throw new SyntaxError(
-                `Invalid track header! Expected "MTrk" got "${trackChunk.type}"`
+        // A track header with the wrong letter case is a damaged track header, not an alien chunk
+        if (
+            trackChunk.type !== "MTrk" &&
+            trackChunk.type.toLowerCase() === "mtrk"
+        ) {
+            warnDamaged(
+                `Track ${i + 1} has the damaged header "${trackChunk.type}", reading it as a track.`
             );
+        } else if (trackChunk.type !== "MTrk") {
+            // The spec says to skip chunks of other types (alien chunks), their type is 4 ASCII letters
+            if (
+                trackChunk.type.length === 4 &&
+                [...trackChunk.type].every((c) => c >= " " && c <= "~")
+            ) {
+                SpessaLog.info(
+                    `%cSkipping an unknown chunk %c${trackChunk.size}%c bytes long, type:`,
+                    ConsoleColors.info,
+                    ConsoleColors.value,
+                    ConsoleColors.info,
+                    trackChunk.type
+                );
+                continue;
+            }
+            // Anything else is junk: a damaged chunk size or padding after the last track.
+            // Guessing where the next track starts (searching for "MTrk") could read garbage as events,
+            // So the file ends here, keeping the tracks that were read
+            if (i === 0) {
+                SpessaLog.groupEnd();
+                throw new SyntaxError(
+                    `Invalid track header! Expected "MTrk" got "${trackChunk.type}"`
+                );
+            }
+            warnDamaged(
+                `Junk after track ${i} instead of a track chunk, the remaining ${trackCount - i} tracks are missing.`
+            );
+            break;
         }
 
         /**
@@ -136,8 +169,8 @@ export function parseSMFInternal(
         };
 
         // Loop until we reach the end of track.
-        // We read on after End of Track (flush removes it if it isn't last), so padding after it becomes events
-        // In the rare files that have it
+        // Events after an End of Track are still read (flush removes an End of Track that isn't last),
+        // Unless only zero padding follows it
         while (trackData.currentIndex < trackEnd) {
             // A delta time is at most 4 bytes, a longer one only comes from a damaged file
             totalTicks += Math.min(
@@ -160,13 +193,12 @@ export function parseSMFInternal(
                 statusByte = runningByte;
             } else {
                 if (statusByteCheck < 0x80) {
-                    // If we don't have a running byte and the status byte isn't valid, it's an error.
-                    // We throw for the whole file here instead of dropping the track,
-                    // A track that starts with a data byte is usually not a MIDI track at all
-                    SpessaLog.groupEnd();
-                    throw new SyntaxError(
-                        `Unexpected byte with no running byte. (${statusByteCheck})`
+                    // A data byte without a running status: there is no way to tell what it belongs to,
+                    // So the rest of this track can't be read. The other tracks still load
+                    warnDamaged(
+                        `Unexpected byte with no running byte (${statusByteCheck}) in track ${i + 1}, dropping the rest of the track.`
                     );
+                    break;
                 }
                 // If the status byte is valid, use that
                 statusByte = statusByteCheck as MIDIMessageType;
@@ -259,6 +291,15 @@ export function parseSMFInternal(
 
             // Advance the track chunk
             trackData.currentIndex += dataSize;
+
+            // Zero padding after End of Track (some writers pad chunks) would turn into running status events
+            if (
+                isMeta &&
+                statusByte === MIDIMessageTypes.endOfTrack &&
+                trackData.subarray(trackData.currentIndex).every((b) => b === 0)
+            ) {
+                break;
+            }
         }
         outputMIDI.tracks.push(track);
         if (outputMIDI.format === 2)

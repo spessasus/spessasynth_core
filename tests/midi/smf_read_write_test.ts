@@ -468,6 +468,201 @@ const allEvents = (midi: BasicMIDI) =>
     );
 }
 
+// Edge cases from the SMF spec and damaged files, built chunk by chunk
+
+// A file from raw chunks, each a 4 letter type and a body
+const chunks = (list: { type: number[]; body: number[] }[]) => {
+    const bytes = new Array<number>();
+    for (const c of list) {
+        bytes.push(...c.type, ...u32(c.body.length));
+        for (const b of c.body) bytes.push(b);
+    }
+    return BasicMIDI.fromArrayBuffer(new Uint8Array(bytes).buffer);
+};
+const MTHD = [0x4d, 0x54, 0x68, 0x64];
+const MTRK = [0x4d, 0x54, 0x72, 0x6b];
+const header = (tracks: number) => [0, 1, 0, tracks, 0, 96];
+const noteTrack = [0x00, 0x90, 0x3c, 0x64, 0x60, 0x80, 0x3c, 0x40, ...END];
+
+// The spec says to honor a longer header length (future parameters)
+{
+    const midi = chunks([
+        { type: MTHD, body: [...header(1), 0x12, 0x34] },
+        { type: MTRK, body: noteTrack }
+    ]);
+    check(
+        "a header longer than 6 bytes is read, its extra bytes skipped",
+        midi.timeDivision === 96 && events(midi).length === 2
+    );
+}
+
+// Alien chunks are skipped and don't count as tracks
+{
+    const midi = chunks([
+        { type: MTHD, body: header(2) },
+        { type: MTRK, body: noteTrack },
+        { type: [0x58, 0x46, 0x49, 0x48], body: [1, 2, 3, 4, 5] },
+        { type: MTRK, body: noteTrack }
+    ]);
+    check(
+        "an unknown chunk between tracks is skipped",
+        midi.tracks.length === 2 && events(midi).length === 4
+    );
+}
+
+// Junk after the last track when the header promises more tracks keeps the tracks that were read
+{
+    const bytes = [
+        ...MTHD,
+        ...u32(6),
+        ...header(3),
+        ...MTRK,
+        ...u32(noteTrack.length),
+        ...noteTrack
+    ];
+    for (let i = 0; i < 16; i++) bytes.push(0);
+    const midi = BasicMIDI.fromArrayBuffer(new Uint8Array(bytes).buffer);
+    check(
+        "zero padding instead of the promised tracks keeps the tracks read",
+        midi.tracks.length === 1
+    );
+}
+
+// Zero padding after End of Track is not read as running status events, real events after it still are
+{
+    const padded = chunks([
+        { type: MTHD, body: header(1) },
+        { type: MTRK, body: [...noteTrack, 0x00, 0x00, 0x00, 0x00] }
+    ]);
+    const late = chunks([
+        { type: MTHD, body: header(1) },
+        {
+            type: MTRK,
+            body: [
+                0x00,
+                0x90,
+                0x3c,
+                0x64,
+                0x00,
+                0xff,
+                0x2f,
+                0x00,
+                0x60,
+                0x80,
+                0x3c,
+                0x40,
+                ...END
+            ]
+        }
+    ]);
+    check(
+        "zero padding after End of Track adds no events",
+        events(padded).length === 2,
+        allEvents(padded)
+    );
+    check(
+        "events after an early End of Track are kept",
+        events(late).length === 2 && events(late)[1].ticks === 96,
+        allEvents(late)
+    );
+}
+
+// A data byte with no running status drops the rest of its track, the other tracks load
+{
+    const midi = chunks([
+        { type: MTHD, body: header(3) },
+        { type: MTRK, body: noteTrack },
+        {
+            type: MTRK,
+            body: [0x00, 0xff, 0x03, 0x01, 0x41, 0x00, 0x3c, 0x64, ...END]
+        },
+        { type: MTRK, body: noteTrack }
+    ]);
+    check(
+        "a data byte with no running status only drops the rest of its track",
+        midi.tracks.length === 3 &&
+            midi.tracks[0].events.length > 1 &&
+            midi.tracks[2].events.length > 1,
+        allEvents(midi)
+    );
+}
+
+// A gap longer than the 4 byte delta maximum keeps its exact timing, also as the start of the next format 2 track
+{
+    const gap = 0x0f_ff_ff_ff + 500;
+    const midi = smf([{ body: noteTrack }, { body: noteTrack }], 2, 2);
+    // Track 0 ends after the gap, track 1 follows it
+    const end = midi.tracks[0].events.at(-1);
+    if (end) end.ticks = gap;
+    const followers = midi.tracks[1].events;
+    for (const e of followers) e.ticks += gap - 96;
+    midi.flush();
+    const voice = (m: BasicMIDI) =>
+        m.tracks
+            .flatMap((t) => t.events.filter((e) => e.statusByte >= 0x80))
+            .map((e) => e.ticks)
+            .join(",");
+    const back = reparse(midi);
+    const second = new Uint8Array(back.writeMIDI());
+    const third = new Uint8Array(reparse(back).writeMIDI());
+    check(
+        "a gap past the delta maximum keeps its ticks in format 2",
+        back.tracks[0].events.at(-1)?.ticks === gap &&
+            voice(back) === voice(midi),
+        `${voice(midi)} -> ${voice(back)}`
+    );
+    check(
+        "a split long gap writes the same bytes again",
+        second.length === third.length && second.every((b, k) => b === third[k])
+    );
+}
+
+// A tick the file format can't hold throws instead of hanging the writer
+{
+    const fails = (tick: number) => {
+        const midi = smf([{ body: noteTrack }]);
+        const end = midi.tracks[0].events.at(-1);
+        if (end) end.ticks = tick;
+        const start = performance.now();
+        let threw = false;
+        try {
+            midi.writeMIDI();
+        } catch {
+            threw = true;
+        }
+        return threw && performance.now() - start < 1000;
+    };
+    check("an infinite tick throws on write", fails(Infinity));
+    check("a NaN tick throws on write instead of becoming delta 0", fails(NaN));
+    check("a gap too big for a MIDI track fails fast on write", fails(1e19));
+}
+
+// A track header with the wrong letter case is read as a track, not skipped as an alien chunk
+{
+    const midi = chunks([
+        { type: MTHD, body: header(2) },
+        { type: [0x4d, 0x54, 0x72, 0x4b], body: noteTrack },
+        { type: MTRK, body: noteTrack }
+    ]);
+    check(
+        "a damaged MTrK header is read as a track",
+        midi.tracks.length === 2 && events(midi).length === 4
+    );
+}
+
+// The header stores the track count and the time division in 16 bits, more throws instead of wrapping
+{
+    const midi = smf([{ body: noteTrack }]);
+    midi.timeDivision = 70_000;
+    let threw = false;
+    try {
+        midi.writeMIDI();
+    } catch {
+        threw = true;
+    }
+    check("a time division over 16 bits throws on write", threw);
+}
+
 if (failed > 0) {
     console.error(`${failed} check(s) failed!`);
     process.exit(1);
