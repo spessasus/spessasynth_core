@@ -102,9 +102,7 @@ export function applySnapshot(
     for (let i = 0; i < snapshot.midiChannels.length; i++)
         this.midiChannels[i].applySnapshot(snapshot.midiChannels[i]);
     // Activate the restored receive channel routing
-    this.customChannelNumbers = this.midiChannels.some(
-        (c) => c.midiParameters.rxChannel !== c.channel
-    );
+    this.receiversDirty = true;
 
     // Restore effect processors
     this.gsReverbProcessor.applySnapshot(snapshot.gsReverbProcessor);

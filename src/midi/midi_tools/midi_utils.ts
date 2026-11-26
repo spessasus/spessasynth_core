@@ -738,11 +738,11 @@ function encodeSysEx(msg: AnalyzedMessage.SysEx, system: MIDISystem) {
                     const v = msg.value;
                     return pickForm(system, name, {
                         gs: () => {
-                            // 16 is off in GS, so receiving on 16 (like an XG part on port B) can not be written.
-                            // Above 16 is kept like the synth reads it (the port offset is added to it)
-                            if (v === 16) {
+                            // GS reads 16 and above as off, so receiving on another port
+                            // (like an XG part on port B) can not be written
+                            if (v >= 16) {
                                 throw new Error(
-                                    `Can not encode ${name}: 16 means off in GS.`
+                                    `Can not encode ${name}: ${v} means off in GS.`
                                 );
                             }
                             return gsPart(channel, 1, 0x02, [
@@ -3176,13 +3176,13 @@ function analyzeGS(syx: SysExAcceptedArray): AnalyzedMessage.SysEx[] {
                 }
 
                 case 0x2: {
-                    // Rx. channel
+                    // Rx. channel. 0x10 and anything above it is OFF (verified on hardware)
                     return [
                         {
                             type: "Channel MIDI Param",
                             channel,
                             parameter: "rxChannel",
-                            value: value === 0x10 ? -1 : value
+                            value: value >= 0x10 ? -1 : value
                         }
                     ];
                 }

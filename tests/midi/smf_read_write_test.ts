@@ -1,6 +1,6 @@
 // Assertion tests for reading and writing Standard MIDI Files, built from raw bytes (damaged files included).
 // Usage: npx tsx tests/midi/smf_read_write_test.ts
-import { BasicMIDI, type MIDIMessage, SpessaLog } from "../../src";
+import { BasicMIDI, IndexedByteArray, MIDIMessage, SpessaLog } from "../../src";
 
 SpessaLog.setLogLevel(false, false, false);
 
@@ -400,6 +400,71 @@ const allEvents = (midi: BasicMIDI) =>
             voice[0].ticks === 16 &&
             voice[1].ticks === 32,
         allEvents(midi)
+    );
+}
+
+// A format 2 file with an empty track keeps the offset chain, the next track starts after the one before it
+{
+    const track = {
+        body: [0x00, 0x90, 0x3c, 0x64, 0x60, 0x80, 0x3c, 0x40, ...END]
+    };
+    const midi = smf([track, { body: [] }, track], 3, 2);
+    const first = midi.tracks[2].events[0];
+    check(
+        "a format 2 track after an empty one starts where the last track ended",
+        first?.ticks === 96 &&
+            events(reparse(midi))
+                .map((e) => describe(e))
+                .join(" ") ===
+                events(midi)
+                    .map((e) => describe(e))
+                    .join(" "),
+        allEvents(midi)
+    );
+}
+
+// A stray system common byte in a damaged file takes no data, the next delta time and events stay in step
+{
+    const body = [
+        0x00,
+        0x90,
+        0x3c,
+        0x64,
+        0x10,
+        0xf3,
+        0x00,
+        0x80,
+        0x3c,
+        0x40,
+        ...END
+    ];
+    const midi = smf([{ body }]);
+    check(
+        "a stray song select byte doesn't swallow the next event",
+        events(midi)
+            .map((e) => describe(e))
+            .join(" ") === "0:144:60,100 16:243: 16:128:60,64",
+        allEvents(midi)
+    );
+}
+
+// A system common message built in code with data is written without it, the reader takes no data after one
+{
+    const midi = smf([
+        { body: [0x00, 0x90, 0x3c, 0x64, 0x10, 0x80, 0x3c, 0x40, ...END] }
+    ]);
+    midi.tracks[0].addEvents(
+        1,
+        new MIDIMessage(5, 0xf2, new IndexedByteArray([0x10, 0x20]))
+    );
+    midi.flush();
+    const back = reparse(midi);
+    check(
+        "a song position with data is written without it and the track stays in step",
+        events(back)
+            .map((e) => describe(e))
+            .join(" ") === "0:144:60,100 5:242: 16:128:60,64",
+        allEvents(back)
     );
 }
 

@@ -76,6 +76,8 @@ export function parseSMFInternal(
         );
     }
 
+    // The spec allows a longer header (the extra bytes are skipped), but a header that isn't 6 bytes is rejected.
+    // We keep it strict like the chunk check below, a wrong size here usually means the file isn't a MIDI file
     if (headerChunk.size !== 6 || headerChunk.data.length < 6) {
         SpessaLog.groupEnd();
         throw new RangeError(
@@ -89,6 +91,7 @@ export function parseSMFInternal(
     const trackCount = readBigEndianIndexed(headerChunk.data, 2);
     // Time division
     outputMIDI.timeDivision = readBigEndianIndexed(headerChunk.data, 2);
+    let formatTwoStart = 0;
     // Read all the tracks
     for (let i = 0; i < trackCount; i++) {
         // A file cut before its last tracks keeps the ones that are there.
@@ -102,6 +105,10 @@ export function parseSMFInternal(
         const track = new MIDITrack();
         const trackChunk = readMIDIChunk();
 
+        // Any other chunk ends the file with an error, including alien chunks the spec says to skip
+        // And junk after the last real track when the header promises more tracks.
+        // We keep it strict because a damaged chunk size also lands here, and guessing where the next track
+        // Starts (searching for "MTrk") could read garbage as events
         if (trackChunk.type !== "MTrk") {
             SpessaLog.groupEnd();
             throw new SyntaxError(
@@ -114,12 +121,9 @@ export function parseSMFInternal(
          */
         let runningByte: MIDIMessageType | undefined;
 
-        let totalTicks = 0;
-        // Format 2 plays sequentially
-        if (outputMIDI.format === 2 && i > 0) {
-            const previousEvents = outputMIDI.tracks[i - 1].events;
-            totalTicks += previousEvents[previousEvents.length - 1]?.ticks ?? 0;
-        }
+        // Format 2 plays sequentially, each track starts where the previous one ended
+        // (an empty track ends where it started)
+        let totalTicks = formatTwoStart;
         const trackData = trackChunk.data;
         const trackEnd = trackData.length;
 
@@ -131,7 +135,9 @@ export function parseSMFInternal(
             return trackData[trackData.currentIndex - 1] >= 0x80 ? -1 : length;
         };
 
-        // Loop until we reach the end of track
+        // Loop until we reach the end of track.
+        // We read on after End of Track (flush removes it if it isn't last), so padding after it becomes events
+        // In the rare files that have it
         while (trackData.currentIndex < trackEnd) {
             // A delta time is at most 4 bytes, a longer one only comes from a damaged file
             totalTicks += Math.min(
@@ -155,6 +161,8 @@ export function parseSMFInternal(
             } else {
                 if (statusByteCheck < 0x80) {
                     // If we don't have a running byte and the status byte isn't valid, it's an error.
+                    // We throw for the whole file here instead of dropping the track,
+                    // A track that starts with a data byte is usually not a MIDI track at all
                     SpessaLog.groupEnd();
                     throw new SyntaxError(
                         `Unexpected byte with no running byte. (${statusByteCheck})`
@@ -206,7 +214,8 @@ export function parseSMFInternal(
                     dataSize = readLength();
                 } else dataSize = -1;
             } else {
-                // System common/realtime (no length)
+                // System common/realtime. A MIDI file can't hold these, so one here is a stray byte from a damaged
+                // File and the bytes after it are the next delta time, not its data (the writer writes no data either)
                 dataSize = 0;
             }
 
@@ -252,6 +261,8 @@ export function parseSMFInternal(
             trackData.currentIndex += dataSize;
         }
         outputMIDI.tracks.push(track);
+        if (outputMIDI.format === 2)
+            formatTwoStart = track.events.at(-1)?.ticks ?? formatTwoStart;
 
         SpessaLog.info(
             `%cParsed %c${outputMIDI.tracks.length}%c / %c${trackCount}`,

@@ -84,6 +84,7 @@ import { DefaultXGChorus } from "./audio_engine/effects/xg/implementation/chorus
 import { DefaultXGVariation } from "./audio_engine/effects/xg/implementation/variation";
 import { DefaultXGInsertion } from "./audio_engine/effects/xg/implementation/insertion";
 import { DecodedSampleCache } from "./audio_engine/decoded_sample_cache";
+import { receiversOfInternal } from "./audio_engine/receivers";
 
 /**
  * Gain smoothing for rapid volume changes. Must be run EVERY SAMPLE
@@ -552,16 +553,27 @@ export class SpessaSynthProcessor {
     protected readonly xgInsertionBlocks: XGInsertionBlock[];
 
     /**
-     * A sysEx may set a "Part" (channel) to receive on a different channel number.
-     * This slows down the access, so this toggle tracks if it's enabled or not.
+     * Set when a channel's receive channel changes or channels are added,
+     * the receive table is rebuilt on the next channel message.
      * @internal
      */
-    protected customChannelNumbers = false;
+    public receiversDirty = true;
+    /**
+     * The channels that receive each channel number (the receive table).
+     * A sysEx may set a "Part" (channel) to receive on a different channel number,
+     * so a number can reach several channels (layering) or none (Rx OFF).
+     * @internal
+     */
+    public readonly receivers = new Array<MIDIChannel[]>();
+    /**
+     * The channels that receive a channel message (see {@link receiversOfInternal}).
+     */
+    private readonly receiversOf: typeof receiversOfInternal;
     /**
      * For F5 system exclusive.
      * @internal
      */
-    protected portSelectChannelOffset = 0;
+    public portSelectChannelOffset = 0;
     /**
      * Left float32 buffer for processing XG insertion effects in-place.
      * (channel outputs are double precision)
@@ -619,6 +631,7 @@ export class SpessaSynthProcessor {
         this.lockMIDIParameter = lockMIDIParameterInternal.bind(this);
         this.setSystemParameter = setSystemParameterInternal.bind(this);
         this.setMIDIParameter = setMIDIParameterInternal.bind(this);
+        this.receiversOf = receiversOfInternal.bind(this);
 
         this.setSystemParameter("effectsEnabled", options.effectsEnabled);
         this.setSystemParameter("eventsEnabled", options.eventsEnabled);
@@ -880,17 +893,10 @@ export class SpessaSynthProcessor {
         controller: MIDIController,
         value: number
     ) {
-        if (this.customChannelNumbers) {
-            for (const ch of this.midiChannels)
-                if (ch.midiParameters.rxChannel === channel) {
-                    ch.controllerChange(controller, value);
-                    ch.efxControl(controller, value);
-                }
-            return;
+        for (const ch of this.receiversOf(channel)) {
+            ch.controllerChange(controller, value);
+            ch.efxControl(controller, value);
         }
-        const ch = this.midiChannels[channel + this.portSelectChannelOffset];
-        ch.controllerChange(controller, value);
-        ch.efxControl(controller, value);
     }
 
     /**
@@ -905,16 +911,8 @@ export class SpessaSynthProcessor {
      * If the velocity is 0, it will be treated as a Note Off message.
      */
     public noteOn(channel: number, midiNote: number, velocity: number) {
-        if (this.customChannelNumbers) {
-            for (const ch of this.midiChannels)
-                if (ch.midiParameters.rxChannel === channel)
-                    ch.noteOn(midiNote, velocity);
-            return;
-        }
-        this.midiChannels[channel + this.portSelectChannelOffset].noteOn(
-            midiNote,
-            velocity
-        );
+        for (const ch of this.receiversOf(channel))
+            ch.noteOn(midiNote, velocity);
     }
 
     /**
@@ -926,15 +924,7 @@ export class SpessaSynthProcessor {
      * Ranges from 0 to 127.
      */
     public noteOff(channel: number, midiNote: number) {
-        if (this.customChannelNumbers) {
-            for (const ch of this.midiChannels)
-                if (ch.midiParameters.rxChannel === channel)
-                    ch.noteOff(midiNote);
-            return;
-        }
-        this.midiChannels[channel + this.portSelectChannelOffset].noteOff(
-            midiNote
-        );
+        for (const ch of this.receiversOf(channel)) ch.noteOff(midiNote);
     }
 
     /**
@@ -947,16 +937,8 @@ export class SpessaSynthProcessor {
      * @param pressure The pressure value, from 0 to 127.
      */
     public polyPressure(channel: number, midiNote: number, pressure: number) {
-        if (this.customChannelNumbers) {
-            for (const ch of this.midiChannels)
-                if (ch.midiParameters.rxChannel === channel)
-                    ch.polyPressure(midiNote, pressure);
-            return;
-        }
-        this.midiChannels[channel + this.portSelectChannelOffset].polyPressure(
-            midiNote,
-            pressure
-        );
+        for (const ch of this.receiversOf(channel))
+            ch.polyPressure(midiNote, pressure);
     }
 
     /**
@@ -967,17 +949,10 @@ export class SpessaSynthProcessor {
      */
     public channelPressure(channel: number, pressure: number) {
         const source = GSInsertionControlSources.channelPressure;
-        if (this.customChannelNumbers) {
-            for (const ch of this.midiChannels)
-                if (ch.midiParameters.rxChannel === channel) {
-                    ch.setMIDIParameter("pressure", pressure);
-                    ch.efxControl(source, pressure);
-                }
-            return;
+        for (const ch of this.receiversOf(channel)) {
+            ch.setMIDIParameter("pressure", pressure);
+            ch.efxControl(source, pressure);
         }
-        const ch = this.midiChannels[channel + this.portSelectChannelOffset];
-        ch.setMIDIParameter("pressure", pressure);
-        ch.efxControl(source, pressure);
     }
 
     /**
@@ -994,17 +969,10 @@ export class SpessaSynthProcessor {
             midiNote === -1
                 ? GSInsertionControlSources.pitchBend
                 : GSInsertionControlSources.off;
-        if (this.customChannelNumbers) {
-            for (const ch of this.midiChannels)
-                if (ch.midiParameters.rxChannel === channel) {
-                    ch.pitchWheel(pitch, midiNote);
-                    ch.efxControl(source, pitch);
-                }
-            return;
+        for (const ch of this.receiversOf(channel)) {
+            ch.pitchWheel(pitch, midiNote);
+            ch.efxControl(source, pitch);
         }
-        const ch = this.midiChannels[channel + this.portSelectChannelOffset];
-        ch.pitchWheel(pitch, midiNote);
-        ch.efxControl(source, pitch);
     }
 
     /**
@@ -1014,15 +982,8 @@ export class SpessaSynthProcessor {
      * @param programNumber The program number to change to, from 0 to 127.
      */
     public programChange(channel: number, programNumber: number) {
-        if (this.customChannelNumbers) {
-            for (const ch of this.midiChannels)
-                if (ch.midiParameters.rxChannel === channel)
-                    ch.programChange(programNumber);
-            return;
-        }
-        this.midiChannels[channel + this.portSelectChannelOffset].programChange(
-            programNumber
-        );
+        for (const ch of this.receiversOf(channel))
+            ch.programChange(programNumber);
     }
 
     /**
@@ -1268,7 +1229,6 @@ export class SpessaSynthProcessor {
         // Reset private props
         this.tunings.fill(-1); // Set all to no change
         this.portSelectChannelOffset = 0;
-        this.customChannelNumbers = false;
         // Clear the GS effects, then set their defaults
         const locks = this.systemParameters;
         if (!locks.gsReverbLock) this.gsReverbProcessor.reset();
@@ -2509,6 +2469,7 @@ export class SpessaSynthProcessor {
             this.midiChannels.length
         );
         this.midiChannels.push(channel);
+        this.receiversDirty = true;
         // Channel is added first, then reset
         if (sendEvent) this.callEvent("channelAdded", undefined);
         // New channels need the default controllers, otherwise they are silent (CC7 = 0)

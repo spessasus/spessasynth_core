@@ -799,12 +799,10 @@ export function rolandSystemExclusive(
                             }
 
                             case 0x02: {
-                                // Rx. channel (0x10 is OFF)
+                                // Rx. channel. 0x10 is OFF, and so is anything above it (verified on hardware)
                                 const rxChannel =
-                                    data === 0x10 ? -1 : data + channelOffset;
+                                    data >= 0x10 ? -1 : data + channelOffset;
                                 ch.setMIDIParameter("rxChannel", rxChannel);
-                                this.customChannelNumbers ||=
-                                    rxChannel !== ch.channel;
                                 SpessaLog.gsInfo(
                                     `Rx. Channel on ${channel}`,
                                     rxChannel

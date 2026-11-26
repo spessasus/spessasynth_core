@@ -409,6 +409,14 @@ throws("GS receive channel 16", () =>
         value: 16
     })
 );
+throws("GS receive channel 17 (GS reads it as off too)", () =>
+    MIDIUtils.fromAnalyzedMessage({
+        type: "Channel MIDI Param",
+        channel: 0,
+        parameter: "rxChannel",
+        value: 17
+    })
+);
 throws("drum key 128", () =>
     MIDIUtils.fromAnalyzedMessage({
         type: "Channel Drum Setup",

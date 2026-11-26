@@ -194,6 +194,11 @@ export class BasicMIDI {
     /**
      * The [MIDI file format.](https://www.music.mcgill.ca/~ich/classes/mumt306/StandardMIDIfileformat.html#BM2_2) Usually 0 or
      * 1, rarely 2, indicating the type of the MIDI file.
+     *
+     * > **Note**
+     * >
+     * > Format 2 tracks play one after another, and their ticks are stored that way:
+     * > each track's ticks continue from the end of the track before it.
      */
     public format: MIDIFormat = 0;
 

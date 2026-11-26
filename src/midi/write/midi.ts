@@ -75,9 +75,10 @@ function writeTrackData(
             runningByte = undefined;
         } else if (event.statusByte >= MIDIMessageTypes.systemExclusive) {
             // System common and realtime messages always have their status byte.
-            // RP-001: system common messages cancel running status, realtime ones leave it alone
+            // RP-001: system common messages cancel running status, realtime ones leave it alone.
+            // A MIDI file can't hold them, the reader takes no data after one (it would be a stray byte),
+            // So their data (song position, song select) is left out
             put(event.statusByte);
-            putData(event.data);
             if (event.statusByte < MIDIMessageTypes.clock)
                 runningByte = undefined;
         } else {

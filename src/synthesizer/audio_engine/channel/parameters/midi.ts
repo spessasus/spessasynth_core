@@ -268,6 +268,12 @@ export function setMIDIParameterInternal<P extends keyof ChannelMIDIParameter>(
             break;
         }
 
+        case "rxChannel": {
+            // The synthesizer rebuilds its receive table on the next channel message
+            if (changed) this.synthCore.receiversDirty = true;
+            break;
+        }
+
         case "polyMode": {
             // A mode switch starts mono mode fresh, without a note to take over.
             // GS and XG SysEx may send the same mode again while a key is held, that keeps the note

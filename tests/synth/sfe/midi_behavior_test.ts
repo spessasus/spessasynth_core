@@ -1360,4 +1360,73 @@ console.info(
     );
 }
 
+// The receive channels: a GS Rx above 0x10 is OFF, layered parts all play, F5 port select works with them,
+// And a GS reset restores every part's Rx
+{
+    const synth = new SpessaSynthProcessor(SAMPLE_RATE, {
+        effectsEnabled: false,
+        eventsEnabled: false
+    });
+    await synth.ready;
+    const gs = (address: number[], value: number) => {
+        const body = [...address, value];
+        const sum = body.reduce((a, b) => a + b, 0);
+        synth.systemExclusive([
+            0x41,
+            0x10,
+            0x42,
+            0x12,
+            ...body,
+            (128 - (sum % 128)) % 128,
+            0xf7
+        ]);
+    };
+    // The brightness controller marks which channels received a message
+    const marks = () =>
+        synth.midiChannels.map(
+            (c) => c.midiControllers[MIDIControllers.brightness] >> 7
+        );
+    const mark = (channel: number, value: number) => {
+        synth.controllerChange(channel, MIDIControllers.brightness, value);
+    };
+    // Part 3 (channel 2) Rx 0x11, part 5 (channel 4) Rx channel 0
+    gs([0x40, 0x13, 0x02], 0x11);
+    gs([0x40, 0x15, 0x02], 0x00);
+    mark(2, 40);
+    mark(0, 30);
+    const p = marks();
+    check(
+        synth.midiChannels[2].midiParameters.rxChannel === -1 &&
+            p[2] !== 40 &&
+            p[0] === 30 &&
+            p[4] === 30,
+        `GS Rx 0x11 is OFF and a part layered on channel 0 follows it (${p.slice(0, 5).join(", ")})`
+    );
+
+    // F5 port select to the second port, with channel 20 layered on channel 16
+    synth.systemExclusive([0xf5, 0x02]);
+    synth.midiChannels[20].setMIDIParameter("rxChannel", 16);
+    mark(0, 50);
+    const f = marks();
+    check(
+        f[16] === 50 && f[20] === 50 && f[0] === 30,
+        `F5 port select reaches the layered parts of its port (${f[0]}, ${f[16]}, ${f[20]})`
+    );
+
+    synth.reset("gs");
+    check(
+        synth.midiChannels.every(
+            (c) => c.midiParameters.rxChannel === c.channel
+        ),
+        "a GS reset restores every receive channel"
+    );
+    mark(4, 60);
+    mark(0, 70);
+    const r = marks();
+    check(
+        r[4] === 60 && r[0] === 70,
+        `after the reset each channel receives only its own messages (${r[0]}, ${r[4]})`
+    );
+}
+
 finish("midi_behavior_test");
