@@ -49,6 +49,12 @@ export interface SynthMethodOptions {
      * The {@link SpessaSynthProcessor.currentTime} when the event should execute, in seconds.
      */
     time: number;
+    /**
+     * The MIDI port the message arrives on: 0 is port A (channels 0-15), 1 is port B (channels 16-31) and so on.
+     * A port of -1 is a port without channels: its channel and part messages are dropped,
+     * only the global parameters of its system exclusives apply.
+     */
+    port: number;
 }
 
 /**

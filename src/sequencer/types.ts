@@ -25,11 +25,11 @@ export interface SequencerEvent {
         time: number;
 
         /**
-         * The channel offset of this message, it is useful for multi-port MIDI files.
-         * For example, offset of 0 means the first 16 channels (0-15). Offset of 16 means the second port (channels 16-31).
+         * The MIDI port of this message, it is useful for multi-port MIDI files.
+         * For example, port 0 is the first 16 channels (0-15), port 1 is the second port (channels 16-31).
          * The second port could be routed to a second MIDI output or a second MIDI device.
          */
-        channelOffset: number;
+        port: number;
     };
     /**
      * This event is called when {@link SpessaSynthSequencer.currentTime} is changed.

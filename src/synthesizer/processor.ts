@@ -594,7 +594,7 @@ export class SpessaSynthProcessor {
      */
     private eventQueue: {
         message: SysExAcceptedArray;
-        channelOffset: number;
+        port: number;
         time: number;
     }[] = [];
     /**
@@ -801,15 +801,25 @@ export class SpessaSynthProcessor {
      * > for the list of supported System Exclusives.
      *
      * @param syx The system exclusive message as an array of bytes, without the starting `F0` byte.
-     * @param channelOffset The channel offset for the message as they usually can only address the first 16 channels.
-     * For example, to send a system exclusive on channel 16,
-     * send a system exclusive for channel 0 and set an offset of 16.
+     * @param options Additional options: the MIDI port the message arrives on (0 is port A).
+     * The port decides which parts the part messages (GS, XG, universal per channel) reach.
+     * A port of -1 is a port without channels: its part messages reach no part, only the global parameters apply.
      */
     public systemExclusive(
         this: SpessaSynthProcessor,
         syx: SysExAcceptedArray,
-        channelOffset = 0
+        options: Partial<Pick<SynthMethodOptions, "port">> = {}
     ) {
+        const { port } = fillWithDefaults(
+            options,
+            DEFAULT_SYNTH_METHOD_OPTIONS
+        );
+        if (!Number.isSafeInteger(port) || port < -1) {
+            throw new Error(`Invalid MIDI port: ${port}.`);
+        }
+        // A port without channels (-1, a port no notes play on): its part messages land past the last channel,
+        // So only the global parameters apply
+        let channelOffset = port < 0 ? this.midiChannels.length : port * 16;
         channelOffset += this.portSelectChannelOffset;
         const manufacturer = syx[0];
         // Ensure that the device ID matches (F5 has the port number there instead)
@@ -1041,29 +1051,32 @@ export class SpessaSynthProcessor {
     /**
      * Processes a raw MIDI message and allows scheduling it at a specific time.
      * @param message The binary MIDI message data to process.
-     * @param channelOffset The channel offset for the message. It will be added to message's channel number if applicable.
-     * @param options Additional options for scheduling the message.
+     * @param options Additional options: the time to schedule the message at and the MIDI port it arrives on.
      */
     public processMessage(
         message: SysExAcceptedArray | MIDIMessage,
-        channelOffset = 0,
-        options: SynthMethodOptions = DEFAULT_SYNTH_METHOD_OPTIONS
+        options: Partial<SynthMethodOptions> = DEFAULT_SYNTH_METHOD_OPTIONS
     ) {
         // Ignore meta
         if (message instanceof MIDIMessage && message.statusByte < 0x80) return;
         const raw =
             message instanceof MIDIMessage ? message.toBytes() : message;
 
-        const time = options.time;
+        // Read directly, this runs for every message
+        const time = options.time ?? DEFAULT_SYNTH_METHOD_OPTIONS.time;
+        const port = options.port ?? DEFAULT_SYNTH_METHOD_OPTIONS.port;
+        if (!Number.isSafeInteger(port) || port < -1) {
+            throw new Error(`Invalid MIDI port: ${port}.`);
+        }
         if (time > this.currentTime) {
             this.eventQueue.push({
                 message: raw,
-                channelOffset,
+                port,
                 time
             });
             this.eventQueue.sort((e1, e2) => e1.time - e2.time);
         } else {
-            this.processMessageInternal(raw, channelOffset);
+            this.processMessageInternal(raw, port);
         }
     }
 
@@ -1071,16 +1084,13 @@ export class SpessaSynthProcessor {
     /**
      * Processes multiple MIDI messages and allows scheduling them at a specific time.
      * @param messages The binary MIDI messages to process.
-     * @param channelOffset The channel offset for the messages. It will be added to messages' channel numbers if applicable.
-     * @param options Additional options for scheduling the messages.
+     * @param options Additional options: the time to schedule the messages at and the MIDI port they arrive on.
      */
     public processMessages(
         messages: (SysExAcceptedArray | MIDIMessage)[],
-        channelOffset = 0,
-        options: SynthMethodOptions = DEFAULT_SYNTH_METHOD_OPTIONS
+        options: Partial<SynthMethodOptions> = DEFAULT_SYNTH_METHOD_OPTIONS
     ) {
-        for (const message of messages)
-            this.processMessage(message, channelOffset, options);
+        for (const message of messages) this.processMessage(message, options);
     }
 
     // noinspection JSUnusedGlobalSymbols
@@ -1463,7 +1473,7 @@ export class SpessaSynthProcessor {
             while (this.eventQueue[0]?.time <= time) {
                 const q = this.eventQueue.shift();
                 if (q) {
-                    this.processMessageInternal(q.message, q.channelOffset);
+                    this.processMessageInternal(q.message, q.port);
                 }
             }
         }
@@ -2477,10 +2487,7 @@ export class SpessaSynthProcessor {
         channel.reset(false);
     }
 
-    private processMessageInternal(
-        message: SysExAcceptedArray,
-        channelOffset: number
-    ) {
+    private processMessageInternal(message: SysExAcceptedArray, port: number) {
         const byte = message[0] as MIDIMessageType;
         let status: MIDIMessageType;
         let channel = 0;
@@ -2492,7 +2499,9 @@ export class SpessaSynthProcessor {
             status = byte;
         }
 
-        channel += channelOffset;
+        // A port without channels (-1) receives no channel messages
+        if (port < 0 && status < MIDIMessageTypes.systemExclusive) return;
+        channel += port * 16;
         // Process the event
         switch (status) {
             case MIDIMessageTypes.noteOn: {
@@ -2541,10 +2550,9 @@ export class SpessaSynthProcessor {
             }
 
             case MIDIMessageTypes.systemExclusive: {
-                this.systemExclusive(
-                    new IndexedByteArray(message.slice(1)),
-                    channelOffset
-                );
+                this.systemExclusive(new IndexedByteArray(message.slice(1)), {
+                    port
+                });
                 break;
             }
 

@@ -476,7 +476,7 @@ export class SpessaSynthSequencer {
     /**
      * @internal
      */
-    protected sendMIDIMessage(message: number[], channelOffset: number) {
+    protected sendMIDIMessage(message: number[], port: number) {
         if (!this.externalMIDIPlayback) {
             SpessaLog.warn(
                 `Attempting to send ${arrayToHexString(message)} to the synthesizer via sendMIDIMessage. This shouldn't happen!`
@@ -486,7 +486,7 @@ export class SpessaSynthSequencer {
         this.callEvent("midiMessage", {
             message,
             time: this.synth.currentTime,
-            channelOffset
+            port
         });
     }
 
@@ -642,7 +642,7 @@ export class SpessaSynthSequencer {
         const midiChannel = channel % 16;
         this.sendMIDIMessage(
             [MIDIMessageTypes.noteOn | midiChannel, midiNote, velocity],
-            channel - midiChannel
+            channel >> 4
         );
     }
 
@@ -661,7 +661,7 @@ export class SpessaSynthSequencer {
                 midiNote,
                 64 // Make sure to send velocity as well
             ],
-            channel - midiChannel
+            channel >> 4
         );
     }
 
@@ -676,7 +676,7 @@ export class SpessaSynthSequencer {
         const midiChannel = channel % 16;
         this.sendMIDIMessage(
             [MIDIMessageTypes.controllerChange | midiChannel, type, value],
-            channel - midiChannel
+            channel >> 4
         );
     }
 
@@ -709,7 +709,7 @@ export class SpessaSynthSequencer {
                 pitch & 0x7f,
                 pitch >> 7
             ],
-            channel - midiChannel
+            channel >> 4
         );
     }
 }

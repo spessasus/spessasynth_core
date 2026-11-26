@@ -51,7 +51,7 @@ export function processEventInternal(
             // SysEx escape sends its bytes as-is, synth does not parse them
             Array.from(event.toBytes()),
             // A global SysEx from a port without notes goes to the first port, it is device-wide anyway
-            portOffset ?? 0
+            (portOffset ?? 0) / 16
         );
         return;
     }
@@ -143,7 +143,10 @@ export function processEventInternal(
         }
 
         case MIDIMessageTypes.systemExclusive: {
-            this.synth.systemExclusive(event.data, offset);
+            // A port without notes has no channels (-1)
+            this.synth.systemExclusive(event.data, {
+                port: portOffset === undefined ? -1 : portOffset / 16
+            });
             break;
         }
 

@@ -335,7 +335,7 @@ check((await panValue(100)) === 100, "CC 10 of 100 is 100");
     const body = [0x40, 0x11, 0x1c, 0x00];
     const sum = body.reduce((a, b) => a + b, 0);
     const cs = (128 - (sum % 128)) % 128;
-    synth.systemExclusive([0x41, 0x10, 0x42, 0x12, ...body, cs, 0xf7], 0);
+    synth.systemExclusive([0x41, 0x10, 0x42, 0x12, ...body, cs, 0xf7]);
     check(
         synth.midiChannels[1].midiParameters.randomPan === true ||
             synth.midiChannels[0].midiParameters.randomPan === true,
@@ -451,17 +451,23 @@ console.info("XG alias fixes:");
     );
     await synth.ready;
     const channel = synth.midiChannels[0];
-    synth.systemExclusive([0x43, 0x10, 0x4c, 0x08, 0x00, 0x14, 77, 0xf7], 0);
+    synth.systemExclusive([0x43, 0x10, 0x4c, 0x08, 0x00, 0x14, 77, 0xf7]);
     check(
         channel.midiControllers[MIDIControllers.variationDepth] >> 7 === 77,
         "XG 08 pp 14 sets CC 94"
     );
     // MW LFO PMOD DEPTH: a range of 5 * value cents, at most 200
     const pmod = (value: number) => {
-        synth.systemExclusive(
-            [0x43, 0x10, 0x4c, 0x08, 0x00, 0x20, value, 0xf7],
-            0
-        );
+        synth.systemExclusive([
+            0x43,
+            0x10,
+            0x4c,
+            0x08,
+            0x00,
+            0x20,
+            value,
+            0xf7
+        ]);
         return channel.midiParameters.modulationDepth;
     };
     check(pmod(10) === 50, `MW LFO PMOD DEPTH 10 is 50 cents (${pmod(10)})`);
@@ -488,10 +494,9 @@ console.info("GS and RP-015 fixes:");
     );
     await synth.ready;
     const channel = synth.midiChannels[0];
-    synth.systemExclusive(
-        [0x41, 0x10, 0x42, 0x12, 0x40, 0x00, 0x06, 0x00, 0x3a, 0xf7],
-        0
-    );
+    synth.systemExclusive([
+        0x41, 0x10, 0x42, 0x12, 0x40, 0x00, 0x06, 0x00, 0x3a, 0xf7
+    ]);
     check(
         synth.midiParameters.pan === -1,
         `GS master pan 0 is -1 (${synth.midiParameters.pan})`
@@ -544,13 +549,18 @@ console.info(
     const gs = (address: number[], data: number[]) => {
         const body = [...address, ...data];
         const checksum = (128 - (body.reduce((x, y) => x + y, 0) % 128)) % 128;
-        synth.systemExclusive(
-            [0x41, 0x10, 0x42, 0x12, ...body, checksum, 0xf7],
-            0
-        );
+        synth.systemExclusive([
+            0x41,
+            0x10,
+            0x42,
+            0x12,
+            ...body,
+            checksum,
+            0xf7
+        ]);
     };
     const xg = (address: number[], data: number[]) =>
-        synth.systemExclusive([0x43, 0x10, 0x4c, ...address, ...data, 0xf7], 0);
+        synth.systemExclusive([0x43, 0x10, 0x4c, ...address, ...data, 0xf7]);
     const channel = synth.midiChannels[0];
     const render = (quanta: number) => {
         for (let i = 0; i < quanta; i++)
@@ -558,7 +568,7 @@ console.info(
     };
 
     // GM mode
-    synth.systemExclusive([0x7e, 0x7f, 0x09, 0x01, 0xf7], 0);
+    synth.systemExclusive([0x7e, 0x7f, 0x09, 0x01, 0xf7]);
     check(synth.midiParameters.system === "gm", "GM1 on sets the GM mode");
     channel.controllerChange(MIDIControllers.bankSelect, 8);
     channel.controllerChange(MIDIControllers.bankSelectLSB, 3);
@@ -591,14 +601,14 @@ console.info(
         channel.midiControllers[MIDIControllers.mainVolume] >> 7 === 100,
         "GM ignores the XG volume"
     );
-    synth.systemExclusive([0x7f, 0x7f, 0x04, 0x01, 0x00, 0x40, 0xf7], 0);
+    synth.systemExclusive([0x7f, 0x7f, 0x04, 0x01, 0x00, 0x40, 0xf7]);
     check(
         Math.abs(synth.midiParameters.volume - 8192 / 16_383) < 0.001,
         "GM keeps the universal master volume"
     );
     gs([0x40, 0x00, 0x7f], [0x00]);
     check(synth.midiParameters.system === "gs", "a GS reset leaves GM");
-    synth.systemExclusive([0x7e, 0x7f, 0x09, 0x01, 0xf7], 0);
+    synth.systemExclusive([0x7e, 0x7f, 0x09, 0x01, 0xf7]);
     xg([0x00, 0x00, 0x7e], [0x00]);
     check(synth.midiParameters.system === "xg", "XG system on leaves GM");
 
@@ -616,7 +626,7 @@ console.info(
     );
 
     // GM2 channel 10
-    synth.systemExclusive([0x7e, 0x7f, 0x09, 0x03, 0xf7], 0);
+    synth.systemExclusive([0x7e, 0x7f, 0x09, 0x03, 0xf7]);
     check(
         ten.patch.bankMSB === 120 && ten.drumChannel,
         `GM2 channel 10 starts at 120 as drums (${ten.patch.bankMSB})`
@@ -675,13 +685,18 @@ console.info("Part mode, bank MSB 126, system mode set and depth aliases:");
     const gs = (address: number[], data: number[]) => {
         const body = [...address, ...data];
         const checksum = (128 - (body.reduce((x, y) => x + y, 0) % 128)) % 128;
-        synth.systemExclusive(
-            [0x41, 0x10, 0x42, 0x12, ...body, checksum, 0xf7],
-            0
-        );
+        synth.systemExclusive([
+            0x41,
+            0x10,
+            0x42,
+            0x12,
+            ...body,
+            checksum,
+            0xf7
+        ]);
     };
     const xg = (address: number[], data: number[]) =>
-        synth.systemExclusive([0x43, 0x10, 0x4c, ...address, ...data, 0xf7], 0);
+        synth.systemExclusive([0x43, 0x10, 0x4c, ...address, ...data, 0xf7]);
     const ten = synth.midiChannels[9];
 
     // XG channel 10 with the bank MSB 126 stays on drums
@@ -697,7 +712,7 @@ console.info("Part mode, bank MSB 126, system mode set and depth aliases:");
     first.programChange(0);
     check(!first.drumChannel, "XG channel 1 with the bank MSB 126 is melodic");
     // GM2 has no such rule
-    synth.systemExclusive([0x7e, 0x7f, 0x09, 0x03, 0xf7], 0);
+    synth.systemExclusive([0x7e, 0x7f, 0x09, 0x03, 0xf7]);
     ten.controllerChange(MIDIControllers.bankSelect, 126);
     ten.programChange(0);
     check(
@@ -712,7 +727,7 @@ console.info("Part mode, bank MSB 126, system mode set and depth aliases:");
             synth.midiChannels[0].midiParameters.drumMap === 0,
         `the part mode value after an XG reset is 2 on channel 10 and 0 elsewhere (${ten.midiParameters.drumMap})`
     );
-    synth.systemExclusive([0x7e, 0x7f, 0x09, 0x03, 0xf7], 0);
+    synth.systemExclusive([0x7e, 0x7f, 0x09, 0x03, 0xf7]);
     check(
         ten.midiParameters.drumMap === 1,
         `the part mode value after a GM2 reset is 1 on channel 10 (${ten.midiParameters.drumMap})`
@@ -747,7 +762,7 @@ console.info("Part mode, bank MSB 126, system mode set and depth aliases:");
     );
 
     // USE FOR RHYTHM PART in GM2
-    synth.systemExclusive([0x7e, 0x7f, 0x09, 0x03, 0xf7], 0);
+    synth.systemExclusive([0x7e, 0x7f, 0x09, 0x03, 0xf7]);
     gs([0x40, 0x12, 0x15], [0x01]);
     check(
         two.drumChannel && two.patch.bankMSB === 120 && !two.patch.isGMGSDrum,
@@ -791,7 +806,7 @@ console.info("Part mode, bank MSB 126, system mode set and depth aliases:");
         tuning() === 0,
         `XG drum channel ignores the fine tuning (${tuning()} cents)`
     );
-    synth.systemExclusive([0x7e, 0x7f, 0x09, 0x03, 0xf7], 0);
+    synth.systemExclusive([0x7e, 0x7f, 0x09, 0x03, 0xf7]);
     rpn(2, 66);
     check(
         tuning() === 0,
@@ -801,19 +816,17 @@ console.info("Part mode, bank MSB 126, system mode set and depth aliases:");
     // SYSTEM MODE SET
     xg([0x00, 0x00, 0x7e], [0x00]);
     first.controllerChange(MIDIControllers.mainVolume, 30);
-    synth.systemExclusive(
-        [0x41, 0x10, 0x42, 0x12, 0x00, 0x00, 0x7f, 0x02, 0x7f, 0xf7],
-        0
-    );
+    synth.systemExclusive([
+        0x41, 0x10, 0x42, 0x12, 0x00, 0x00, 0x7f, 0x02, 0x7f, 0xf7
+    ]);
     check(
         synth.midiParameters.system === "xg" &&
             first.midiControllers[MIDIControllers.mainVolume] >> 7 === 30,
         "SYSTEM MODE SET 02 does not reset"
     );
-    synth.systemExclusive(
-        [0x41, 0x10, 0x42, 0x12, 0x00, 0x00, 0x7f, 0x00, 0x01, 0xf7],
-        0
-    );
+    synth.systemExclusive([
+        0x41, 0x10, 0x42, 0x12, 0x00, 0x00, 0x7f, 0x00, 0x01, 0xf7
+    ]);
     check(
         synth.midiParameters.system === "gs" &&
             first.midiControllers[MIDIControllers.mainVolume] >> 7 === 100,
@@ -821,10 +834,9 @@ console.info("Part mode, bank MSB 126, system mode set and depth aliases:");
     );
     xg([0x00, 0x00, 0x7e], [0x00]);
     first.controllerChange(MIDIControllers.mainVolume, 30);
-    synth.systemExclusive(
-        [0x41, 0x10, 0x42, 0x12, 0x00, 0x00, 0x7f, 0x01, 0x00, 0xf7],
-        0
-    );
+    synth.systemExclusive([
+        0x41, 0x10, 0x42, 0x12, 0x00, 0x00, 0x7f, 0x01, 0x00, 0xf7
+    ]);
     check(
         synth.midiParameters.system === "gs" &&
             first.midiControllers[MIDIControllers.mainVolume] >> 7 === 100,
@@ -957,11 +969,11 @@ console.info(
     // GM ignores both part mode messages
     {
         const synth = await create(bankWith(true));
-        synth.systemExclusive(modes.gm, 0);
+        synth.systemExclusive(modes.gm);
         const channel = synth.midiChannels[2];
         channel.programChange(1);
-        synth.systemExclusive(gsPart(2, 1), 0);
-        synth.systemExclusive(xgPart(2, 1), 0);
+        synth.systemExclusive(gsPart(2, 1));
+        synth.systemExclusive(xgPart(2, 1));
         check(
             !channel.drumChannel &&
                 channel.preset?.name === "M1" &&
@@ -973,16 +985,16 @@ console.info(
     // GS, an unchanged part mode value selects nothing
     {
         const synth = await create(bankWith(true));
-        synth.systemExclusive(modes.gs, 0);
+        synth.systemExclusive(modes.gs);
         const channel = synth.midiChannels[2];
-        synth.systemExclusive(gsPart(2, 1), 0);
+        synth.systemExclusive(gsPart(2, 1));
         channel.programChange(1);
-        synth.systemExclusive(gsPart(2, 1), 0);
+        synth.systemExclusive(gsPart(2, 1));
         check(
             channel.drumChannel && channel.preset?.name === "GMD1",
             `an unchanged GS part mode value keeps the program (${channel.preset?.name})`
         );
-        synth.systemExclusive(gsPart(2, 2), 0);
+        synth.systemExclusive(gsPart(2, 2));
         check(
             channel.preset?.name === "GMD0",
             `a changed value selects program 0 (${channel.preset?.name})`
@@ -992,7 +1004,7 @@ console.info(
     // User drum sets
     {
         const synth = await create(bankWith(true, true));
-        synth.systemExclusive(modes.gs, 0);
+        synth.systemExclusive(modes.gs);
         const drums = synth.midiChannels[9];
         drums.programChange(64);
         check(
@@ -1002,7 +1014,7 @@ console.info(
     }
     {
         const synth = await create(bankWith(true));
-        synth.systemExclusive(modes.gs, 0);
+        synth.systemExclusive(modes.gs);
         const drums = synth.midiChannels[9];
         drums.programChange(64);
         check(
@@ -1033,13 +1045,13 @@ console.info(
             `bank MSB 1 still gives the user drum set (${drums.preset?.name})`
         );
         drums.controllerChange(MIDIControllers.bankSelect, 0);
-        synth.systemExclusive(modes.xg, 0);
+        synth.systemExclusive(modes.xg);
         drums.programChange(64);
         check(
             !drums.preset?.name.startsWith("User"),
             `XG never gets a user drum set (${drums.preset?.name})`
         );
-        synth.systemExclusive(modes.gm2, 0);
+        synth.systemExclusive(modes.gm2);
         drums.programChange(64);
         check(
             !drums.preset?.name.startsWith("User"),
@@ -1065,7 +1077,7 @@ console.info(
         }
         bank.flush();
         const synth = await create(bank);
-        synth.systemExclusive(modes.gs, 0);
+        synth.systemExclusive(modes.gs);
         const ch = synth.midiChannels[0];
 
         // CC 1 to 31 and CC 33 to 63 are independent controllers (11.3)
@@ -1122,7 +1134,7 @@ console.info(
         );
 
         // XG channel 10 accepts the bank MSB 120, 126 and 127 only (11.2.2)
-        synth.systemExclusive(modes.xg, 0);
+        synth.systemExclusive(modes.xg);
         ten.controllerChange(MIDIControllers.bankSelect, 120);
         check(
             ten.patch.bankMSB === 120,
@@ -1147,13 +1159,13 @@ console.info(
         bank.flush();
         const synth = await create(bank);
         const ten = synth.midiChannels[9];
-        synth.systemExclusive(modes.gm2, 0);
+        synth.systemExclusive(modes.gm2);
         ten.programChange(56);
         check(
             ten.preset?.name === "GMD56",
             `GM2 drum program 56 falls back to the GS kit at 56 (${ten.preset?.name})`
         );
-        synth.systemExclusive(modes.xg, 0);
+        synth.systemExclusive(modes.xg);
         ten.programChange(56);
         check(
             ten.preset?.name !== "GMD56",
@@ -1164,15 +1176,15 @@ console.info(
     // A bank with no drum preset
     {
         const synth = await create(bankWith(false));
-        synth.systemExclusive(modes.gs, 0);
+        synth.systemExclusive(modes.gs);
         const ten = synth.midiChannels[9];
         check(
             !ten.drumChannel && ten.preset?.isDrum === false,
             `channel 10 after a GS reset plays a melodic preset (${ten.preset?.name})`
         );
         const three = synth.midiChannels[2];
-        synth.systemExclusive(gsPart(2, 1), 0);
-        synth.systemExclusive(modes.gs, 0);
+        synth.systemExclusive(gsPart(2, 1));
+        synth.systemExclusive(modes.gs);
         check(
             !three.patch.isGMGSDrum && three.midiParameters.drumMap === 0,
             "a system reset clears the drum flag set by USE FOR RHYTHM PART"
@@ -1182,10 +1194,10 @@ console.info(
     // Snapshots
     {
         const synth = await create(bankWith(true));
-        synth.systemExclusive(modes.gs, 0);
+        synth.systemExclusive(modes.gs);
         synth.midiChannels[9].programChange(1);
         const snapshot = synth.getSnapshot();
-        synth.systemExclusive(modes.gm, 0);
+        synth.systemExclusive(modes.gm);
         synth.applySnapshot(snapshot);
         check(
             synth.midiChannels[9].drumChannel &&
@@ -1204,7 +1216,7 @@ console.info(
     // XG channel 10 with the bank MSB 126
     {
         const synth = await create(bankWith(true));
-        synth.systemExclusive(modes.xg, 0);
+        synth.systemExclusive(modes.xg);
         const ten = synth.midiChannels[9];
         ten.controllerChange(MIDIControllers.bankSelect, 126);
         ten.programChange(0);
@@ -1426,6 +1438,71 @@ console.info(
     check(
         r[4] === 60 && r[0] === 70,
         `after the reset each channel receives only its own messages (${r[0]}, ${r[4]})`
+    );
+}
+
+// The port comes with the message: port 1 is channels 16-31, a port without channels (-1) reaches no part
+{
+    const synth = new SpessaSynthProcessor(SAMPLE_RATE, {
+        effectsEnabled: false,
+        eventsEnabled: false
+    });
+    await synth.ready;
+    synth.systemExclusive([0xf5, 0x02]);
+    synth.reset("gs");
+    synth.processMessage([0xb0, MIDIControllers.brightness, 99], { port: 1 });
+    // A channel message on a port without channels goes nowhere, also with a port select active
+    synth.systemExclusive([0xf5, 0x02]);
+    synth.processMessage([0xb0, MIDIControllers.brightness, 77], { port: -1 });
+    // GS part 1 (channel 0) level 0, sent from a port without channels
+    synth.systemExclusive(
+        [0x41, 0x10, 0x42, 0x12, 0x40, 0x11, 0x19, 0x00, 0x16, 0xf7],
+        {
+            port: -1
+        }
+    );
+    check(
+        synth.midiChannels[16].midiControllers[MIDIControllers.brightness] >>
+            7 ===
+            99 &&
+            synth.midiChannels[0].midiControllers[MIDIControllers.brightness] >>
+                7 !==
+                77 &&
+            synth.midiChannels[0].midiControllers[MIDIControllers.mainVolume] >>
+                7 !==
+                0 &&
+            synth.midiChannels[16].midiControllers[
+                MIDIControllers.mainVolume
+            ] >>
+                7 !==
+                0,
+        "a message on port 1 reaches channel 16, a part SysEx from a port without channels reaches no part"
+    );
+}
+
+// A port that isn't a whole number of -1 or more is invalid input
+{
+    const synth = new SpessaSynthProcessor(SAMPLE_RATE, {
+        effectsEnabled: false,
+        eventsEnabled: false
+    });
+    await synth.ready;
+    const throws = (run: () => void) => {
+        try {
+            run();
+            return false;
+        } catch {
+            return true;
+        }
+    };
+    check(
+        throws(() => synth.processMessage([0x90, 60, 100], { port: 1.5 })) &&
+            throws(() =>
+                synth.systemExclusive([0x7e, 0x7f, 0x09, 0x01, 0xf7], {
+                    port: -2
+                })
+            ),
+        "a fractional or too low port throws"
     );
 }
 

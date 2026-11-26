@@ -24,6 +24,7 @@ export {
     SPESSA_BUFSIZE,
     MIDI_DRUM_CHANNEL,
     DEFAULT_SYNTH_MODE,
+    DEFAULT_SYNTH_METHOD_OPTIONS,
     VOICE_CAP
 } from "./audio_engine/synth_constants";
 export * from "./audio_engine/channel/types";

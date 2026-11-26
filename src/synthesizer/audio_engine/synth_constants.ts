@@ -29,8 +29,15 @@ export const EMBEDDED_SOUND_BANK_ID = `SPESSASYNTH_EMBEDDED_BANK_${Math.random()
 
 export const GENERATOR_OVERRIDE_NO_CHANGE_VALUE = 32_767;
 
+/**
+ * The default options for {@link SpessaSynthProcessor.processMessage} and {@link SpessaSynthProcessor.systemExclusive}:
+ * now, on port A.
+ *
+ * @group Synthesizer.Options
+ */
 export const DEFAULT_SYNTH_METHOD_OPTIONS: SynthMethodOptions = {
-    time: 0
+    time: 0,
+    port: 0
 };
 /**
  * If the note is released faster than that, it is forced to last that long
