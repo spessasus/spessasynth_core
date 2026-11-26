@@ -1,72 +1,17 @@
-import { MIDIMessage } from "../midi/midi_message";
-import {
-    DEFAULT_MIDI_CONTROLLERS,
-    RP_15_RESET_CC_NUMS
-} from "../synthesizer/audio_engine/channel/reset";
-import {
-    type MIDIController,
-    MIDIControllers,
-    type MIDIMessageType,
-    MIDIMessageTypes
-} from "../midi/enums";
+import type { MIDIMessage } from "../midi/midi_message";
+import { MIDIMessageTypes } from "../midi/enums";
 import type { SpessaSynthSequencer } from "./sequencer";
 import { readBigEndian } from "../utils/byte_functions/big_endian";
-import * as MIDIUtils from "../midi/midi_tools/midi_utils";
-import { ParameterTracker } from "../midi/midi_tools/parameter_tracker";
-import { CONTROLLER_TABLE_SIZE } from "../synthesizer/audio_engine/synth_constants";
-
-const nonSkippableCCs = new Set<MIDIController>([
-    MIDIControllers.dataDecrement,
-    MIDIControllers.dataIncrement,
-    MIDIControllers.dataEntryMSB,
-    MIDIControllers.dataEntryLSB,
-    MIDIControllers.registeredParameterLSB,
-    MIDIControllers.registeredParameterMSB,
-    MIDIControllers.nonRegisteredParameterLSB,
-    MIDIControllers.nonRegisteredParameterMSB,
-    MIDIControllers.bankSelect,
-    MIDIControllers.bankSelectLSB,
-    MIDIControllers.resetAllControllers,
-    MIDIControllers.monoModeOn,
-    MIDIControllers.polyModeOn
-] as const);
-
-interface ChannelStatus {
-    /**
-     * NRPN tracking for controller changes
-     */
-    param: ParameterTracker;
-    /**
-     * Save controllers and send them only after.
-     */
-    controllers: Int16Array;
-    /**
-     * Save portamento notes and send them only after (-1 means no portamento note).
-     */
-    portamentoNote: number;
-    /**
-     * Save pitch wheels and send them only after.
-     */
-    pitchWheel: number;
-}
-
-/**
- * Stores a controller value in the saved 14-bit table, like playback does.
- * The LSB controllers are independent, so every controller is stored alone (SFe 4.0, section 11.3).
- * @param controllers The saved controller table.
- * @param controller The controller number.
- * @param value The 7-bit value.
- */
-function storeController(
-    controllers: Int16Array,
-    controller: MIDIController,
-    value: number
-) {
-    controllers[controller] = value << 7;
-}
+import { setTimeToExternal } from "./seek_external";
 
 /**
  * Plays the MIDI file to a specific time or ticks.
+ *
+ * For the internal synthesizer every event goes through the same path as in playback, so the synthesizer ends up
+ * in the same state (receive channels, resets, effects, portamento and the parts each message reaches all follow
+ * the synth's own rules). The synth plays nothing while seeking (notes only update their bookkeeping)
+ * and its controller events are merged into one per value.
+ * External playback can't send every message again, it has its own seek ({@link setTimeToExternal}).
  * @param time in seconds.
  * @param ticks optional MIDI ticks, when given is used instead of time.
  * @returns true if the MIDI file is not finished.
@@ -76,29 +21,16 @@ export function setTimeToInternal(
     time: number,
     ticks: number | undefined = undefined
 ): boolean {
+    if (this.externalMIDIPlayback)
+        return setTimeToExternal.call(this, time, ticks);
     if (!this._midiData) {
         return false;
     }
     this.oneTickToSeconds = 60 / (120 * this._midiData.timeDivision);
     // Reset everything
-
     this.sendMIDIReset();
     this.playedTime = 0;
     this.index = 0;
-
-    // We save the pitch wheels, programs and controllers here
-    // To only send them once after going through the events
-
-    const createChannelStatus = (channel: number): ChannelStatus => ({
-        pitchWheel: 8192,
-        controllers: new Int16Array(DEFAULT_MIDI_CONTROLLERS),
-        param: new ParameterTracker(channel),
-        portamentoNote: -1
-    });
-    const channels: ChannelStatus[] = [];
-    for (let i = 0; i < this.synth.midiChannels.length; i++) {
-        channels.push(createChannelStatus(i));
-    }
 
     // Save tempo changes
     // Testcase:
@@ -107,286 +39,48 @@ export function setTimeToInternal(
     let savedTempo: MIDIMessage | undefined = undefined;
     let savedTempoTrack = 0;
 
-    /**
-     * RP-15 compliant reset
-     * https://amei.or.jp/midistandardcommittee/Recommended_Practice/e/rp15.pdf
-     */
-    const resetAllControllers = (chan: number) => {
-        const ch = channels[chan];
-        // Reset pitch wheel
-        ch.pitchWheel = 8192;
-        ch.param.resetAllControllers();
-        // Like playback, the LSB controllers in the list (CC 33 and 43) are reset on their own
-        for (const resetCC of RP_15_RESET_CC_NUMS)
-            storeController(
-                ch.controllers,
-                resetCC,
-                DEFAULT_MIDI_CONTROLLERS[resetCC] >> 7
-            );
-        // Forward it, so the synth's parameter selection matches the following data entries
-        this.sendMIDICC(chan, MIDIControllers.resetAllControllers, 0);
-    };
+    // The seeking mode always ends, also when a message handler throws
+    try {
+        this.synth.seeking = true;
+        const { timeline, tracks } = this._midiData;
+        // Start with the same ports as a fresh playback, MIDI port events update them
+        this.ports!.reset();
 
-    const { timeline, tracks } = this._midiData;
-    // Start with the same ports as a fresh playback, MIDI port events update them
-    this.ports!.reset();
-
-    while (true) {
-        // Find the next event
-        const e = timeline[this.index];
-        if (e === undefined) {
-            this.stop();
-            return false;
-        }
-        const trackIndex = e.tr;
-        const track = tracks[trackIndex];
-        const event = track.events[e.ev];
-        if (ticks === undefined) {
-            if (this.playedTime >= time) break;
-        } else if (event.ticks >= ticks) break;
-
-        // Skip note ons
-        let status: MIDIMessageType;
-        let statusChannel = 0;
-        if (event.statusByte >= 0x80 && event.statusByte < 0xf0) {
-            // Voice message
-            status = (event.statusByte & 0xf0) as MIDIMessageType;
-            statusChannel = event.statusByte & 0x0f;
-        } else {
-            status = event.statusByte;
-        }
-
-        // Keep in mind midi ports to determine the channel!
-        // Use the current port, like the playback does.
-        // A port without notes: its voice messages go nowhere (the playback drops them too),
-        // And its SysEx lands past the last channel, so only the global parameters apply
-        const notePortOffset: number | undefined =
-            this.ports!.offset(trackIndex);
-        const dropped =
-            notePortOffset === undefined &&
-            event.statusByte >= 0x80 &&
-            event.statusByte < 0xf0;
-        const portOffset: number =
-            notePortOffset ?? this.synth.midiChannels.length;
-        const channel = statusChannel + portOffset;
-
-        // Ensure that the channel is always there (ports may be added during the seek)
-        channels[channel] ??= createChannelStatus(channel);
-
-        const ch = channels[channel];
-
-        // A dropped message goes to the default case, where the playback drops it
-        switch (dropped ? undefined : status) {
-            // Skip note messages
-            case MIDIMessageTypes.noteOn: {
-                // Always track the last note, even if portamento isn't applied.
-                // See: https://github.com/spessasus/spessasynth_core/issues/77
-                ch.portamentoNote = event.data[0];
-                break;
+        while (true) {
+            // Find the next event
+            const e = timeline[this.index];
+            if (e === undefined) {
+                this.stop();
+                return false;
             }
+            const trackIndex = e.tr;
+            const event = tracks[trackIndex].events[e.ev];
+            if (ticks === undefined) {
+                if (this.playedTime >= time) break;
+            } else if (event.ticks >= ticks) break;
 
-            case MIDIMessageTypes.noteOff: {
-                break;
-            }
-
-            // Skip pitch wheel
-            case MIDIMessageTypes.pitchWheel: {
-                ch.pitchWheel = (event.data[1] << 7) | event.data[0];
-                break;
-            }
-
-            case MIDIMessageTypes.systemExclusive: {
-                // Resolved from the track's port like the playback (-1 for a port without notes)
-                const analyzedMessages = MIDIUtils.analyzeSysEx(
-                    event.data,
-                    notePortOffset === undefined ? -1 : notePortOffset / 16
-                );
-                // The whole message is sent at most once, even if it has many results
-                let shouldProcess = false;
-                for (const analyzed of analyzedMessages)
-                    // Sysex may change controllers
-                    switch (analyzed.type) {
-                        default: {
-                            shouldProcess = true;
-                            break;
-                        }
-
-                        /*
-                        Program change cannot be skipped.
-                        Some MIDIs edit drums via sysEx and skipping program changes causes them to be sent after, resetting the params.
-                        Testcase: (GS88Pro)Th19_1S(KR.Palto47)
-                         */
-
-                        case "Controller Change": {
-                            const { controller, value } = analyzed;
-                            const channel = analyzed.channel;
-                            // A port without channels (-1) or a part above the existing channels
-                            if (
-                                channel < 0 ||
-                                channel >= this.synth.midiChannels.length
-                            )
-                                break;
-                            channels[channel] ??= createChannelStatus(channel);
-                            // No empty track check here. The playback always sends SysEx
-                            // Testcase: (XG2000EX)MA09_Necrofantasia(KR.Palto47)
-                            if (
-                                controller ===
-                                MIDIControllers.resetAllControllers
-                            ) {
-                                resetAllControllers(channel);
-                                break;
-                            }
-                            if (nonSkippableCCs.has(controller))
-                                this.sendMIDICC(channel, controller, value);
-                            else
-                                storeController(
-                                    channels[channel].controllers,
-                                    controller,
-                                    value
-                                );
-                        }
-                    }
-                if (shouldProcess) this.processEvent(event, trackIndex);
-                break;
-            }
-
-            case MIDIMessageTypes.controllerChange: {
-                const controller = event.data[0] as MIDIController;
-                const value = event.data[1];
-
-                switch (controller) {
-                    default: {
-                        if (
-                            controller === MIDIControllers.resetAllControllers
-                        ) {
-                            resetAllControllers(channel);
-                            break;
-                        }
-                        if (nonSkippableCCs.has(controller))
-                            this.sendMIDICC(channel, controller, value);
-                        else storeController(ch.controllers, controller, value);
-                        break;
-                    }
-
-                    // Parameter tracking
-                    case MIDIControllers.registeredParameterMSB:
-                    case MIDIControllers.registeredParameterLSB:
-                    case MIDIControllers.nonRegisteredParameterLSB:
-                    case MIDIControllers.nonRegisteredParameterMSB: {
-                        // Track and event indexes are irrelevant here
-                        ch.param.controllerChange(controller, value, 0, 0);
-                        // Always send regardless
-                        this.sendMIDICC(channel, controller, value);
-                        break;
-                    }
-
-                    case MIDIControllers.dataEntryMSB:
-                    case MIDIControllers.dataEntryLSB: {
-                        const analyzed = ch.param.controllerChange(
-                            controller,
-                            value,
-                            0,
-                            0
-                        )!;
-                        // Always send regardless
-                        this.sendMIDICC(channel, controller, value);
-
-                        // NRPN may change controllers
-                        switch (analyzed.type) {
-                            default: {
-                                break;
-                            }
-
-                            case "Controller Change": {
-                                if (nonSkippableCCs.has(analyzed.controller))
-                                    this.sendMIDICC(
-                                        channel,
-                                        analyzed.controller,
-                                        analyzed.value
-                                    );
-                                else
-                                    storeController(
-                                        ch.controllers,
-                                        analyzed.controller,
-                                        analyzed.value
-                                    );
-                            }
-                        }
-                        break;
-                    }
-                }
-
-                break;
-            }
-
-            case MIDIMessageTypes.setTempo: {
+            if (event.statusByte === MIDIMessageTypes.setTempo) {
                 const tempoBPM = 60_000_000 / readBigEndian(event.data, 3);
                 this.oneTickToSeconds =
                     60 / (tempoBPM * this._midiData.timeDivision);
                 savedTempo = event;
                 savedTempoTrack = trackIndex;
-                break;
+            } else this.processEvent(event, trackIndex);
+
+            // Find the next event
+            const nE = timeline[++this.index];
+            if (nE === undefined) {
+                this.stop();
+                return false;
             }
-
-            /*
-            Program change cannot be skipped.
-            Some MIDIs edit drums via sysEx and skipping program changes causes them to be sent after, resetting the params.
-            Testcase: (GS88Pro)Th19_1S(KR.Palto47)
-             */
-
-            default: {
-                this.processEvent(event, trackIndex);
-                break;
-            }
+            const nextEvent = tracks[nE.tr].events[nE.ev];
+            this.playedTime +=
+                this.oneTickToSeconds * (nextEvent.ticks - event.ticks);
         }
-
-        // Find the next event
-        const nE = timeline[++this.index];
-        if (nE === undefined) {
-            this.stop();
-            return false;
-        }
-        const nextEvent = tracks[nE.tr].events[nE.ev];
-        this.playedTime +=
-            this.oneTickToSeconds * (nextEvent.ticks - event.ticks);
-    }
-
-    // For all synth channels (including the ones added during the seek)
-    const channelsToRestore = Math.min(
-        channels.length,
-        this.synth.midiChannels.length
-    );
-    for (let channel = 0; channel < channelsToRestore; channel++) {
-        const ch = channels[channel] ?? createChannelStatus(channel);
-        // Restoring pitch wheels
-        this.sendMIDIPitchWheel(channel, ch.pitchWheel);
-
-        // Restoring portamento (only if currently active)
-        // Note: we do it before controllers as portamento control may want to override it
-        if (ch.portamentoNote >= 0) {
-            if (this.externalMIDIPlayback) {
-                this.sendMIDICC(
-                    channel,
-                    MIDIControllers.portamentoControl,
-                    ch.portamentoNote
-                );
-            } else {
-                this.synth.midiChannels[channel].setLastNote(ch.portamentoNote);
-            }
-        }
-
-        // Restoring saved controllers
-        // Every controller that has changed
-        for (let i = 0; i < CONTROLLER_TABLE_SIZE; i++) {
-            // 14-bit, defaults are also 14-bit
-            const value = ch.controllers[i];
-            if (
-                value !== DEFAULT_MIDI_CONTROLLERS[i] &&
-                !nonSkippableCCs.has(i as MIDIController)
-            ) {
-                this.sendMIDICC(channel, i as MIDIController, value >> 7);
-            }
-        }
+    } finally {
+        // The notes held at the target never sounded, resuming must not strike them again
+        for (const notes of this.playingNotes) notes.clear();
+        this.synth.endSeek();
     }
 
     // Restoring tempo

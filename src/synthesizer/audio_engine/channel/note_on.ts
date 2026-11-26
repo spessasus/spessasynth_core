@@ -73,16 +73,16 @@ export function noteOn(
         127
     );
 
-    // Monophonic retrigger
+    // Monophonic retrigger.
+    // A seek replays notes that never sound, they must not cut the tails still releasing from before it
+    const seeking = this.synthCore.seeking;
     if (
-        (this._systemParameters.monophonicRetrigger ??
+        !seeking &&
+        ((this._systemParameters.monophonicRetrigger ??
             this.synthCore.systemParameters.monophonicRetrigger) ||
-        this._midiParameters.assignMode === 0
+            this._midiParameters.assignMode === 0)
     )
         this.killNote(midiNote);
-
-    // Gain
-    let voiceGain = 1;
 
     // Portamento
     const previousNote = this.lastPortamentoNote;
@@ -121,11 +121,21 @@ export function noteOn(
 
     // Mono mode. A drum part ignores it, like on the Sound Canvas (SC-88Pro and SC-8850 manuals)
     if (!this._midiParameters.polyMode && !this._drumChannel) {
-        if (this.lastMonoNote >= 0 && this.lastMonoNote !== midiNote)
+        if (
+            !seeking &&
+            this.lastMonoNote >= 0 &&
+            this.lastMonoNote !== midiNote
+        )
             this.killNote(this.lastMonoNote);
         this.lastMonoNote = midiNote;
         this.lastMonoVelocity = velocity;
     }
+
+    // A sequencer seek replays the notes for this bookkeeping (portamento, mono mode) but plays nothing
+    if (seeking) return;
+
+    // Gain
+    let voiceGain = 1;
 
     // Get voices
     const voices = this.synthCore.getVoices(

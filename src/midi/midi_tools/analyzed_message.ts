@@ -66,6 +66,9 @@ export type ChannelMIDIParam = {
         value: ChannelMIDIParameter[P];
         /**
          * The MIDI channel number (it may be above 15 for multi-port MIDI setups).
+         * For a system exclusive it is resolved from the port it arrived on, -1 for a port without channels.
+         * The value of `rxChannel` is not resolved: it is the raw value of the message (GS: a channel of the part's block,
+         * XG: relative to the sender's port).
          */
         channel: number;
     };
@@ -498,6 +501,7 @@ export type ChannelDrumSetup = {
         type: "Channel Drum Setup";
         /**
          * The MIDI channel number (it may be above 15).
+         * For a system exclusive it is resolved from the port it arrived on, -1 for a port without channels.
          */
         channel: number;
         /**
@@ -596,6 +600,7 @@ export interface ControllerChange {
     value: number;
     /**
      * The MIDI channel number (it may be above 15).
+     * For a system exclusive it is resolved from the port it arrived on, -1 for a port without channels.
      */
     channel: number;
 }
@@ -666,7 +671,8 @@ export interface ProgramChange {
      */
     type: "Program Change";
     /**
-     * The MIDI channel number.
+     * The MIDI channel number (it may be above 15).
+     * For a system exclusive it is resolved from the port it arrived on, -1 for a port without channels.
      */
     channel: number;
     /**

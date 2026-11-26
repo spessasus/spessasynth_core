@@ -22,8 +22,8 @@ export function noteOff(this: MIDIChannel, midiNote: number) {
         // If "receive note off" is enabled, kill the note (force quick release)
         (this._drumChannel && this.drumParams[midiNote].rxNoteOff)
     ) {
-        // Instantly kill the note
-        this.killNote(midiNote);
+        // Instantly kill the note (not during a seek, its notes never sound and the tails from before it stay)
+        if (!this.synthCore.seeking) this.killNote(midiNote);
         this.synthCore.callEvent("noteOff", {
             midiNote,
             channel: this.channel

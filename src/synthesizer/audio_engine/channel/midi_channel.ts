@@ -1025,16 +1025,6 @@ export class MIDIChannel {
     }
 
     /**
-     * Strictly internal, used by the sequencer for
-     * very accurate portamento recreation.
-     * @internal
-     * @param midiNote
-     */
-    public setLastNote(midiNote: number) {
-        this.lastPortamentoNote = midiNote;
-    }
-
-    /**
      * @internal
      */
     public destroy() {
@@ -1276,14 +1266,12 @@ export class MIDIChannel {
      * @param sourceIndex
      * @internal
      */
-    protected computeModulatorsAll(
-        sourceUsesCC: -1 | 0 | 1,
-        sourceIndex: number
-    ) {
+    public computeModulatorsAll(sourceUsesCC: -1 | 0 | 1, sourceIndex: number) {
         // Every matrix source goes through here
         if (this.matrix.active) this.recomputeMatrix();
         let vc = 0;
-        if (this._voiceCount > 0)
+        // A seek replays many controllers, the sounding voices are updated once when it ends
+        if (this._voiceCount > 0 && !this.synthCore.seeking)
             for (const v of this.synthCore.voices) {
                 if (!(v.channel === this.channel && v.isActive)) {
                     continue;

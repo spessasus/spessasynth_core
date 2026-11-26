@@ -1506,4 +1506,34 @@ console.info(
     );
 }
 
+// A note replayed during a sequencer seek doesn't cut a tail still releasing from before it (mono mode)
+{
+    const bank = makeBank(sineSample(), {
+        [GeneratorTypes.releaseVolEnv]: 1200
+    });
+    const synth = new SpessaSynthProcessor(SAMPLE_RATE, {
+        effectsEnabled: false,
+        eventsEnabled: false
+    });
+    synth.soundBankManager.addSoundBank(bank, "main");
+    await synth.ready;
+    const channel = synth.midiChannels[0];
+    channel.controllerChange(MIDIControllers.monoModeOn, 1);
+    channel.noteOn(40, 100);
+    channel.noteOff(40);
+    // A seek replays a note on and its note off, then ends
+    synth.seeking = true;
+    channel.noteOn(41, 100);
+    channel.noteOn(40, 100);
+    channel.noteOff(40);
+    synth.endSeek();
+    const left = new Float32Array(128);
+    const right = new Float32Array(128);
+    for (let q = 0; q < 35; q++) synth.process(left, right);
+    check(
+        synth.voices.some((v) => v.isActive && v.midiNote === 40),
+        "a note replayed during a seek keeps the releasing tail from before it"
+    );
+}
+
 finish("midi_behavior_test");

@@ -3,6 +3,7 @@
 import {
     BasicMIDI,
     MIDIBuilder,
+    MIDIControllers,
     MIDIMessageTypes,
     MIDIUtils,
     SpessaLog,
@@ -27,6 +28,8 @@ function run(midi: BasicMIDI) {
     const parsed = BasicMIDI.fromArrayBuffer(midi.writeMIDI());
     const play = new SpessaSynthProcessor(44_100);
     const seq = new SpessaSynthSequencer(play);
+    // Real playback from the start, skipping to the first note would seek
+    seq.skipToFirstNoteOn = false;
     seq.loadNewSongList([parsed]);
     seq.play();
     const l = new Float32Array(128);
@@ -565,6 +568,194 @@ const port = (m: MIDIBuilder, track: number, ticks: number, p: number) =>
         "16. a GS part message from port B reaches channel 16, from a port without channels none",
         channelOf(0) === 0 && channelOf(1) === 16 && channelOf(-1) === -1,
         `${channelOf(0)} ${channelOf(1)} ${channelOf(-1)}`
+    );
+}
+
+// 17. Seeking sends part SysEx controllers to the part, not to the channel number the part receives.
+// Part 16 (channel 15) receives channel 2 and gets its own pan, part 3 (channel 2) another pan.
+// Testcase: GEORGY.MID
+{
+    const gs = (addr: number[], value: number) =>
+        MIDIUtils.gs(addr[0], addr[1], addr[2], [value]);
+    const m = new MIDIBuilder({ name: "rx seek", format: 1 });
+    m.addTrack("notes", 0);
+    m.addEvent(
+        0,
+        1,
+        MIDIMessageTypes.systemExclusive,
+        gs([0x40, 0x1f, 0x02], 0x02)
+    );
+    m.addEvent(
+        10,
+        1,
+        MIDIMessageTypes.systemExclusive,
+        gs([0x40, 0x13, 0x1c], 70)
+    );
+    m.addEvent(
+        20,
+        1,
+        MIDIMessageTypes.systemExclusive,
+        gs([0x40, 0x1f, 0x1c], 100)
+    );
+    m.noteOn(30, 1, 2, 60, 100);
+    m.noteOff(960, 1, 2, 60);
+    m.flush();
+    const { synths } = run(m);
+    for (const [i, s] of synths.entries()) {
+        const label = i === 0 ? "playback" : "seek";
+        const pan = (c: number) => s.midiChannels[c].midiControllers[10] >> 7;
+        check(
+            `17. a part SysEx pan stays with its part (${label})`,
+            pan(15) === 100 && pan(2) === 70,
+            `channel 15 ${pan(15)}, channel 2 ${pan(2)}`
+        );
+    }
+}
+
+// 18. Seeking matches playback when the routing or the state changes on the way:
+// A controller sent before a part starts receiving its channel doesn't reach that part,
+// A reset clears the controllers sent before it, and a part with Rx OFF misses what is sent meanwhile
+{
+    const gs = (addr: number[], value: number) =>
+        MIDIUtils.gs(addr[0], addr[1], addr[2], [value]);
+    const m = new MIDIBuilder({ name: "seek state", format: 1 });
+    m.addTrack("notes", 0);
+    // Part 16 (channel 15) pan before it listens to channel 2: channel 2 pan 30 must not reach it
+    m.controllerChange(0, 1, 2, MIDIControllers.pan, 30);
+    m.addEvent(
+        10,
+        1,
+        MIDIMessageTypes.systemExclusive,
+        gs([0x40, 0x1f, 0x02], 0x02)
+    );
+    // Channel 4 volume 30, then a GS reset clears it, then part 16 listens to channel 2 again (the reset restored Rx)
+    m.controllerChange(20, 1, 4, MIDIControllers.mainVolume, 30);
+    m.addEvent(
+        30,
+        1,
+        MIDIMessageTypes.systemExclusive,
+        [0x41, 0x10, 0x42, 0x12, 0x40, 0x00, 0x7f, 0x00, 0x41, 0xf7]
+    );
+    m.addEvent(
+        40,
+        1,
+        MIDIMessageTypes.systemExclusive,
+        gs([0x40, 0x1f, 0x02], 0x02)
+    );
+    // Part 5 (channel 4) pan 20, Rx OFF, channel 4 pan 100, Rx back on: part 5 keeps 20
+    m.addEvent(
+        50,
+        1,
+        MIDIMessageTypes.systemExclusive,
+        gs([0x40, 0x15, 0x1c], 20)
+    );
+    m.addEvent(
+        60,
+        1,
+        MIDIMessageTypes.systemExclusive,
+        gs([0x40, 0x15, 0x02], 0x10)
+    );
+    m.controllerChange(70, 1, 4, MIDIControllers.pan, 100);
+    m.addEvent(
+        80,
+        1,
+        MIDIMessageTypes.systemExclusive,
+        gs([0x40, 0x15, 0x02], 0x04)
+    );
+    m.noteOn(90, 1, 2, 60, 100);
+    m.noteOff(960, 1, 2, 60);
+    m.flush();
+    const { synths } = run(m);
+    for (const [i, s] of synths.entries()) {
+        const label = i === 0 ? "playback" : "seek";
+        const cc = (c: number, n: number) =>
+            s.midiChannels[c].midiControllers[n] >> 7;
+        check(
+            `18. routing and resets on the way are followed (${label})`,
+            cc(15, MIDIControllers.pan) === 64 &&
+                cc(4, MIDIControllers.mainVolume) === 100 &&
+                cc(4, MIDIControllers.pan) === 20,
+            `ch15 pan ${cc(15, MIDIControllers.pan)}, ch4 volume ${cc(4, MIDIControllers.mainVolume)}, ch4 pan ${cc(4, MIDIControllers.pan)}`
+        );
+    }
+}
+
+// 19. A reset message the synth ignores (GS reset with data 01) doesn't make the seek drop the saved controllers
+{
+    const m = new MIDIBuilder({ name: "ignored reset", format: 1 });
+    m.addTrack("notes", 0);
+    m.controllerChange(0, 1, 1, MIDIControllers.mainVolume, 30);
+    m.addEvent(
+        10,
+        1,
+        MIDIMessageTypes.systemExclusive,
+        MIDIUtils.gs(0x40, 0x00, 0x7f, [0x01])
+    );
+    m.noteOn(20, 1, 1, 60, 100);
+    m.noteOff(960, 1, 1, 60);
+    m.flush();
+    const { synths } = run(m);
+    for (const [i, s] of synths.entries()) {
+        const label = i === 0 ? "playback" : "seek";
+        const volume =
+            s.midiChannels[1].midiControllers[MIDIControllers.mainVolume] >> 7;
+        check(
+            `19. an ignored reset keeps the controllers (${label})`,
+            volume === 30,
+            `volume ${volume}`
+        );
+    }
+}
+
+// 22. After an internal seek, the controller events report the values the synth has (a reset in between changed them),
+// And a note held at the seek point isn't struck when playback resumes
+{
+    const m = new MIDIBuilder({ name: "seek events", format: 1 });
+    m.addTrack("notes", 0);
+    m.controllerChange(0, 1, 0, MIDIControllers.pan, 0);
+    m.addEvent(
+        10,
+        1,
+        MIDIMessageTypes.systemExclusive,
+        MIDIUtils.gs(0x40, 0x00, 0x7f, [0x00])
+    );
+    // A long note held over the seek point
+    m.noteOn(20, 1, 1, 60, 100);
+    m.noteOff(1900, 1, 1, 60);
+    m.noteOn(1910, 1, 0, 62, 100);
+    m.noteOff(1920, 1, 0, 62);
+    m.flush();
+    const parsed = BasicMIDI.fromArrayBuffer(m.writeMIDI());
+    const synth = new SpessaSynthProcessor(44_100);
+    const seq = new SpessaSynthSequencer(synth);
+    seq.loadNewSongList([parsed]);
+    seq.pause();
+    let pan: number | undefined;
+    synth.onEventCall = (e) => {
+        if (
+            e.type === "controllerChange" &&
+            e.data.channel === 0 &&
+            e.data.controller === MIDIControllers.pan
+        )
+            pan = e.data.value;
+    };
+    seq.currentTime = parsed.midiTicksToSeconds(500);
+    // Play strikes the notes the sequencer holds as playing (no sound bank here, so it is checked directly)
+    const held = (
+        seq as unknown as { playingNotes: Map<number, number>[] }
+    ).playingNotes.reduce((n, m) => n + m.size, 0);
+    seq.play();
+    const l = new Float32Array(128);
+    const r = new Float32Array(128);
+    for (let i = 0; i < 10; i++) {
+        seq.processTick();
+        synth.process(l, r, 0, 128);
+    }
+    const struck = held > 0;
+    check(
+        "22. seek events carry the final values and held notes are not struck again",
+        pan === 64 && !struck,
+        `pan event ${pan}, note struck ${struck}`
     );
 }
 

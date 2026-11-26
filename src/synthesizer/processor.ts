@@ -85,6 +85,7 @@ import { DefaultXGVariation } from "./audio_engine/effects/xg/implementation/var
 import { DefaultXGInsertion } from "./audio_engine/effects/xg/implementation/insertion";
 import { DecodedSampleCache } from "./audio_engine/decoded_sample_cache";
 import { receiversOfInternal } from "./audio_engine/receivers";
+import { endSeekInternal } from "./audio_engine/end_seek";
 
 /**
  * Gain smoothing for rapid volume changes. Must be run EVERY SAMPLE
@@ -558,6 +559,23 @@ export class SpessaSynthProcessor {
      * @internal
      */
     public receiversDirty = true;
+    /**
+     * Set during a sequencer seek, which replays every controller: controller and pitch wheel events are held back
+     * and only the last one of each value is sent when it ends ({@link endSeek}), so listeners get the final values
+     * (not their order relative to the other events). The sounding voices' modulators are updated once at the end.
+     * @internal
+     */
+    public seeking = false;
+    /**
+     * The held back events of a seek, in the order they were first changed.
+     * @internal
+     */
+    public readonly seekEvents = new Map<string, SynthesizerEventCallback>();
+    /**
+     * Ends a sequencer seek (see {@link seeking}).
+     * @internal
+     */
+    public readonly endSeek = endSeekInternal.bind(this);
     /**
      * The channels that receive each channel number (the receive table).
      * A sysEx may set a "Part" (channel) to receive on a different channel number,
@@ -1908,10 +1926,27 @@ export class SpessaSynthProcessor {
         data: SynthesizerEvent[K]
     ) {
         if (!this.systemParameters.eventsEnabled) return;
-        this.onEventCall?.({
-            type,
-            data
-        } as SynthesizerEventCallback);
+        const event = { type, data } as SynthesizerEventCallback;
+        if (this.seeking) {
+            // A seek replays the notes without playing them
+            if (event.type === "noteOn" || event.type === "noteOff") return;
+            // A seek replays every controller, the listeners only need the value each one ends at
+            if (event.type === "controllerChange") {
+                this.seekEvents.set(
+                    `c${event.data.channel}.${event.data.controller}`,
+                    event
+                );
+                return;
+            }
+            if (
+                event.type === "channelParamChange" &&
+                event.data.parameter === "pitchWheel"
+            ) {
+                this.seekEvents.set(`p${event.data.channel}`, event);
+                return;
+            }
+        }
+        this.onEventCall?.(event);
     }
 
     /**
