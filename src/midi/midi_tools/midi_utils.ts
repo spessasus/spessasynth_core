@@ -1114,6 +1114,61 @@ export function gsPartToChannel(part: number) {
 }
 
 /**
+ * The channel a GS part address reaches, seen from the sender's port.
+ * The synthesizer and the SysEx analyzer resolve GS parts here.
+ * The encoder (channel to part) still has its own mapping.
+ * @param block The address byte: 0x40 (block A) or 0x50 (block B).
+ * @param part The part number (the low nibble of the address).
+ * @param senderOffset The channel offset of the port the message came from.
+ * @internal
+ */
+export function gsPartAddress(
+    block: number,
+    part: number,
+    senderOffset: number
+) {
+    // Block B is the second 16-channel set
+    return gsPartToChannel(part) + (block === 0x50 ? 16 : 0) + senderOffset;
+}
+
+/**
+ * The channel a GS part receives on (Rx. channel), seen from the sender's port, -1 for OFF.
+ * @param block The address byte: 0x40 (block A) or 0x50 (block B).
+ * @param value The Rx. channel value. 0x10 and anything above it is OFF (verified on hardware).
+ * @param senderOffset The channel offset of the port the message came from.
+ * @internal
+ */
+export function gsRxAddress(
+    block: number,
+    value: number,
+    senderOffset: number
+) {
+    return value >= 0x10
+        ? -1
+        : value + (block === 0x50 ? 16 : 0) + senderOffset;
+}
+
+/**
+ * The channel an XG part number reaches, seen from the sender's port.
+ * @param part The part number.
+ * @param senderOffset The channel offset of the port the message came from.
+ * @internal
+ */
+export function xgPartAddress(part: number, senderOffset: number) {
+    return part + senderOffset;
+}
+
+/**
+ * The channel an XG part receives on (Rcv CHANNEL), seen from the sender's port, -1 for OFF.
+ * @param value The Rcv CHANNEL value, 0x7F is OFF.
+ * @param senderOffset The channel offset of the port the message came from.
+ * @internal
+ */
+export function xgRxAddress(value: number, senderOffset: number) {
+    return value === 0x7f ? -1 : value + senderOffset;
+}
+
+/**
  * Converts MIDI channel number to GS "part number".
  * @param channel The MIDI channel number.
  * @returns The GS part number.
@@ -2007,7 +2062,8 @@ function analyzeXG(syx: SysExAcceptedArray): AnalyzedMessage.SysEx[] {
 
     // XG MULTI PART
     if (a1 === 0x08 /* A2 is the channel number*/) {
-        const channel = a2;
+        // The channels here are seen from the first port, the caller adds the sender's port offset
+        const channel = xgPartAddress(a2, 0);
         switch (a3) {
             default: {
                 return unrecognized(syx);
@@ -2055,7 +2111,7 @@ function analyzeXG(syx: SysExAcceptedArray): AnalyzedMessage.SysEx[] {
                         type: "Channel MIDI Param",
                         channel,
                         parameter: "rxChannel",
-                        value: value === 0x7f ? -1 : value
+                        value: xgRxAddress(value, 0)
                     }
                 ];
             }
@@ -3143,12 +3199,11 @@ function analyzeGS(syx: SysExAcceptedArray): AnalyzedMessage.SysEx[] {
         return unrecognized(syx);
     }
 
-    // Block B is the second 16-channel set
-    const channelOffset = a1 === 0x50 ? 16 : 0;
+    // The channels here are seen from the first port, the caller adds the sender's port offset
+    const channel = gsPartAddress(a1, a2 & 0x0f, 0);
     switch (a2 >> 4) {
         // Patch part parameter
         case 1: {
-            const channel = gsPartToChannel(a2 & 0x0f) + channelOffset;
             switch (a3) {
                 default: {
                     return unrecognized(syx);
@@ -3182,7 +3237,8 @@ function analyzeGS(syx: SysExAcceptedArray): AnalyzedMessage.SysEx[] {
                             type: "Channel MIDI Param",
                             channel,
                             parameter: "rxChannel",
-                            value: value >= 0x10 ? -1 : value
+                            // The raw value, without the block offset (seen from block A)
+                            value: gsRxAddress(0x40, value, 0)
                         }
                     ];
                 }
@@ -3467,7 +3523,6 @@ function analyzeGS(syx: SysExAcceptedArray): AnalyzedMessage.SysEx[] {
 
         // Patch Part Parameters (Controllers)
         case 2: {
-            const channel = gsPartToChannel(a2 & 0x0f) + channelOffset;
             switch (a3) {
                 case 0x04: {
                     // LFO1 Pitch depth
@@ -3509,7 +3564,6 @@ function analyzeGS(syx: SysExAcceptedArray): AnalyzedMessage.SysEx[] {
 
         // Patch Parameter Tone Map
         case 4: {
-            const channel = gsPartToChannel(a2 & 0x0f) + channelOffset;
             switch (a3) {
                 default: {
                     return unrecognized(syx);

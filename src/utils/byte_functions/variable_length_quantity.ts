@@ -10,7 +10,6 @@ export const MAX_VLQ = 0x0f_ff_ff_ff;
  * A long VLQ (more than 4 bytes only appears in damaged MIDI files) is read whole and never turns negative.
  * @param midiByteArray the array to read from.
  * @returns the number.
- * @group Utilities
  */
 export function readVariableLengthQuantity(
     midiByteArray: IndexedByteArray

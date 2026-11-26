@@ -1096,6 +1096,7 @@ export class SpessaSynthProcessor {
         for (const c of this.midiChannels) c.destroy();
         this.clearCache();
         this.midiChannels.length = 0;
+        this.receiversDirty = true;
         this.soundBankManager.destroy();
     }
 

@@ -1,6 +1,7 @@
 import type { BasicMIDI } from "../basic_midi";
 import type { MIDITrack } from "../midi_track";
 import { MIDIMessageTypes } from "../enums";
+import { SpessaLog } from "../../utils/loggin";
 import {
     MAX_VLQ,
     writeVariableLengthQuantity
@@ -118,6 +119,11 @@ export function writeMIDIInternal(midi: BasicMIDI): ArrayBuffer {
         // So the delta times start from there. The ticks in memory include that offset (the reader stores them so),
         // Events earlier than the previous track's end are written at its end
         const startTick = midi.format === 2 && i > 0 ? endTicks[i - 1] : 0;
+        if (events.length > 0 && events[0].ticks < startTick) {
+            SpessaLog.warn(
+                `Format 2 track ${i} starts before the end of the track before it, its early events are moved to tick ${startTick}.`
+            );
+        }
         // The End of Track keeps its tick, the silence after the last note is part of the song
         const endTick = Math.max(startTick, events.at(-1)?.ticks ?? 0);
         startTicks.push(startTick);

@@ -183,11 +183,8 @@ export function rolandSystemExclusive(
 
                 // Patch Parameter
                 if (a1 === 0x40 || a1 === 0x50) {
-                    // 50 means BLOCK B (+16 channels)
+                    // 50 means BLOCK B, resolved with the part number below
                     // Testcase: 95043-2.KYC.mid
-                    if (a1 === 0x50) {
-                        channelOffset += 16;
-                    }
                     // System Parameter
                     if (a2 === 0x00) {
                         switch (a3) {
@@ -758,9 +755,11 @@ export function rolandSystemExclusive(
                         // Determine the channel
                         // Note that: 0 means channel 9 (drums), and only then 1 means channel 0, 2 channel 1, etc.
                         // SC-8850 manual, page 237
-                        const channel =
-                            MIDIUtils.gsPartToChannel(a2 & 0x0f) +
-                            channelOffset;
+                        const channel = MIDIUtils.gsPartAddress(
+                            a1,
+                            a2 & 0x0f,
+                            channelOffset
+                        );
                         // For example, 0x1A means A = 10, which corresponds to channel 11 (counting from 1)
                         const ch = this.midiChannels[channel];
                         if (!ch) {
@@ -800,8 +799,11 @@ export function rolandSystemExclusive(
 
                             case 0x02: {
                                 // Rx. channel. 0x10 is OFF, and so is anything above it (verified on hardware)
-                                const rxChannel =
-                                    data >= 0x10 ? -1 : data + channelOffset;
+                                const rxChannel = MIDIUtils.gsRxAddress(
+                                    a1,
+                                    data,
+                                    channelOffset
+                                );
                                 ch.setMIDIParameter("rxChannel", rxChannel);
                                 SpessaLog.gsInfo(
                                     `Rx. Channel on ${channel}`,
@@ -1070,9 +1072,11 @@ export function rolandSystemExclusive(
                         // Determine the channel
                         // Note that: 0 means channel 9 (drums), and only then 1 means channel 0, 2 channel 1, etc.
                         // SC-8850 manual, page 237
-                        const channel =
-                            MIDIUtils.gsPartToChannel(a2 & 0x0f) +
-                            channelOffset;
+                        const channel = MIDIUtils.gsPartAddress(
+                            a1,
+                            a2 & 0x0f,
+                            channelOffset
+                        );
                         // For example, 0x1A means A = 10, which corresponds to channel 11 (counting from 1)
                         const ch = this.midiChannels[channel];
                         if (!ch) {
@@ -1146,9 +1150,11 @@ export function rolandSystemExclusive(
                         // Determine the channel
                         // Note that: 0 means channel 9 (drums), and only then 1 means channel 0, 2 channel 1, etc.
                         // SC-8850 manual, page 237
-                        const channel =
-                            MIDIUtils.gsPartToChannel(a2 & 0x0f) +
-                            channelOffset;
+                        const channel = MIDIUtils.gsPartAddress(
+                            a1,
+                            a2 & 0x0f,
+                            channelOffset
+                        );
                         // For example, 0x1A means A = 10, which corresponds to channel 11 (counting from 1)
                         const ch = this.midiChannels[channel];
                         if (!ch) {

@@ -12,6 +12,7 @@ import {
     DEFAULT_XG_DRUM_MAP,
     MELODIC_MAP
 } from "../../../midi/midi_tools/sysex_data";
+import * as MIDIUtils from "../../../midi/midi_tools/midi_utils";
 
 const XG_MATRIX_DESTINATIONS: MatrixDestination[] = [
     MatrixDestinations.pitch,
@@ -517,7 +518,7 @@ export function yamahaSystemExclusive(
         }
 
         if (a1 === 0x08 /* A2 is the channel number*/) {
-            const channel = a2 + channelOffset;
+            const channel = MIDIUtils.xgPartAddress(a2, channelOffset);
             const ch = this.midiChannels[channel];
             if (!ch) {
                 // Invalid channel
@@ -559,7 +560,10 @@ export function yamahaSystemExclusive(
 
                 // Rev. channel
                 case 0x04: {
-                    const rxChannel = data === 0x7f ? -1 : data + channelOffset;
+                    const rxChannel = MIDIUtils.xgRxAddress(
+                        data,
+                        channelOffset
+                    );
                     ch.setMIDIParameter("rxChannel", rxChannel);
                     SpessaLog.xgInfo(`Rev. Channel on ${channel}`, rxChannel);
                     break;
