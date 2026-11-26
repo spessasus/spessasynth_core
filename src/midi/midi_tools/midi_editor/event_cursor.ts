@@ -1,4 +1,4 @@
-import { MIDIMessage } from "../../midi_message";
+import { isNoteOn, MIDIMessage } from "../../midi_message";
 import type { BasicMIDI } from "../../basic_midi";
 import { MIDIMessageTypes } from "../../enums";
 import { PortTracker } from "../port_tracker";
@@ -161,14 +161,7 @@ export class EventCursor {
         // A track with notes and no port event at all gets its port from the file
         // (the lowest port with notes, or its track name). Its first port event would change how
         // `BasicMIDI` assigns the port channels for the whole file, track-name routing switches off entirely
-        if (
-            firstPort === -1 &&
-            trackEvents.some(
-                (e) =>
-                    (e.statusByte & 0xf0) === MIDIMessageTypes.noteOn &&
-                    e.data[1] > 0
-            )
-        )
+        if (firstPort === -1 && trackEvents.some((e) => isNoteOn(e)))
             return false;
         const restore = portEvent(ticks, trackPort);
         this.lastWrap = { port, restore };

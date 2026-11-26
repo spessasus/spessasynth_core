@@ -130,7 +130,8 @@ function writeTrackData(
  * @param midi the MIDI to write
  */
 export function writeMIDIInternal(midi: BasicMIDI): ArrayBuffer {
-    // The sizes come first, so the whole file goes into one array
+    // The sizes come first, so the whole file goes into one array.
+    // Per track: the tick its delta times start from and its End of Track tick
     const startTicks = new Array<number>();
     const endTicks = new Array<number>();
     const sizes = new Array<number>();
@@ -138,13 +139,17 @@ export function writeMIDIInternal(midi: BasicMIDI): ArrayBuffer {
     for (let i = 0; i < midi.tracks.length; i++) {
         const events = midi.tracks[i].events;
         // Format 2 tracks play one after another and the reader adds the previous track's end to each,
-        // So the delta times start from there. The ticks in memory include that offset (the reader stores them so),
-        // Events earlier than the previous track's end are written at its end
-        const startTick = midi.format === 2 && i > 0 ? endTicks[i - 1] : 0;
+        // So the delta times start from the previous track's end as stored. That keeps a track's leading silence,
+        // Also when an earlier track moved later (the reader places each track after the one before it)
+        let startTick = midi.format === 2 && i > 0 ? endTicks[i - 1] : 0;
+        // A format 2 track that starts before the previous one ends (an edit made the previous track longer)
+        // Starts right after it instead, as a whole, so its events keep their spacing.
+        // The silence it had before its first event can't be kept, the file never stored where the track started
         if (events.length > 0 && events[0].ticks < startTick) {
             SpessaLog.warn(
-                `Format 2 track ${i + 1} starts before the end of the track before it, its early events are moved to tick ${startTick}.`
+                `Format 2 track ${i + 1} overlaps the track before it by ${startTick - events[0].ticks} ticks, it now starts right after it.`
             );
+            startTick = events[0].ticks;
         }
         // The End of Track keeps its tick, the silence after the last note is part of the song
         const endTick = Math.max(startTick, events.at(-1)?.ticks ?? 0);

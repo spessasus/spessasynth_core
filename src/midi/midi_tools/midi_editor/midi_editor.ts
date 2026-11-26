@@ -2,6 +2,7 @@ import { SpessaLog } from "../../../utils/loggin";
 import { ConsoleColors } from "../../../utils/other";
 import { DEFAULT_SYNTH_MODE } from "../../../synthesizer/audio_engine/synth_constants";
 import type { BasicMIDI } from "../../basic_midi";
+import { isNoteOn } from "../../midi_message";
 import * as MIDIUtils from "../midi_utils";
 import { PortTracker } from "../port_tracker";
 import type { EditContext, ModifyMIDIOptions, ResetPosition } from "./types";
@@ -11,7 +12,7 @@ import { trackInsertedSelection } from "./controller_change";
 import { generateSetup } from "./generate_setup";
 import { parseEditOptions } from "./edit_options";
 import { createChannelStatus } from "./channel_status";
-import { addMissingReset, firstTrackIndexAt } from "./missing_reset";
+import { addMissingReset, trackIndexAt } from "./missing_reset";
 
 /**
  * A single-use class for editing a MIDI file.
@@ -145,21 +146,36 @@ export class MIDIEditor {
         }
 
         // Step 5: cleared system. Every reset was deleted, so there is nothing to add the setup to.
-        // Insert the locked setup once on the first track instead, right before the first note.
+        // Insert the locked setup once instead, right before the first note
+        // (on the first track, or for format 2 on the track of the first note)
         if (requestedSystem === "clear") {
-            const targetTicks = Math.max(0, this.midi.firstNoteOn);
+            let targetTicks = Math.max(0, this.midi.firstNoteOn);
+            // Format 2 tracks play one after another, so the first track may end before the first note.
+            // The setup goes on the track of the first note there (it only holds global parameters, no channels).
+            // The note is found in the edited tracks, so notes of cleared channels don't count
+            let track = 0;
+            if (this.midi.format === 2) {
+                let firstTick = Infinity;
+                for (const [t, { events }] of this.midi.tracks.entries()) {
+                    const note = events.find((e) => isNoteOn(e));
+                    if (!note || note.ticks >= firstTick) continue;
+                    firstTick = note.ticks;
+                    track = t;
+                }
+                if (firstTick !== Infinity) targetTicks = firstTick;
+            }
             const output = generateSetup(options, targetTicks, this.ctx.system);
             if (output.length > 0) {
-                const index = firstTrackIndexAt(this.midi, targetTicks);
+                const index = trackIndexAt(this.midi, targetTicks, track);
                 SpessaLog.info(
-                    `%cInserting setup without a reset on track %c0%c on index %c${index}%c!`,
+                    `%cInserting setup without a reset on track %c${track}%c on index %c${index}%c!`,
                     ConsoleColors.recognized,
                     ConsoleColors.value,
                     ConsoleColors.recognized,
                     ConsoleColors.value,
                     ConsoleColors.recognized
                 );
-                this.midi.tracks[0].addEvents(index, ...output);
+                this.midi.tracks[track].addEvents(index, ...output);
             }
         }
 

@@ -10,6 +10,15 @@ import {
 } from "./enums";
 
 /**
+ * If the message is a note on with a velocity above 0 (a velocity of 0 is a note off).
+ * @param e The MIDI message.
+ * @internal
+ */
+export function isNoteOn(e: MIDIMessage) {
+    return (e.statusByte & 0xf0) === MIDIMessageTypes.noteOn && e.data[1] > 0;
+}
+
+/**
  * This class represents a single MIDI 1.0 message.
  *
  * @group MIDI.Protocol

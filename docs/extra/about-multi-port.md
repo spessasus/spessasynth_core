@@ -50,10 +50,17 @@ It seems to work with various multi-port files and might be helpful for others i
    **This is a different method of achieving multiple ports and MIDI files that use it do not use the meta message.**
 3. Tracks without a port use the lowest port that plays notes. If no ports are found at all, default to port `0`.
    If no track with notes has a port, the port numbers say nothing about routing and every port uses the first 16 channels.
-4. Give each port that plays notes a unique channel offset, incremented by 16 for each port:
-   first the starting ports the tracks play notes on (in track order), then the other ports in the time order of their first note.
-   For example, if the first detected port is `1`, it gets an offset of `0`. The next port gets an offset of `16`, and so on.
-5. When loading the file, add 16 channels to the synthesizer for every port that does not fit into the existing channels.
+4. Map the ports that play notes to the device's ports A, B, C and so on, from the set of ports (never the track order),
+   and give each the channel offset `16 * device port`:
+    - If the ports include port `0`, ports `0-3` are those device ports (`0` is A, `2` is C)
+      and any higher port follows the highest of them in order.
+      So a file for a four-port device that plays on ports `0` and `2` keeps port `2` on channels `32-47`,
+      where XG part numbers and GS block addresses expect it, and ports `0` and `15` get offsets `0` and `16`.
+    - Otherwise the ports are sorted by number and packed from A.
+      For example, ports `1` and `2` (counted from 1) get offsets `0` and `16`.
+    - Ports detected from track names keep their letter (`C01` is always C).
+5. When loading the file, add synthesizer channels up to the highest port's offset plus 16
+   (a gap between device ports, like B for ports `0` and `2`, gets channels too).
 6. On encountering a Port Prefix meta-message, switch the track to the specified port.
 7. For voice and system exclusive messages, add the port offset to the channel number to determine the final channel used.
 8. A port without any notes gets no channels: its voice messages and part-specific system exclusive messages are dropped.

@@ -663,6 +663,48 @@ const noteTrack = [0x00, 0x90, 0x3c, 0x64, 0x60, 0x80, 0x3c, 0x40, ...END];
     check("a time division over 16 bits throws on write", threw);
 }
 
+// A format 2 track that starts before the previous one ends (an edit made it longer) moves later as a whole
+{
+    const midi = smf([{ body: noteTrack }, { body: noteTrack }], 2, 2);
+    // Track 0 now ends 50 ticks into track 1
+    midi.tracks[0].events.at(-1)!.ticks = 96 + 50;
+    midi.flush();
+    const back = reparse(midi);
+    const spacing = (m: BasicMIDI) => {
+        const t = m.tracks[1].events.filter((e) => e.statusByte >= 0x80);
+        return t.map((e) => e.ticks - t[0].ticks).join(",");
+    };
+    check(
+        "a format 2 track overlapped by the previous one keeps its spacing",
+        spacing(back) === spacing(midi) &&
+            back.tracks[1].events[0].ticks === 146,
+        `${spacing(midi)} -> ${spacing(back)}, starts at ${back.tracks[1].events[0]?.ticks}`
+    );
+}
+
+// A format 2 track after a moved one keeps its leading silence
+{
+    // Track 2 starts with 50 ticks of silence after track 1
+    const late = [0x32, 0x90, 0x3c, 0x64, 0x60, 0x80, 0x3c, 0x40, ...END];
+    const midi = smf(
+        [{ body: noteTrack }, { body: noteTrack }, { body: late }],
+        3,
+        2
+    );
+    // Track 0 now ends 50 ticks into track 1, which moves later
+    midi.tracks[0].events.at(-1)!.ticks = 96 + 50;
+    midi.flush();
+    const back = reparse(midi);
+    const end1 = back.tracks[1].events.at(-1)?.ticks ?? 0;
+    const first2 =
+        back.tracks[2].events.find((e) => e.statusByte >= 0x80)?.ticks ?? 0;
+    check(
+        "a format 2 track after a moved one keeps its leading silence",
+        first2 - end1 === 50,
+        `track 1 ends ${end1}, track 2 starts ${first2}`
+    );
+}
+
 if (failed > 0) {
     console.error(`${failed} check(s) failed!`);
     process.exit(1);

@@ -142,7 +142,7 @@ const port = (m: MIDIBuilder, track: number, ticks: number, p: number) =>
     }
 }
 
-// 3. A track switching ports: its first port gets the first offset, the switch is followed.
+// 3. A track switching ports: the lower port gets the first offset, the switch is followed.
 {
     const m = new MIDIBuilder({ name: "ports", format: 1 });
     m.addTrack("switch", 0);
@@ -479,6 +479,62 @@ const port = (m: MIDIBuilder, track: number, ticks: number, p: number) =>
             `program ${s.midiChannels[0].patch.program}`
         );
     }
+}
+
+// 15. Ports map from the set of note ports, never the track order: sorted by number, and a set inside 0 to 3
+// With port 0 keeps its numbers (ports A to D of the device), any other set is packed from A
+{
+    const offsets = (order: number[]) => {
+        const m = new MIDIBuilder({ name: "ports", format: 1 });
+        for (const [i, p] of order.entries()) {
+            m.addTrack(`port ${p}`, p);
+            m.noteOn(0, i + 1, 0, 60, 100);
+            m.noteOff(240, i + 1, 0, 60);
+        }
+        m.flush();
+        const parsed = BasicMIDI.fromArrayBuffer(m.writeMIDI());
+        return order.map((p) => parsed.getPortOffset(p)).join(",");
+    };
+    check(
+        "15. port 1 before port 0 still gives A and B",
+        offsets([1, 0]) === "16,0",
+        offsets([1, 0])
+    );
+    check(
+        "15. ports 0 and 2 stay A and C",
+        offsets([0, 2]) === "0,32",
+        offsets([0, 2])
+    );
+    check(
+        "15. ports 2 and 0 stay C and A",
+        offsets([2, 0]) === "32,0",
+        offsets([2, 0])
+    );
+    check(
+        "15. ports 1 and 2 (counted from 1) give A and B",
+        offsets([1, 2]) === "0,16",
+        offsets([1, 2])
+    );
+    check(
+        "15. ports 0 and 15 give A and B",
+        offsets([0, 15]) === "0,16",
+        offsets([0, 15])
+    );
+    check(
+        "15. ports 9 and 7 give B and A",
+        offsets([9, 7]) === "16,0",
+        offsets([9, 7])
+    );
+    check(
+        "15. ports 0 and 3 stay A and D",
+        offsets([0, 3]) === "0,48",
+        offsets([0, 3])
+    );
+    check(
+        "15. a port above D follows D, port 3 stays D",
+        offsets([0, 3, 4]) === "0,48,64",
+        offsets([0, 3, 4])
+    );
 }
 
 console.info(failed === 0 ? "\nAll passed." : `\n${failed} failed.`);

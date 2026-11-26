@@ -1,7 +1,7 @@
 // Assertion tests for MIDI editor bug fixes, one block per fixed bug.
 // Usage: npx tsx tests/midi/midi_editor/midi_editor_fixes_test.ts
 import {
-    type BasicMIDI,
+    BasicMIDI,
     MIDIBuilder,
     MIDIControllers,
     MIDIMessage,
@@ -49,6 +49,35 @@ function withPorts(midi: BasicMIDI) {
     });
 }
 const isPort = (e: MIDIMessage) => e.statusByte === MIDIMessageTypes.midiPort;
+
+const u32 = (n: number) => [
+    n >>> 24,
+    (n >> 16) & 0xff,
+    (n >> 8) & 0xff,
+    n & 0xff
+];
+
+/**
+ * A format 2 file from raw track bodies, 96 ticks per quarter note.
+ */
+function formatTwo(tracks: number[][]) {
+    const bytes = [
+        0x4d,
+        0x54,
+        0x68,
+        0x64,
+        ...u32(6),
+        0,
+        2,
+        0,
+        tracks.length,
+        0,
+        96
+    ];
+    for (const t of tracks)
+        bytes.push(0x4d, 0x54, 0x72, 0x6b, ...u32(t.length), ...t);
+    return BasicMIDI.fromArrayBuffer(new Uint8Array(bytes).buffer);
+}
 
 function newFile() {
     const midi = new MIDIBuilder({ name: "fixes", format: 1 });
@@ -1555,6 +1584,54 @@ for (const lockPatch of [false, true]) {
         summary ===
             "port 0@0, port 1@10, PC 33@10, port 0@10, volume@15 on 0, port 1@20, PC 34@20, port 0@20",
         summary
+    );
+}
+
+// 42. Format 2: with the system cleared, the setup goes on the track of the first note, not after the first track's end.
+// The tracks play one after another, so a setup on track 0 at the first note's tick would make track 0 longer
+// And move every later track on write
+{
+    const conductor = [
+        0x00, 0xff, 0x51, 0x03, 0x07, 0xa1, 0x20, 0x60, 0xff, 0x2f, 0x00
+    ];
+    const notes = [
+        0x10, 0x90, 0x3c, 0x64, 0x60, 0x80, 0x3c, 0x40, 0x00, 0xff, 0x2f, 0x00
+    ];
+    const midi = formatTwo([conductor, notes]);
+    const noteTicks = (m: BasicMIDI) =>
+        m.tracks
+            .flatMap((t) =>
+                t.events.filter((e) => isNoteOn(e)).map((e) => e.ticks)
+            )
+            .join(",");
+    const before = noteTicks(midi);
+    midi.modify({ midiParams: { system: "clear", volume: 100 } });
+    const conductorEnd = midi.tracks[0].events.at(-1)?.ticks;
+    const back = BasicMIDI.fromArrayBuffer(midi.writeMIDI());
+    check(
+        "42. a format 2 setup goes on the first note's track and the timing survives a write",
+        conductorEnd === 96 && noteTicks(back) === before && before === "112",
+        `conductor end ${conductorEnd}, notes ${before} -> ${noteTicks(back)}`
+    );
+}
+
+// 43. Format 2 with the system cleared: a velocity 0 note on doesn't count as the first note,
+// The setup still goes on the track of the first sounding note
+{
+    // Track 0 has a velocity 0 note on at tick 0 and ends at 96
+    const conductor = [0x00, 0x90, 0x3c, 0x00, 0x60, 0xff, 0x2f, 0x00];
+    const notes = [
+        0x10, 0x90, 0x3c, 0x64, 0x60, 0x80, 0x3c, 0x40, 0x00, 0xff, 0x2f, 0x00
+    ];
+    const midi = formatTwo([conductor, notes]);
+    midi.modify({ midiParams: { system: "clear", volume: 100 } });
+    const setupTrack = midi.tracks.findIndex((t) =>
+        t.events.some((e) => e.statusByte === MIDIMessageTypes.systemExclusive)
+    );
+    check(
+        "43. a velocity 0 note on doesn't decide where a format 2 setup goes",
+        setupTrack === 1 && midi.tracks[0].events.at(-1)?.ticks === 96,
+        `setup on track ${setupTrack}, track 0 ends at ${midi.tracks[0].events.at(-1)?.ticks}`
     );
 }
 

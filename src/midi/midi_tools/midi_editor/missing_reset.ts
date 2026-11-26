@@ -1,4 +1,5 @@
 import { SpessaLog } from "../../../utils/loggin";
+import { isNoteOn } from "../../midi_message";
 import { ConsoleColors } from "../../../utils/other";
 import type { BasicMIDI } from "../../basic_midi";
 import { MIDIMessageTypes } from "../../enums";
@@ -77,8 +78,7 @@ export function addMissingReset(midi: BasicMIDI, options: EditOptions) {
             sawReset = true;
         } else if (
             portOffset !== undefined &&
-            (e.statusByte & 0xf0) === MIDIMessageTypes.noteOn &&
-            e.data[1] > 0 &&
+            isNoteOn(e) &&
             !options.clearedChannels.has((e.statusByte & 0xf) + portOffset)
         ) {
             sawNote = true;
@@ -91,10 +91,7 @@ export function addMissingReset(midi: BasicMIDI, options: EditOptions) {
     if (hasKeptReset) return;
     // A requested system, or the GM replacement (the fallback, XG for XG-only effects, otherwise GS)
     const system = requestedSystem ?? options.gmReplacement;
-    midi.tracks[0].addEvents(
-        firstTrackIndexAt(midi, 0),
-        MIDIUtils.reset(0, system)
-    );
+    midi.tracks[0].addEvents(trackIndexAt(midi, 0), MIDIUtils.reset(0, system));
     SpessaLog.info(
         `%c${system} reset not detected. Adding it.`,
         ConsoleColors.info
@@ -102,15 +99,16 @@ export function addMissingReset(midi: BasicMIDI, options: EditOptions) {
 }
 
 /**
- * Finds where an inserted reset or setup goes on the first track:
+ * Finds where an inserted reset or setup goes on a track (the first one unless given):
  * after everything before the tick and the meta events at it,
  * so it comes before the first voice message or SysEx at that tick and the track stays sorted.
  * @param midi The file being edited.
  * @param ticks The tick of the inserted events.
+ * @param track The track to insert on.
  * @returns The index to insert at.
  */
-export function firstTrackIndexAt(midi: BasicMIDI, ticks: number) {
-    const events = midi.tracks[0].events;
+export function trackIndexAt(midi: BasicMIDI, ticks: number, track = 0) {
+    const events = midi.tracks[track].events;
     let index = 0;
     while (
         index < events.length &&

@@ -1,4 +1,5 @@
 import type { MIDIPatchFull } from "../soundbank/basic_soundbank/midi_patch";
+import { isNoteOn } from "./midi_message";
 import type {
     GenericRange,
     PresetsWithKeyCombinations
@@ -40,14 +41,6 @@ import type {
 } from "./types";
 import { writeMIDIInternal } from "./write/midi";
 import { DEFAULT_RMIDI_WRITE_OPTIONS, writeRMIDIInternal } from "./write/rmidi";
-
-/**
- * If the message is a note on with a velocity above 0.
- * @param e The MIDI message.
- */
-function isNoteOn(e: MIDIMessage) {
-    return (e.statusByte & 0xf0) === MIDIMessageTypes.noteOn && e.data[1] > 0;
-}
 
 /**
  * BasicMIDI is the base of a complete MIDI file.
@@ -1510,16 +1503,8 @@ export class BasicMIDI {
         //
         // When a note track has no port event: it goes to the lowest port that plays notes,
         // Not to the port a setup-only track names (the old code did the same, it gave such tracks no port at all).
-        // Only ports that play notes get channels, in the order the sequencer meets them:
-        // The starting ports of the tracks with notes, then the other ports in the time order of their first note.
-        // A port a track switches to without playing a note there gets nothing (a stray port event at the end)
-        let portOffset = 0;
-        this.portChannelOffsetMap = [];
-        const addPort = (port: number) => {
-            if (this.portChannelOffsetMap[port] !== undefined) return;
-            this.portChannelOffsetMap[port] = portOffset;
-            portOffset += 16;
-        };
+        // Only ports that play notes get channels. A port a track switches to without playing a note there gets nothing
+        // (a stray port event at the end)
         // The ports each track plays notes on
         const playedPorts = this.tracks.map((track) => {
             const played = new Set<number>();
@@ -1529,16 +1514,24 @@ export class BasicMIDI {
             });
             return played;
         });
-        for (const [i, track] of this.tracks.entries()) {
-            if (playedPorts[i].has(track.port)) addPort(track.port);
-        }
         const playingPorts = new Set(playedPorts.flatMap((p) => [...p]));
-        const tracker = new PortTracker(this);
-        for (const { tr: trackNum, ev } of this.timeline) {
-            const e = this.tracks[trackNum].events[ev];
-            if (tracker.update(e, trackNum) || !isNoteOn(e)) continue;
-            const port = tracker.port(trackNum);
-            if (port !== -1) addPort(port);
+        // The ports map to the device's ports A, B, C... from the set of ports, never the track order,
+        // So reordering tracks doesn't renumber the channels (a track on a new port can).
+        // With port 0 among them, ports 0 to 3 are the device's ports A to D as they are (a file for a 4 port device
+        // On A and C keeps C, where XG part numbers and GS block addresses expect it), higher ports follow them.
+        // Without port 0 the set is packed in order from A: port numbers counted from 1, or an output number like 9.
+        // Ports above D can't be reached by part SysEx, so packing them changes no addressing.
+        // Only notes on port 0 count as numbering from 0: a port 0 that only holds the setup or the tempo
+        // Also appears in files that play everything on port 1, which would leave block A empty
+        const sortedPorts = [...playingPorts];
+        sortedPorts.sort((a, b) => a - b);
+        const countsFromZero = sortedPorts[0] === 0;
+        this.portChannelOffsetMap = [];
+        let nextPort = 0;
+        for (const port of sortedPorts) {
+            const devicePort = countsFromZero && port <= 3 ? port : nextPort;
+            this.portChannelOffsetMap[port] = devicePort * 16;
+            nextPort = devicePort + 1;
         }
 
         // Attempt to determine ports from track names:
@@ -1547,7 +1540,7 @@ export class BasicMIDI {
         // C<num> or PartC<num>
         // D<num> or PartD<num>
         // Testcase: Y4002_01.MID
-        if (portOffset === 0) {
+        if (playingPorts.size === 0) {
             for (const track of this.tracks) {
                 const n = track.name;
                 let port: number;
